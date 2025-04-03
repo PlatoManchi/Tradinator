@@ -1,4 +1,4 @@
 [submodule "Tradinator/imgui"]
-	path = Tradinator/imgui
+	path = Submodules/imgui/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking

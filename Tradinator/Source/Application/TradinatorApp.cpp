@@ -1,6 +1,7 @@
 #include "TradinatorApp.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 TradinatorApp::TradinatorApp()
 {
@@ -8,16 +9,65 @@ TradinatorApp::TradinatorApp()
 
 void TradinatorApp::Init()
 {
+    m_dashboard_window.Init();
+    m_audo_analysis_update_window.Init();
 }
+
+void TradinatorApp::Begin()
+{
+    m_root_docksapce_id = ImGui::GetID("root_dock");
+
+    if (!ImGui::DockBuilderGetNode(m_root_docksapce_id))
+    {
+        // if dockspace is not found then this is first time running app, so setup the docking for default view
+
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+        // Clear the previous layout and add a root node the size of the viewport.
+        ImGui::DockBuilderRemoveNode(m_root_docksapce_id);
+        ImGui::DockBuilderAddNode(m_root_docksapce_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoResize | ImGuiDockNodeFlags_KeepAliveOnly);
+        ImGui::DockBuilderSetNodeSize(m_root_docksapce_id, viewport->Size);
+
+        // Split the dockspace into 4 nodes by splitting root_dock_ID horizontally and then splitting the right node vertically.
+        ImGui::DockBuilderSplitNode(m_root_docksapce_id, ImGuiDir_Right, 0.3f, &m_dock_id_right, &m_dock_id_center);
+
+        ImGui::DockBuilderFinish(m_root_docksapce_id);
+    }
+
+    m_dashboard_window.Begin();
+    m_audo_analysis_update_window.Begin();
+}
+
+
+
 
 void TradinatorApp::ShowApp()
 {
-	ShowMainMenu();
+    ShowMainMenu();
+
+
+    ImGuiID dock_id = ImGui::DockSpaceOverViewport(m_root_docksapce_id, ImGui::GetMainViewport());
+
+    // Dashboard 
+    ImGui::SetNextWindowDockID(m_dock_id_center, ImGuiCond_FirstUseEver);
+    m_dashboard_window.Show();
+
+    // Auto analysis update
+    ImGui::SetNextWindowDockID(m_dock_id_right, ImGuiCond_FirstUseEver);
+    m_audo_analysis_update_window.Show();
 }
+
+
+
 
 void TradinatorApp::Shutdown()
 {
+    m_dashboard_window.Shutdown();
+    m_audo_analysis_update_window.Shutdown();
 }
+
+
+
 
 void TradinatorApp::ShowMainMenu()
 {
