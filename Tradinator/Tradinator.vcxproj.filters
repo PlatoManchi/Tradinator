@@ -69,14 +69,4 @@
       <Filter>Source\Application</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="imgui\imgui.natstepfilter">
-      <Filter>imgui</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="imgui\imgui.natvis">
-      <Filter>imgui</Filter>
-    </Natvis>
-  </ItemGroup>
 </Project>
