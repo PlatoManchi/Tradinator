@@ -3,18 +3,27 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include "Market/NSE_Market.h"
+
 TradinatorApp::TradinatorApp()
+    : m_tradinator_core(std::make_shared<TradinatorCore>("D:/Stock Data"))
 {
 }
 
 void TradinatorApp::Init()
 {
+    // Creating markets that we want to follow
+    m_tradinator_core->AddMarket(std::make_shared<NSE_Market>(m_tradinator_core));
+
     m_dashboard_window.Init();
     m_audo_analysis_update_window.Init();
 }
 
 void TradinatorApp::Begin()
 {
+    m_tradinator_core->InitializeAllMarkets();
+
+
     m_root_docksapce_id = ImGui::GetID("root_dock");
 
     if (!ImGui::DockBuilderGetNode(m_root_docksapce_id))
@@ -43,6 +52,8 @@ void TradinatorApp::Begin()
 
 void TradinatorApp::ShowApp()
 {
+    m_tradinator_core->Update();
+
     ShowMainMenu();
 
 

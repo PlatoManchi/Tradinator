@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tradinator", "Tradinator.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui", "..\Submodules\imgui\imgui.vcxproj", "{23952454-AF9B-4426-9754-23C87A45CCE9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TradinatorCore", "..\TradinatorCore\TradinatorCore.vcxproj", "{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{23952454-AF9B-4426-9754-23C87A45CCE9}.Release|x64.Build.0 = Release|x64
 		{23952454-AF9B-4426-9754-23C87A45CCE9}.Release|x86.ActiveCfg = Release|Win32
 		{23952454-AF9B-4426-9754-23C87A45CCE9}.Release|x86.Build.0 = Release|Win32
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Debug|x64.ActiveCfg = Debug|x64
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Debug|x64.Build.0 = Debug|x64
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Debug|x86.ActiveCfg = Debug|Win32
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Debug|x86.Build.0 = Debug|Win32
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Release|x64.ActiveCfg = Release|x64
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Release|x64.Build.0 = Release|x64
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Release|x86.ActiveCfg = Release|Win32
+		{10699FFA-7AF6-447D-BED0-5BC3F9BB5CFB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

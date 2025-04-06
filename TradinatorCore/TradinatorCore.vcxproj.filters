@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Private">
+      <UniqueIdentifier>{fb220a23-02a8-4a25-a623-5f39d7473ff5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public">
+      <UniqueIdentifier>{2a617f5f-2269-4587-91be-742e3b4f8a44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Market">
+      <UniqueIdentifier>{f7e18fdf-a144-46f1-b1cc-b32773ec4297}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Market">
+      <UniqueIdentifier>{e310edae-7335-4f7a-988e-22a119e2b02d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Data">
+      <UniqueIdentifier>{83d1c135-85ea-4d70-b6d5-fcd63c3d59c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Data">
+      <UniqueIdentifier>{ccdbdab2-ec33-4fa1-be58-7d8c2dac42da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Utils">
+      <UniqueIdentifier>{1a24b750-ecea-4a83-b21f-c8cc4e39224c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Utils">
+      <UniqueIdentifier>{8e3f9df2-a50c-4d87-b123-bbcadf6728f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Public\TradinatorCore.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Market\Market.h">
+      <Filter>Public\Market</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Market\NSE_Market.h">
+      <Filter>Public\Market</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Data\Company.h">
+      <Filter>Public\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\ThreadManager.h">
+      <Filter>Public\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Data\Equity.h">
+      <Filter>Public\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\AsyncTask.h">
+      <Filter>Public\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\DownloadTask.h">
+      <Filter>Public\Utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Private\TradinatorCore.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Market\Market.cpp">
+      <Filter>Private\Market</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Market\NSE_Market.cpp">
+      <Filter>Private\Market</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Data\Company.cpp">
+      <Filter>Private\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\ThreadManager.cpp">
+      <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Data\Equity.cpp">
+      <Filter>Private\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\AsyncTask.cpp">
+      <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\DownloadTask.cpp">
+      <Filter>Private\Utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

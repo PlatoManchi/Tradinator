@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 
+#include "TradinatorCore.h"
+
 #include "AutoAnalysisUpdateWindow.h"
 #include "DashboardWindow.h"
 
@@ -26,4 +28,6 @@ private:
 	ImGuiID m_root_docksapce_id;
 	ImGuiID m_dock_id_center;
 	ImGuiID m_dock_id_right;
+
+	std::shared_ptr<TradinatorCore> m_tradinator_core;
 };
