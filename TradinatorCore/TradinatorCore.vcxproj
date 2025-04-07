@@ -100,7 +100,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\ExternaCurlCPP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\ExternaCurlCPP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\ExternaCurlCPP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
@@ -151,7 +151,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\ExternaCurlCPP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
     <ClInclude Include="Public\Data\Equity.h" />
     <ClInclude Include="Public\Market\Market.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="Public\Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Private\Data\Candle.cpp" />
     <ClCompile Include="Private\Data\Company.cpp" />
     <ClCompile Include="Private\Data\Equity.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
@@ -183,11 +185,6 @@
     <ClCompile Include="Private\Utils\DownloadTask.cpp" />
     <ClCompile Include="Private\Utils\ThreadManager.cpp" />
     <ClCompile Include="Private\Utils\Utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Submodules\glaze\glaze.vcxproj">
-      <Project>{5b8f1fc6-6ac8-4c5f-8561-ce4aa5d09850}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

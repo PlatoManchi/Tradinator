@@ -10,21 +10,46 @@ Market::Market(std::shared_ptr<TradinatorCore> tradinator_core)
 
 }
 
+std::weak_ptr<Market> Market::GetMarket() const
+{
+	std::vector<std::shared_ptr<Market>> markets = m_tradinator_core->GetAllMarkets();
+
+	for (std::shared_ptr<Market>& market : markets)
+	{
+		if (market.get() == this)
+		{
+			return market;
+		}
+	}
+
+	return std::weak_ptr<Market>();
+}
+
 void Market::CreateFolderStructure() const
 {
 	std::filesystem::create_directory(m_tradinator_core->GetDataFolderPath() + "/" + _RAW_DATA_FOLDER_);
-	std::filesystem::create_directory(GetRawDataFolder());
+	std::filesystem::create_directory(GetRawDataFolderPath());
 
 	std::filesystem::create_directory(m_tradinator_core->GetDataFolderPath() + "/" + _PROCESSED_DATA_FOLDER_);
-	std::filesystem::create_directory(GetProcessedDataFolder());
+	std::filesystem::create_directory(GetProcessedDataFolderPath());
 }
 
-std::string Market::GetRawDataFolder() const
+std::string Market::GetRawDataFolderPath() const
 {
-	return m_tradinator_core->GetDataFolderPath() + "/" + _RAW_DATA_FOLDER_ + "/" + GetMarketName();
+	return m_tradinator_core->GetDataFolderPath() + "/" + _RAW_DATA_FOLDER_ + "/" + GetMarketCode();
 }
 
-std::string Market::GetProcessedDataFolder() const
+std::string Market::GetProcessedDataFolderPath() const
 {
-	return m_tradinator_core->GetDataFolderPath() + "/" + _PROCESSED_DATA_FOLDER_ + "/" + GetMarketName();
+	return m_tradinator_core->GetDataFolderPath() + "/" + _PROCESSED_DATA_FOLDER_ + "/" + GetMarketCode();
+}
+
+std::string Market::GetRawDataFilePath() const
+{
+	return GetRawDataFolderPath() + "/" + GetRawDataFilePathName();
+}
+
+std::string Market::GetProcessedDataFilePath() const
+{
+	return GetProcessedDataFolderPath() + "/" + GetProcessedDataFileName();
 }

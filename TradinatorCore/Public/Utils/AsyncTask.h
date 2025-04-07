@@ -19,9 +19,6 @@ public:
 	template<typename ... WorkType>
 	AsyncTask(std::string human_readable_description, std::function<void()> callback, WorkType ... workers);
 
-	void StartTask();
-	bool Update();
-	void TaskCompleted();
 
 	virtual ~AsyncTask();
 
@@ -29,6 +26,7 @@ public:
 
 
 protected:
+
 	virtual std::string GetHumanReadableDescription() const;
 
 	bool m_is_complete;
@@ -40,6 +38,15 @@ protected:
 
 	// 
 	std::chrono::steady_clock::time_point m_start;
+
+private:
+
+	void StartTask();
+	void Update();
+	void TaskCompleted();
+
+
+	friend class ThreadManager;
 };
 
 

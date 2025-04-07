@@ -42,9 +42,6 @@
     <ClInclude Include="Public\Utils\ThreadManager.h">
       <Filter>Public\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Data\Equity.h">
-      <Filter>Public\Data</Filter>
-    </ClInclude>
     <ClInclude Include="Public\Utils\AsyncTask.h">
       <Filter>Public\Utils</Filter>
     </ClInclude>
@@ -53,6 +50,12 @@
     </ClInclude>
     <ClInclude Include="Public\Utils\Utils.h">
       <Filter>Public\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Data\Candle.h">
+      <Filter>Public\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Data\Equity.h">
+      <Filter>Public\Data</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +85,9 @@
     </ClCompile>
     <ClCompile Include="Private\Utils\Utils.cpp">
       <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Data\Candle.cpp">
+      <Filter>Private\Data</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

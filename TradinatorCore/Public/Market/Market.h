@@ -15,6 +15,7 @@ public:
 	Market(std::shared_ptr<TradinatorCore> tradinator_core);
 
 	virtual std::string GetMarketName() const = 0;
+	virtual std::string GetMarketCode() const = 0;
 
 	virtual void GatherSymbols() = 0;
 
@@ -22,18 +23,29 @@ public:
 	virtual bool IsValid() const { return false; }
 
 	void CreateFolderStructure() const;
-	std::string GetRawDataFolder() const;
-	std::string GetProcessedDataFolder() const;
+	std::string GetRawDataFolderPath() const;
+	std::string GetProcessedDataFolderPath() const;
+
+	std::string GetRawDataFilePath() const;
+	std::string GetProcessedDataFilePath() const;
+
+	virtual std::string GetRawDataFilePathName() const = 0;
+	virtual std::string GetProcessedDataFileName() const = 0;
+
+	inline std::weak_ptr<TradinatorCore> GetTradinatorCore() const { return m_tradinator_core; }
 
 protected:
+	// get the weak_ptr from the shared_ptr stored in TradinatorCore
+	std::weak_ptr<Market> GetMarket() const;
+
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
 
 	// key value pair of symbol to equity for easier and faster access
-	std::map<std::string, Equity> m_equities_list;
+	std::map<std::string, std::shared_ptr<Equity>> m_equities_list;
 
 	// Temporary one that is used by async loading during loading phase.
 	// Once all the data is loaded, then it will be copied into m_equities_list
 	// Instead of using locks, use copies for lock free execution
-	std::map<std::string, Equity> m_equities_list_loader;
+	std::map<std::string, std::shared_ptr<Equity>> m_equities_list_loader;
 };
 

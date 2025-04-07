@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "AsyncTask.h"
+
+class AsyncTask;
 
 class ThreadManager
 {

@@ -1,5 +1,7 @@
 #include "Utils/ThreadManager.h"
 
+#include "Utils/AsyncTask.h"
+
 void ThreadManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
 	task->StartTask();
@@ -10,15 +12,16 @@ void ThreadManager::Update()
 {
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
-		if (!task->Update())
+		task->Update();
+		/*if (task && !task->Update())
 		{
 			task.reset();	// delete completed task
-		}
+		}*/
 	}
 
 	// remove all completed tasks
 	m_tasks.erase(std::remove_if(m_tasks.begin(), m_tasks.end(),
 		[](std::unique_ptr<AsyncTask>& task) {
-			return task.get() == nullptr;
+			return task->m_is_complete;
 		}), m_tasks.end());
 }

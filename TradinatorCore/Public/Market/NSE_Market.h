@@ -18,16 +18,17 @@ public:
 
 	virtual bool IsValid() const override;
 
-	virtual std::string GetMarketName() const override
-	{
-		return "NSE Market";
-	}
+	virtual std::string GetMarketName() const override { return "NSE (National Stock Exchange, India)"; }
+	virtual std::string GetMarketCode() const override { return "NSE"; }
 
 	virtual void GatherSymbols() override;
 
-	void function();
 private:
 	void OnGatherSymbolsCompleted();
+	void OnEquityDataLoaded();
+
+	std::string GetRawDataFilePathName() const;
+	std::string GetProcessedDataFileName() const;
 
 	bool IsRawFileExist() const;
 	bool IsProcessedFileExist() const;
