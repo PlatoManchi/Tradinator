@@ -104,7 +104,7 @@ void Equity::FromString(std::string str)
 stream.read(reinterpret_cast<char*>(&string_size), sizeof(string_size));			\
 buffer = new char[string_size + 1];													\
 stream.read(reinterpret_cast<char*>(buffer), string_size);							\
-buffer[string_size] = '/0';															\
+buffer[string_size] = '\0';															\
 string_name = buffer;																\
 delete[] buffer;																	\
 buffer = nullptr;																	\
