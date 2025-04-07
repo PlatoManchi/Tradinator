@@ -171,6 +171,7 @@
     <ClInclude Include="Public\Utils\AsyncTask.h" />
     <ClInclude Include="Public\Utils\DownloadTask.h" />
     <ClInclude Include="Public\Utils\ThreadManager.h" />
+    <ClInclude Include="Public\Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Data\Company.cpp" />
@@ -181,6 +182,7 @@
     <ClCompile Include="Private\Utils\AsyncTask.cpp" />
     <ClCompile Include="Private\Utils\DownloadTask.cpp" />
     <ClCompile Include="Private\Utils\ThreadManager.cpp" />
+    <ClCompile Include="Private\Utils\Utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

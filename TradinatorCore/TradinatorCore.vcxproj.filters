@@ -51,6 +51,9 @@
     <ClInclude Include="Public\Utils\DownloadTask.h">
       <Filter>Public\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Utils\Utils.h">
+      <Filter>Public\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -75,6 +78,9 @@
       <Filter>Private\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\DownloadTask.cpp">
+      <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\Utils.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
   </ItemGroup>

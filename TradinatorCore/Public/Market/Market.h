@@ -14,7 +14,6 @@ class Market
 public:
 	Market(std::shared_ptr<TradinatorCore> tradinator_core);
 
-	virtual void Update() = 0;
 	virtual std::string GetMarketName() const = 0;
 
 	virtual void GatherSymbols() = 0;
@@ -31,5 +30,10 @@ protected:
 
 	// key value pair of symbol to equity for easier and faster access
 	std::map<std::string, Equity> m_equities_list;
+
+	// Temporary one that is used by async loading during loading phase.
+	// Once all the data is loaded, then it will be copied into m_equities_list
+	// Instead of using locks, use copies for lock free execution
+	std::map<std::string, Equity> m_equities_list_loader;
 };
 

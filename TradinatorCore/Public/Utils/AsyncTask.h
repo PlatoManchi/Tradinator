@@ -10,11 +10,14 @@ class AsyncTask
 {
 public:
 	// default single parameter task
-	AsyncTask(std::function<void()> callback) : m_is_complete(false), m_callback(callback) {};
+	AsyncTask(std::string human_readable_description, std::function<void()> callback) 
+		: m_is_complete(false)
+		, m_human_readable_description(human_readable_description)
+		, m_callback(callback) {};
 
 	// First function is the callback 
 	template<typename ... WorkType>
-	AsyncTask(std::function<void()> callback, WorkType ... workers);
+	AsyncTask(std::string human_readable_description, std::function<void()> callback, WorkType ... workers);
 
 	void StartTask();
 	bool Update();
@@ -26,18 +29,26 @@ public:
 
 
 protected:
+	virtual std::string GetHumanReadableDescription() const;
+
 	bool m_is_complete;
 	std::future<void> m_work_future;
 
+	std::string m_human_readable_description;
 	std::function<void()> m_callback;
 	std::vector<std::function<void()>> m_worker_list;
+
+	// 
+	std::chrono::steady_clock::time_point m_start;
 };
 
 
 
 template<typename ... WorkType>
-AsyncTask::AsyncTask(std::function<void()> callback, WorkType ... workers)
+AsyncTask::AsyncTask(std::string human_readable_description, std::function<void()> callback, WorkType ... workers)
 	: m_is_complete(false)
+	, m_human_readable_description(human_readable_description)
+	, m_callback(callback)
 {
 	static_assert((std::is_same_v<WorkType, std::function<void()>> && ...), "Workers should be std::function<void()>");
 

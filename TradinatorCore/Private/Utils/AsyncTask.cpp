@@ -6,6 +6,10 @@
 
 void AsyncTask::StartTask()
 {
+	std::cout << GetHumanReadableDescription() << " ... " << std::endl;
+
+	m_start = std::chrono::steady_clock::now();
+
 	if (m_worker_list.size() > 0)
 	{
 		m_work_future = std::async(std::launch::async, m_worker_list[m_worker_list.size() - 1]);
@@ -40,8 +44,15 @@ void AsyncTask::TaskCompleted()
 {
 	m_is_complete = true;
 	m_callback();
+
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << GetHumanReadableDescription() << " completed in " << std::to_string(std::chrono::duration<double>(end - m_start).count()) << " sec" << std::endl;
 }
 
+std::string AsyncTask::GetHumanReadableDescription() const
+{
+	return m_human_readable_description;
+}
 
 AsyncTask::~AsyncTask()
 {

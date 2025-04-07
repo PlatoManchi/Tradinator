@@ -7,6 +7,14 @@
 class Equity : public Company
 {
 public:
+	Equity();
+
+	// copy and move sementics
+	Equity(const Equity& other);
+	Equity(Equity&& other) noexcept;
+	Equity& operator = (const Equity& other);
+	Equity& operator = (Equity&& other) noexcept;
+
 	// 
 	void FromString(std::string str);
 

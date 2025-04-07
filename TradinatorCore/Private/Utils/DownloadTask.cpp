@@ -3,11 +3,15 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <format>
+
 #include <curl/curl.h>
 
 
 DownloadTask::DownloadTask(std::function<void()> callback, std::string url, std::string file)
-	: AsyncTask(callback)
+	: AsyncTask("Downloading", callback)
+    , m_url(url)
+    , m_file_path (file)
 {
     m_worker_list.push_back(std::function<void()>(
         [url, file, this]() 
@@ -155,4 +159,13 @@ void DownloadTask::DownloadFile(DownloadRequest request)
 
     std::chrono::time_point end = std::chrono::steady_clock::now();
     std::cout << "Download took " << std::to_string(std::chrono::duration<double>(end - start).count()) << "s" << std::endl;
+}
+
+
+std::string DownloadTask::GetHumanReadableDescription() const
+{
+    return std::format("{} \'{}\' and saving at {}"
+        , m_human_readable_description
+        , m_url
+        , m_file_path);
 }

@@ -16,7 +16,6 @@ class NSE_Market : public Market
 public:
 	NSE_Market(std::shared_ptr<TradinatorCore> tradinator_core);
 
-	virtual void Update() override;
 	virtual bool IsValid() const override;
 
 	virtual std::string GetMarketName() const override
@@ -32,8 +31,5 @@ private:
 
 	bool IsRawFileExist() const;
 	bool IsProcessedFileExist() const;
-
-	std::thread download_thread;
-	bool finished = false;
 };
 

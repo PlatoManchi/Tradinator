@@ -6,6 +6,14 @@
 class Company
 {
 public:
+	Company();
+
+	// copy and move sementics
+	Company(const Company& other);
+	Company(Company&& other) noexcept;
+	Company& operator = (const Company& other);
+	Company& operator = (Company&& other) noexcept;
+
 	inline std::string symbol() const { return m_symbol; }
 	inline std::string name() const { return m_name; }
 	inline std::string isin_number() const { return m_isin_number; }

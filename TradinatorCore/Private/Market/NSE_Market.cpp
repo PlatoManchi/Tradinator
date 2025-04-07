@@ -2,12 +2,15 @@
 
 #include <iostream>
 #include <fstream>
+#include <format>
+
 #include <curl/curl.h>
-#include <filesystem>
 
 #include "TradinatorCore.h"
 #include "Utils/AsyncTask.h"
 #include "Utils/DownloadTask.h"
+#include "Utils/Utils.h"
+
 
 static std::string _SRC_EQUITY_DATA_FILE_ = "EQUITY_L.csv";
 static std::string _SRC_SME_EQUITY_DATA_FILE_ = "SME_EQUITY_L.csv";
@@ -33,9 +36,6 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, FILE* use
 
 void NSE_Market::GatherSymbols()
 {
-	std::cout << "Gather Symbols for Market : " << GetMarketName() << std::endl;
-    finished = false;
-    
     std::function<void()> process_raw_equity_data = [&]()
         {
             if (IsRawFileExist() && !IsProcessedFileExist())
@@ -52,7 +52,7 @@ void NSE_Market::GatherSymbols()
                 std::getline(raw_file, line); // first line is just headings so discard it
                 
                 // clean start
-                m_equities_list.clear();
+                m_equities_list_loader.clear();
 
                 int count = 0;
 
@@ -60,15 +60,18 @@ void NSE_Market::GatherSymbols()
                 while (std::getline(raw_file, line))
                 {
                     tmp_equity.FromString(line);
-                    m_equities_list[tmp_equity.symbol()] = tmp_equity;
-                    count++;
-                    std::cout << count << " - " << tmp_equity << std::endl;
-                    processed_file << tmp_equity;
-                }
+                    m_equities_list_loader[tmp_equity.symbol()] = tmp_equity;
+                    //processed_file << tmp_equity; // do i really need to save processed data as binary data since its loaded once during startup
+                }                
+            }
+            else if (IsProcessedFileExist())
+            {
+                std::ifstream  processed_file(GetProcessedDataFolder() + "/" + _DST_EQUITY_DATA_FILE_);
             }
         };
 
     m_tradinator_core->GetThreadManager()->AddTask(std::make_unique<AsyncTask>(
+        std::format("{} {}", "Gathering Symbols for", GetMarketName()),
         [&]()
         {
             OnGatherSymbolsCompleted();
@@ -92,19 +95,10 @@ void NSE_Market::GatherSymbols()
 
 }
 
-void NSE_Market::Update()
-{
-    //task.Update();
-    if (finished && download_thread.joinable())
-    {
-        //download_thread.join();
-        //function();
-    }
-}
-
 void NSE_Market::OnGatherSymbolsCompleted()
 {
-    std::cout << "Done processing symbold" << std::endl;
+    // Since loading is finished, move loaded data into actual variable in main thread.
+    m_equities_list = std::move(m_equities_list_loader);
 }
 
 bool NSE_Market::IsValid() const
@@ -115,29 +109,13 @@ bool NSE_Market::IsValid() const
 bool NSE_Market::IsRawFileExist() const
 {
     std::string raw_file_path = GetRawDataFolder() + "/" + _SRC_EQUITY_DATA_FILE_;
-    for (const auto& entry : std::filesystem::directory_iterator(GetRawDataFolder()))
-    {
-        if (entry.path() == raw_file_path)
-        {
-            return true;
-        }
-    }
-        
-    return false;
+    return Utils::DoesFileExist(raw_file_path);
 }
 
 bool NSE_Market::IsProcessedFileExist() const
 {
     std::string processed_file_path = GetProcessedDataFolder() + "/" + _DST_EQUITY_DATA_FILE_;
-    for (const auto& entry : std::filesystem::directory_iterator(GetRawDataFolder()))
-    {
-        if (entry.path() == processed_file_path)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return Utils::DoesFileExist(processed_file_path);
 }
 
 void NSE_Market::function()

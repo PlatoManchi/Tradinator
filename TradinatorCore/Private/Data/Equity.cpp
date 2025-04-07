@@ -4,6 +4,70 @@
 #include <fstream>
 #include <sstream>
 
+Equity::Equity()
+	: Company()
+	, m_series()
+	, m_paid_up_value(0)
+	, m_market_lot(0)
+	, m_face_value(0)
+{
+
+}
+
+// copy and move sementics
+Equity::Equity(const Equity& other)
+	: Company(other)
+	, m_series(other.m_series)
+	, m_paid_up_value(other.m_paid_up_value)
+	, m_market_lot(other.m_market_lot)
+	, m_face_value(other.m_face_value)
+{
+
+}
+
+Equity::Equity(Equity&& other) noexcept
+	: Company(other)
+	, m_series(std::move(other.m_series))
+	, m_paid_up_value(other.m_paid_up_value)
+	, m_market_lot(other.m_market_lot)
+	, m_face_value(other.m_face_value)
+{
+	other.m_paid_up_value = 0;
+	other.m_market_lot = 0;
+	other.m_face_value = 0;
+}
+
+Equity& Equity::operator = (const Equity& other)
+{
+	Company::operator=(other);
+
+	m_series = other.m_series;
+	m_paid_up_value = other.m_paid_up_value;
+	m_market_lot = other.m_market_lot;
+	m_face_value = other.m_face_value;
+
+	return *this;
+}
+
+Equity& Equity::operator = (Equity&& other) noexcept
+{
+	Company::operator=(other);
+
+	m_series = std::move(other.m_series);
+	
+	m_paid_up_value = other.m_paid_up_value;
+	other.m_paid_up_value = 0;
+
+	m_market_lot = other.m_market_lot;
+	other.m_market_lot = 0;
+
+	m_face_value = other.m_face_value;
+	other.m_face_value = 0;
+
+	return *this;
+}
+
+
 void Equity::FromString(std::string str)
 {
 	std::vector<std::string> split_strings;

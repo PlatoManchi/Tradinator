@@ -33,11 +33,6 @@ void TradinatorCore::InitializeAllMarkets()
 void TradinatorCore::Update()
 {
 	m_thread_manager->Update();
-
-	for (std::shared_ptr<Market>& market : m_market_list)
-	{
-		market->Update();
-	}
 }
 
 void TradinatorCore::AddMarket(std::shared_ptr<Market>&& market)
