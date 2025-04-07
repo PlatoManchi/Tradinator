@@ -6,6 +6,8 @@
 #include <sstream>
 #include <chrono>
 
+#include "json/json.h"
+
 #include "TradinatorCore.h"
 #include "Data/Candle.h"
 #include "Market/Market.h"
@@ -113,7 +115,7 @@ void Equity::LoadEquityData(std::function<void()> callback)
 				//std::ofstream tmp_download_file(tmp_file_name);
 
 				std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
-				std::chrono::days delta_time(7);
+				std::chrono::days delta_time(50 * 365);
 
 				std::chrono::system_clock::time_point from_tp = to_tp - delta_time;
 				std::string to = std::format("{:%F}", to_tp);
@@ -149,13 +151,36 @@ void Equity::ProcessDownloadedData(std::string tmp_file_path)
 	std::ifstream tmp_file(tmp_file_path);
 	std::stringstream buffer;
 	buffer << tmp_file.rdbuf();
+	std::string raw_json_string = buffer.str();
+	std::size_t length = static_cast<int>(raw_json_string.length());
 
-	//auto s = glz::read_json<JsonTmp>(buffer.str());
-	//if (s) // check std::expected
-	//{
-	//	JsonTmp tmp = s.value(); // s.value() is a my_struct populated from buffer
-	//	std::cout << "" << std::endl;
-	//}
+	JSONCPP_STRING err;
+	Json::Value root;
+	root["date"] = "sdf";
+	root["high"] = 900.0;
+
+	Json::CharReaderBuilder builder;
+	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+	if (reader->parse(raw_json_string.c_str(), raw_json_string.c_str() + length, &root, &err)) 
+	{
+		if (root["status"] == "success" && root["data"] && root["data"]["candles"])
+		{
+			Json::ArrayIndex candles_count = root["data"]["candles"].size();
+			Json::Value value;
+			value["date"] = "sdf";
+			value["high"] = 900.0;
+
+			//root["data"]["candles"][4] = value;
+			root["data"]["candles"].insert(0, value);
+
+		}
+		std::cout << "Status: " << root["status"] << std::endl;
+		std::cout << "Candles: " << root["data"]["candles"] << std::endl;
+	}
+	else
+	{
+		std::cout << "error: " << err << std::endl;
+	}
 }
 
 void Equity::SetParentMarket(std::weak_ptr<Market> parent)
