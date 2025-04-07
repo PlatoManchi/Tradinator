@@ -184,6 +184,11 @@
     <ClCompile Include="Private\Utils\ThreadManager.cpp" />
     <ClCompile Include="Private\Utils\Utils.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Submodules\glaze\glaze.vcxproj">
+      <Project>{5b8f1fc6-6ac8-4c5f-8561-ce4aa5d09850}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="glaze\include\glaze\api\api.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\hash.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\impl.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\lib.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\array.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\deque.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\functional.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\list.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\map.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\optional.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\set.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\shared_ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\span.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\string.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\tuple.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\unique_ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\unordered_map.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\unordered_set.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\variant.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\std\vector.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\trait.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\tuplet.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\type_support.hpp" />
+    <ClInclude Include="glaze\include\glaze\api\xxh64.hpp" />
+    <ClInclude Include="glaze\include\glaze\base64\base64.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\beve_to_json.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\header.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\read.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\skip.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\wrappers.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve\write.hpp" />
+    <ClInclude Include="glaze\include\glaze\beve.hpp" />
+    <ClInclude Include="glaze\include\glaze\compare\approx.hpp" />
+    <ClInclude Include="glaze\include\glaze\compare\compare.hpp" />
+    <ClInclude Include="glaze\include\glaze\concepts\container_concepts.hpp" />
+    <ClInclude Include="glaze\include\glaze\containers\flat_map.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\array_apply.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\common.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\context.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\convert_struct.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\custom.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\feature_test.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\manage.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\meta.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\opts.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\read.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\reflect.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\seek.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\to.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\wrappers.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\write.hpp" />
+    <ClInclude Include="glaze\include\glaze\core\write_chars.hpp" />
+    <ClInclude Include="glaze\include\glaze\csv\read.hpp" />
+    <ClInclude Include="glaze\include\glaze\csv\write.hpp" />
+    <ClInclude Include="glaze\include\glaze\csv.hpp" />
+    <ClInclude Include="glaze\include\glaze\exceptions\binary_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\exceptions\core_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\exceptions\csv_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\exceptions\json_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\exceptions\json_schema_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\ext\cli_menu.hpp" />
+    <ClInclude Include="glaze\include\glaze\ext\eigen.hpp" />
+    <ClInclude Include="glaze\include\glaze\ext\glaze_asio.hpp" />
+    <ClInclude Include="glaze\include\glaze\ext\jsonrpc.hpp" />
+    <ClInclude Include="glaze\include\glaze\ext\README.md" />
+    <ClInclude Include="glaze\include\glaze\file\file_ops.hpp" />
+    <ClInclude Include="glaze\include\glaze\file\file_watch.hpp" />
+    <ClInclude Include="glaze\include\glaze\file\hostname_include.hpp" />
+    <ClInclude Include="glaze\include\glaze\file\raw_or_file.hpp" />
+    <ClInclude Include="glaze\include\glaze\file\read_directory.hpp" />
+    <ClInclude Include="glaze\include\glaze\file\write_directory.hpp" />
+    <ClInclude Include="glaze\include\glaze\format\format_to.hpp" />
+    <ClInclude Include="glaze\include\glaze\glaze.hpp" />
+    <ClInclude Include="glaze\include\glaze\glaze_exceptions.hpp" />
+    <ClInclude Include="glaze\include\glaze\hardware\volatile_array.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\escape_unicode.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\invoke.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\jmespath.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\json_concepts.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\json_format.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\json_ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\json_t.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\max_write_precision.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\minify.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\ndjson.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\prettify.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\ptr.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\raw_string.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\read.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\schema.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\skip.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\study.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\wrappers.hpp" />
+    <ClInclude Include="glaze\include\glaze\json\write.hpp" />
+    <ClInclude Include="glaze\include\glaze\json.hpp" />
+    <ClInclude Include="glaze\include\glaze\record\recorder.hpp" />
+    <ClInclude Include="glaze\include\glaze\reflection\get_name.hpp" />
+    <ClInclude Include="glaze\include\glaze\reflection\to_tuple.hpp" />
+    <ClInclude Include="glaze\include\glaze\rpc\repe\header.hpp" />
+    <ClInclude Include="glaze\include\glaze\rpc\repe\registry.hpp" />
+    <ClInclude Include="glaze\include\glaze\stencil\stencil.hpp" />
+    <ClInclude Include="glaze\include\glaze\stencil\stencilcount.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\async.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\async_string.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\async_vector.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\atomic.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\guard.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\shared_async_map.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\shared_async_vector.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\threadpool.hpp" />
+    <ClInclude Include="glaze\include\glaze\thread\value_proxy.hpp" />
+    <ClInclude Include="glaze\include\glaze\toml\write.hpp" />
+    <ClInclude Include="glaze\include\glaze\toml.hpp" />
+    <ClInclude Include="glaze\include\glaze\trace\trace.hpp" />
+    <ClInclude Include="glaze\include\glaze\tuplet\tuple.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\atoi.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\bit_array.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\compare.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\convert.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\dragonbox.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\dtoa.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\dump.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\expected.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\fast_float.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\for_each.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\glaze_fast_float.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\hash_map.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\help.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\inline.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\itoa.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\memory_pool.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\murmur.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\parse.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\primes_64.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\progress_bar.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\string_literal.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\tuple.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\type_traits.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\utility.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\validate.hpp" />
+    <ClInclude Include="glaze\include\glaze\util\variant.hpp" />
+    <ClInclude Include="glaze\include\glaze\version.hpp" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{5b8f1fc6-6ac8-4c5f-8561-ce4aa5d09850}</ProjectGuid>
+    <RootNamespace>glaze</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PublicIncludeDirectories>$(ProjectDir)glaze\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PublicIncludeDirectories>$(ProjectDir)glaze\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PublicIncludeDirectories>$(ProjectDir)glaze\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PublicIncludeDirectories>$(ProjectDir)glaze\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
