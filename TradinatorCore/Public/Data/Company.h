@@ -9,10 +9,10 @@ public:
 	Company();
 
 	// copy and move sementics
-	Company(const Company& other);
-	Company(Company&& other) noexcept;
-	Company& operator = (const Company& other);
-	Company& operator = (Company&& other) noexcept;
+	Company(const Company& other) = default;
+	Company(Company&& other) noexcept = default;
+	Company& operator = (const Company& other) = default;
+	Company& operator = (Company&& other) noexcept = default;
 
 	inline std::string symbol() const { return m_symbol; }
 	inline std::string name() const { return m_name; }

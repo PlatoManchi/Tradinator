@@ -4,7 +4,8 @@
 #include <memory>
 #include <map>
 
-#include<Data/Equity.h>
+#include "Data/Security.h"
+#include "Data/AsyncData.h"
 
 class TradinatorCore;
 
@@ -40,12 +41,14 @@ protected:
 
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
 
-	// key value pair of symbol to equity for easier and faster access
-	std::map<std::string, std::shared_ptr<Equity>> m_equities_list;
+	// key value pair of symbol to security for easier and faster access
+	//std::map<std::string, std::shared_ptr<Security>> m_securities_list;
 
 	// Temporary one that is used by async loading during loading phase.
-	// Once all the data is loaded, then it will be copied into m_equities_list
+	// Once all the data is loaded, then it will be copied into m_securities_list
 	// Instead of using locks, use copies for lock free execution
-	std::map<std::string, std::shared_ptr<Equity>> m_equities_list_loader;
+	//std::map<std::string, std::shared_ptr<Security>> m_securities_list_loader;
+
+	AsyncData<std::map<std::string, std::shared_ptr<Security>>> m_securities_async_data;
 };
 

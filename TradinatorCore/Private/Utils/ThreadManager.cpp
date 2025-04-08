@@ -2,6 +2,13 @@
 
 #include "Utils/AsyncTask.h"
 
+
+ThreadManager::ThreadManager(std::thread::id tradinator_core_thread_id)
+	: m_tradinator_core_thread_id(tradinator_core_thread_id)
+{
+
+}
+
 void ThreadManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
 	task->StartTask();

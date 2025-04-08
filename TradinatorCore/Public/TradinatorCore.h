@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-
+#include <thread>
 
 
 //class ThreadManager;
@@ -29,9 +29,14 @@ public:
 	std::shared_ptr<ThreadManager> GetThreadManager() const { return m_thread_manager; }
 
 	inline std::string GetDataFolderPath() const { return m_data_folder_path; }
-
+	inline std::thread::id GetTradinatorCoreThreadID() const { return m_tradinator_core_thread_id; }
 
 private:
+	// The ID of thread TradinatorCore is constructed on.
+	// Caching and using this to make debugging easy
+	const std::thread::id m_tradinator_core_thread_id;
+
+
 	std::shared_ptr<ThreadManager> m_thread_manager;
 
 	// List of markets that this core will process

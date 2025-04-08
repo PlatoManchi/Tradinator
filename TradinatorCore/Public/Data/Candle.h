@@ -2,26 +2,24 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
+#include <cstdint>
 
 struct Candle
 {
 public:
-	std::string date;
+	Candle() = default;
+
+	Candle(const Candle& other) = default;
+	Candle(Candle&& other) noexcept = default;
+	Candle& operator=(const Candle& other) = default;
+	Candle& operator=(Candle&& other) noexcept = default;
+
+	std::chrono::system_clock::time_point date;
 	double open;
 	double high;
 	double low;
 	double close;
-	long volume;
-	long open_interest;
-};
-
-struct Data
-{
-	std::vector<Candle> candles;
-};
-
-struct JsonTmp
-{
-	std::string status;
-	Data data;
+	uint64_t volume;
+	uint64_t open_interest;
 };

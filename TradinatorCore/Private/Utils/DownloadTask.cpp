@@ -24,8 +24,7 @@ DownloadTask::DownloadTask(std::function<void()> callback, std::string url, std:
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, FILE* userp)
 {
     size_t written = fwrite(contents, size, nmemb, userp);
-    std::cout << "Written : " << written << " bytes" << std::endl;
-    std::cout << contents << std::endl;
+    
     // return -1 to cancel the download
     return written;
 }
@@ -164,7 +163,7 @@ void DownloadTask::DownloadFile(DownloadRequest request)
 
 std::string DownloadTask::GetHumanReadableDescription() const
 {
-    return std::format("{} \'{}\' and saving at {}"
+    return std::format("{} \n URL: \'{}\'\nSaving Filename: {}"
         , m_human_readable_description
         , m_url
         , m_file_path);

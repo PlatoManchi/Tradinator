@@ -25,7 +25,7 @@ public:
 
 private:
 	void OnGatherSymbolsCompleted();
-	void OnEquityDataLoaded();
+	void OnSecurityDataLoaded();
 
 	std::string GetRawDataFilePathName() const;
 	std::string GetProcessedDataFileName() const;

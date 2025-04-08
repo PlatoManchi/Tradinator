@@ -10,7 +10,8 @@
 
 
 TradinatorCore::TradinatorCore(std::string data_folder_path)
-	: m_thread_manager(std::make_shared<ThreadManager>())
+	: m_tradinator_core_thread_id(std::this_thread::get_id())
+	, m_thread_manager(std::make_shared<ThreadManager>(m_tradinator_core_thread_id))
 	, m_data_folder_path(data_folder_path)
 {
 	std::filesystem::create_directories("Data/Raw");

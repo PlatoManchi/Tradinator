@@ -6,6 +6,7 @@
 
 Market::Market(std::shared_ptr<TradinatorCore> tradinator_core)
 	: m_tradinator_core(tradinator_core)
+	, m_securities_async_data(m_tradinator_core->GetTradinatorCoreThreadID())
 {
 
 }

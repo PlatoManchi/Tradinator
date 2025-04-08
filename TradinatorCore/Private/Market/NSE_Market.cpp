@@ -28,11 +28,11 @@ NSE_Market::NSE_Market(std::shared_ptr<TradinatorCore> tradinator_core)
 
 void NSE_Market::GatherSymbols()
 {
-    std::function<void()> process_raw_equity_data = [&]()
+    std::function<void()> process_raw_security_data = [&]()
         {
             if (!IsRawFileExist())
             {
-                std::cout << "ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv' and place the file at '" << GetRawDataFilePath()<<"'." << std::endl;
+                std::cout << "ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/securities/EQUITY_L.csv' and place the file at '" << GetRawDataFilePath()<<"'." << std::endl;
             }
 
             if (IsRawFileExist() /* && !IsProcessedFileExist()*/)
@@ -41,26 +41,29 @@ void NSE_Market::GatherSymbols()
                 std::ifstream  raw_file(GetRawDataFilePath());
                 std::ofstream  processed_file(GetProcessedDataFilePath(), std::ios::binary);
 
-                Equity tmp_equity;
+                Security tmp_security;
 
                 std::string line;
                 std::getline(raw_file, line); // first line is just headings so discard it
                 
                 // clean start
-                m_equities_list_loader.clear();
-
+                m_securities_async_data.SetDataReady(false);
+                //m_securities_list_loader.clear();
+                
                 int count = 0;
 
                 // fill up the map
                 while (std::getline(raw_file, line))
                 {
-                    tmp_equity.FromString(line);
+                    tmp_security.FromString(line);
                     
-                    std::shared_ptr<Equity> equity = std::make_shared<Equity>(tmp_equity);
-                    equity->SetParentMarket(GetMarket());
+                    std::shared_ptr<Security> security = std::make_shared<Security>(tmp_security);
+                    security->SetParentMarket(GetMarket());
 
-                    m_equities_list_loader[tmp_equity.symbol()] = equity;
-                    //processed_file << tmp_equity; // do i really need to save processed data as binary data since its loaded once during startup
+                    //m_securities_list_loader[tmp_security.symbol()] = security;
+                    m_securities_async_data.GetAsyncDataCopy()[tmp_security.symbol()] = security;
+
+                    //processed_file << tmp_security; // do i really need to save processed data as binary data since its loaded once during startup
                 }                
             }
             else if (IsProcessedFileExist())
@@ -75,7 +78,7 @@ void NSE_Market::GatherSymbols()
         {
             OnGatherSymbolsCompleted();
         },
-        process_raw_equity_data
+        process_raw_security_data
     ));
 
     
@@ -96,11 +99,13 @@ void NSE_Market::GatherSymbols()
 void NSE_Market::OnGatherSymbolsCompleted()
 {
     // Since loading is finished, move loaded data into actual variable in main thread.
-    m_equities_list = std::move(m_equities_list_loader);
-    m_equities_list.begin()->second->LoadEquityData(std::bind(&NSE_Market::OnEquityDataLoaded, this));
+    //m_securities_list = std::move(m_securities_list_loader);
+    m_securities_async_data.SetDataReady(true);
+    //m_securities_list.begin()->second->LoadSecurityData(std::bind(&NSE_Market::OnSecurityDataLoaded, this));
+    m_securities_async_data.GetData().begin()->second->DownloadSecurityData(std::bind(&NSE_Market::OnSecurityDataLoaded, this));
 }
 
-void NSE_Market::OnEquityDataLoaded()
+void NSE_Market::OnSecurityDataLoaded()
 {
 
 }

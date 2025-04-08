@@ -54,7 +54,10 @@
     <ClInclude Include="Public\Data\Candle.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Data\Equity.h">
+    <ClInclude Include="Public\Data\Security.h">
+      <Filter>Public\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Data\AsyncData.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
   </ItemGroup>
@@ -65,16 +68,13 @@
     <ClCompile Include="Private\Market\Market.cpp">
       <Filter>Private\Market</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Market\NSE_Market.cpp">
-      <Filter>Private\Market</Filter>
-    </ClCompile>
     <ClCompile Include="Private\Data\Company.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\ThreadManager.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Data\Equity.cpp">
+    <ClCompile Include="Private\Data\Security.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\AsyncTask.cpp">
@@ -89,5 +89,13 @@
     <ClCompile Include="Private\Data\Candle.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Market\NSE_Market.cpp">
+      <Filter>Private\Market</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Public\Data\AsyncData.inl">
+      <Filter>Public\Data</Filter>
+    </None>
   </ItemGroup>
 </Project>

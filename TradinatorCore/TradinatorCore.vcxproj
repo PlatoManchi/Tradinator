@@ -163,9 +163,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Public\Data\AsyncData.h" />
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
-    <ClInclude Include="Public\Data\Equity.h" />
+    <ClInclude Include="Public\Data\Security.h" />
     <ClInclude Include="Public\Market\Market.h" />
     <ClInclude Include="Public\Market\NSE_Market.h" />
     <ClInclude Include="Public\TradinatorCore.h" />
@@ -177,7 +178,7 @@
   <ItemGroup>
     <ClCompile Include="Private\Data\Candle.cpp" />
     <ClCompile Include="Private\Data\Company.cpp" />
-    <ClCompile Include="Private\Data\Equity.cpp" />
+    <ClCompile Include="Private\Data\Security.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
     <ClCompile Include="Private\Market\NSE_Market.cpp" />
     <ClCompile Include="Private\TradinatorCore.cpp" />
@@ -185,6 +186,9 @@
     <ClCompile Include="Private\Utils\DownloadTask.cpp" />
     <ClCompile Include="Private\Utils\ThreadManager.cpp" />
     <ClCompile Include="Private\Utils\Utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Public\Data\AsyncData.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
