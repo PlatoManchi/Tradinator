@@ -41,7 +41,7 @@ protected:
 
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
 
-	// key value pair of symbol to security for easier and faster access
+	// key value pair of Symbol to security for easier and faster access
 	//std::map<std::string, std::shared_ptr<Security>> m_securities_list;
 
 	// Temporary one that is used by async loading during loading phase.

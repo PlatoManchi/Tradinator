@@ -71,9 +71,9 @@ void Security::DownloadSecurityData(std::function<void()> callback)
 
 	
 	tradinator_core->GetThreadManager()->AddTask(std::make_unique<AsyncTask>(
-		std::format("Gathering historical candles data stored locally for {}", m_symbol),
-		load_historical_data_if_exists,
-		download_daily_data
+			std::format("Gathering historical candles data stored locally for {}", m_symbol),
+			load_historical_data_if_exists,
+			download_daily_data
 		));
 }
 

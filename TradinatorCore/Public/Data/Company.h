@@ -14,10 +14,10 @@ public:
 	Company& operator = (const Company& other) = default;
 	Company& operator = (Company&& other) noexcept = default;
 
-	inline std::string symbol() const { return m_symbol; }
-	inline std::string name() const { return m_name; }
-	inline std::string isin_number() const { return m_isin_number; }
-	inline std::chrono::system_clock::time_point date_of_listing() const { return m_date_of_listing; }
+	inline std::string Symbol() const { return m_symbol; }
+	inline std::string Name() const { return m_name; }
+	inline std::string ISIN_Number() const { return m_isin_number; }
+	inline std::chrono::system_clock::time_point DateOfListing() const { return m_date_of_listing; }
 
 
 	bool operator == (const Company& other) const;

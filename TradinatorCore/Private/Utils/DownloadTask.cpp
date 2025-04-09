@@ -130,7 +130,7 @@ void DownloadTask::DownloadFile(DownloadRequest request)
                     (unsigned long)(val / 1024));
 
             if (prtall) {
-                /* check for name resolution time */
+                /* check for Name resolution time */
                 res = curl_easy_getinfo(curl_handle, CURLINFO_NAMELOOKUP_TIME_T, &val);
                 if ((CURLE_OK == res) && (val > 0))
                     printf("Name lookup time: %lu.%06lu sec.\n",

@@ -32,10 +32,10 @@ public:
 	// 
 	void FromString(std::string str);
 
-	inline std::string series() const { return m_series; }
-	inline uint32_t paid_up_value() const { return m_paid_up_value; }
-	inline uint32_t market_lot() const { return m_market_lot; }
-	inline uint32_t face_value() const { return m_face_value; }
+	inline std::string Series() const { return m_series; }
+	inline uint32_t PaidUpValue() const { return m_paid_up_value; }
+	inline uint32_t MarkerLot() const { return m_market_lot; }
+	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncCandleData> GetCandleData() const { return m_candle_data; }
 

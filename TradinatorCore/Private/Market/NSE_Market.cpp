@@ -60,8 +60,8 @@ void NSE_Market::GatherSymbols()
                     std::shared_ptr<Security> security = std::make_shared<Security>(tmp_security);
                     security->SetParentMarket(GetMarket());
 
-                    //m_securities_list_loader[tmp_security.symbol()] = security;
-                    m_securities_async_data.GetAsyncDataCopy()[tmp_security.symbol()] = security;
+                    //m_securities_list_loader[tmp_security.Symbol()] = security;
+                    m_securities_async_data.GetAsyncDataCopy()[tmp_security.Symbol()] = security;
 
                     //processed_file << tmp_security; // do i really need to save processed data as binary data since its loaded once during startup
                 }                
