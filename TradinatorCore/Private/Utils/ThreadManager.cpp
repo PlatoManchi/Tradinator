@@ -11,8 +11,12 @@ ThreadManager::ThreadManager(std::thread::id tradinator_core_thread_id)
 
 void ThreadManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
+	m_mutex.lock();
+
 	task->StartTask();
 	m_tasks.push_back(std::move(task));
+
+	m_mutex.unlock();
 }
 
 void ThreadManager::Update()
@@ -20,10 +24,6 @@ void ThreadManager::Update()
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
 		task->Update();
-		/*if (task && !task->Update())
-		{
-			task.reset();	// delete completed task
-		}*/
 	}
 
 	// remove all completed tasks

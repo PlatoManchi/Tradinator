@@ -9,15 +9,17 @@
 class AsyncTask
 {
 public:
-	// default single parameter task
-	AsyncTask(std::string human_readable_description, std::function<void()> callback) 
-		: m_is_complete(false)
-		, m_human_readable_description(human_readable_description)
-		, m_callback(callback) {};
+	
 
 	// First function is the callback 
-	template<typename ... WorkType>
-	AsyncTask(std::string human_readable_description, std::function<void()> callback, WorkType ... workers);
+	template<typename Worker, typename ... WorkersAndCallback>
+	AsyncTask(std::string human_readable_description, Worker worker, WorkersAndCallback ... workers_and_callback)
+		: AsyncTask(workers_and_callback...)
+	{
+		m_is_complete = false;
+		m_human_readable_description = human_readable_description;
+		m_worker_list.push_back(worker);
+	}
 
 
 	virtual ~AsyncTask();
@@ -26,6 +28,28 @@ public:
 
 
 protected:
+	
+	template<typename Worker, typename ... Workers>
+	AsyncTask(Worker worker, Workers ... workers)
+		: AsyncTask(workers...)
+	{
+		m_worker_list.push_back(worker);
+	}
+
+	template<typename Callback>
+	AsyncTask(Callback callback)
+		: m_is_complete(false)
+		, m_callback(callback)
+	{
+	}
+
+	// Used by subclasses if they want to take params other than std::function in constructor
+	AsyncTask()
+		: m_is_complete (false)
+	{
+		m_human_readable_description = "";
+	};
+
 
 	virtual std::string GetHumanReadableDescription() const;
 
@@ -48,24 +72,3 @@ private:
 
 	friend class ThreadManager;
 };
-
-
-
-template<typename ... WorkType>
-AsyncTask::AsyncTask(std::string human_readable_description, std::function<void()> callback, WorkType ... workers)
-	: m_is_complete(false)
-	, m_human_readable_description(human_readable_description)
-	, m_callback(callback)
-{
-	static_assert((std::is_same_v<WorkType, std::function<void()>> && ...), "Workers should be std::function<void()>");
-
-	m_callback = callback;
-	
-	for (std::function<void()> const worker : {workers...}) {
-		m_worker_list.push_back(worker);
-	}
-
-	// Reverse so that instead of 1, 2, 3 it will be 3, 2, 1
-	// then we can just pop the last worker to process instead of removing from begining
-	std::reverse(m_worker_list.begin(), m_worker_list.end());
-}

@@ -9,10 +9,13 @@
 
 
 DownloadTask::DownloadTask(std::function<void()> callback, std::string url, std::string file)
-	: AsyncTask("Downloading", callback)
+	: AsyncTask()
     , m_url(url)
     , m_file_path (file)
 {
+    m_callback = callback;
+    m_human_readable_description = "Downloading ";
+
     m_worker_list.push_back(std::function<void()>(
         [url, file, this]() 
         {
@@ -65,8 +68,6 @@ int progress_func(void* ptr, double TotalToDownload, double NowDownloaded, doubl
 
 void DownloadTask::DownloadFile(DownloadRequest request)
 {
-    std::cout << "Download Request: " << std::endl << "URL : " << request.url << std::endl << "Filename: " << request.file_path << std::endl;
-
     std::chrono::time_point start = std::chrono::steady_clock::now();
 
     CURL* curl_handle;
@@ -157,13 +158,12 @@ void DownloadTask::DownloadFile(DownloadRequest request)
     curl_global_cleanup();
 
     std::chrono::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Download took " << std::to_string(std::chrono::duration<double>(end - start).count()) << "s" << std::endl;
 }
 
 
 std::string DownloadTask::GetHumanReadableDescription() const
 {
-    return std::format("{} \n URL: \'{}\'\nSaving Filename: {}"
+    return std::format("{} \n  URL: \'{}\'\n  File: {}"
         , m_human_readable_description
         , m_url
         , m_file_path);

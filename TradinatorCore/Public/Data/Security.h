@@ -37,14 +37,16 @@ public:
 	inline uint32_t market_lot() const { return m_market_lot; }
 	inline uint32_t face_value() const { return m_face_value; }
 
+	inline std::shared_ptr<const AsyncCandleData> GetCandleData() const { return m_candle_data; }
+
 	std::string ToString() const;
 
 protected:
 	void LoadHistoricalDataIfExists();
 	// tmp_file_path - save downloaded data at this location for processing
-	void DownloadDailyData(std::string tmp_file_path);
+	void DownloadDailyData(std::string tmp_file_path, std::function<void()> callback);
 
-	void ProcessDownloadedData(std::string tmp_file_path);
+	void ProcessDownloadedData(std::string tmp_file_path, std::function<void()> callback);
 
 
 	void ReadFromStream(std::istream& stream);
@@ -55,11 +57,11 @@ protected:
 	uint32_t m_market_lot;
 	uint32_t m_face_value;
 	
+	// market this security belongs to
 	std::weak_ptr<Market> m_parent_market;
-	std::function<void()> m_callback;
 	
 	// Candle data sorted from latest to oldest
-	AsyncCandleData m_candle_data;
+	std::shared_ptr<AsyncCandleData> m_candle_data;
 
 
 

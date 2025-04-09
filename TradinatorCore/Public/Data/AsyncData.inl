@@ -45,8 +45,12 @@ void AsyncData<T>::SetDataReady(bool is_ready)
 	{
 		if (is_ready)
 		{
+			m_mutex.lock();
+
 			m_data = std::move(m_async_data_copy);
 			m_was_ready_before = true;
+
+			m_mutex.unlock();
 		}
 		else
 		{

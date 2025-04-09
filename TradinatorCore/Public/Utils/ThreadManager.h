@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include "AsyncTask.h"
 
@@ -19,6 +20,8 @@ public:
 	void Update();
 
 private:
+	std::mutex m_mutex;
+
 	std::vector<std::unique_ptr<AsyncTask>> m_tasks;
 
 

@@ -74,11 +74,11 @@ void NSE_Market::GatherSymbols()
 
     m_tradinator_core->GetThreadManager()->AddTask(std::make_unique<AsyncTask>(
         std::format("{} {}", "Gathering Symbols for", GetMarketName()),
+        process_raw_security_data,
         [&]()
         {
             OnGatherSymbolsCompleted();
-        },
-        process_raw_security_data
+        }
     ));
 
     

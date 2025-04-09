@@ -1,7 +1,7 @@
 #pragma once
 
 #include <thread>
-#include <atomic>
+#include <mutex>
 
 template <typename T>
 class AsyncData
@@ -43,6 +43,8 @@ private:
 	// Store if this data was ever processed successfully before.
 	// If it was, then m_data can be considered as cached data from previous processing.
 	bool m_was_ready_before = false;
+
+	std::mutex m_mutex;
 
 	// The ID of thread TradinatorCore is constructed on.
 	// Caching and using this to make debugging easy
