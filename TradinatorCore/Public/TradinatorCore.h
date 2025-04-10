@@ -18,8 +18,10 @@ class TradinatorCore
 public:
 	TradinatorCore(std::string data_folder_path);
 
-	void InitializeAllMarkets();
 	void Update();
+	void InitializeAllMarkets();
+	
+	void Shutdown();
 
 	// Taking market as rvalue ref because we want to take the ownership 
 	// and want to make sure that caller understands that caller no longer has ownership
@@ -32,6 +34,8 @@ public:
 	inline std::thread::id GetTradinatorCoreThreadID() const { return m_tradinator_core_thread_id; }
 
 private:
+	
+
 	// The ID of thread TradinatorCore is constructed on.
 	// Caching and using this to make debugging easy
 	const std::thread::id m_tradinator_core_thread_id;
@@ -43,4 +47,6 @@ private:
 	std::vector<std::shared_ptr<Market>> m_market_list;
 
 	std::string m_data_folder_path;
+
+	bool m_is_shutting_down;
 };

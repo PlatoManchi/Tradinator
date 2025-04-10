@@ -17,6 +17,9 @@ void TradinatorApp::Init()
 
     m_dashboard_window.Init();
     m_audo_analysis_update_window.Init();
+    m_main_windows.Init();
+    m_search_bar.Init();
+    m_status_bar.Init();
 }
 
 void TradinatorApp::Begin()
@@ -24,27 +27,12 @@ void TradinatorApp::Begin()
     m_tradinator_core->InitializeAllMarkets();
 
 
-    m_root_docksapce_id = ImGui::GetID("root_dock");
-
-    if (!ImGui::DockBuilderGetNode(m_root_docksapce_id))
-    {
-        // if dockspace is not found then this is first time running app, so setup the docking for default view
-
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
-        // Clear the previous layout and add a root node the size of the viewport.
-        ImGui::DockBuilderRemoveNode(m_root_docksapce_id);
-        ImGui::DockBuilderAddNode(m_root_docksapce_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoResize | ImGuiDockNodeFlags_KeepAliveOnly);
-        ImGui::DockBuilderSetNodeSize(m_root_docksapce_id, viewport->Size);
-
-        // Split the dockspace into 4 nodes by splitting root_dock_ID horizontally and then splitting the right node vertically.
-        ImGui::DockBuilderSplitNode(m_root_docksapce_id, ImGuiDir_Right, 0.3f, &m_dock_id_right, &m_dock_id_center);
-
-        ImGui::DockBuilderFinish(m_root_docksapce_id);
-    }
 
     m_dashboard_window.Begin();
     m_audo_analysis_update_window.Begin();
+    m_main_windows.Begin();
+    m_search_bar.Begin();
+    m_status_bar.Begin();
 }
 
 
@@ -56,16 +44,30 @@ void TradinatorApp::ShowApp()
 
     ShowMainMenu();
 
+    const float search_bar_height = 80.0f;
+    const float status_bar_height = 70.0f;
+    
+    ImVec2 work_pos = ImGui::GetMainViewport()->WorkPos;
+    ImVec2 work_size = ImGui::GetMainViewport()->WorkSize;
+    
 
-    ImGuiID dock_id = ImGui::DockSpaceOverViewport(m_root_docksapce_id, ImGui::GetMainViewport());
 
-    // Dashboard 
-    ImGui::SetNextWindowDockID(m_dock_id_center, ImGuiCond_FirstUseEver);
-    m_dashboard_window.Show();
 
-    // Auto analysis update
-    ImGui::SetNextWindowDockID(m_dock_id_right, ImGuiCond_FirstUseEver);
-    m_audo_analysis_update_window.Show();
+    ImGui::SetNextWindowPos(work_pos);
+    ImGui::SetNextWindowSize(ImVec2(work_size.x, search_bar_height));
+    m_search_bar.Show();
+
+    ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + search_bar_height));
+    ImGui::SetNextWindowSize(ImVec2(work_size.x, work_size.y - (search_bar_height + status_bar_height)));
+    m_main_windows.Show();
+
+
+    ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + work_size.y - status_bar_height));
+    ImGui::SetNextWindowSize(ImVec2(work_size.x, status_bar_height));
+    m_status_bar.Show();
+
+
+    
 }
 
 
@@ -73,8 +75,13 @@ void TradinatorApp::ShowApp()
 
 void TradinatorApp::Shutdown()
 {
+    m_tradinator_core->Shutdown();
+
     m_dashboard_window.Shutdown();
     m_audo_analysis_update_window.Shutdown();
+    m_main_windows.Shutdown();
+    m_search_bar.Shutdown();
+    m_status_bar.Shutdown();
 }
 
 
@@ -99,6 +106,12 @@ void TradinatorApp::ShowMainMenu()
             if (ImGui::MenuItem("Paste", "CTRL+V")) {}
             ImGui::EndMenu();
         }
+
+        ImGui::BeginChild("child", ImVec2(0, 40), ImGuiChildFlags_Borders);
+        for (int i = 0; i < 10; i++)
+            ImGui::Text("Scrolling Text %d", i);
+        ImGui::EndChild();
+
         ImGui::EndMainMenuBar();
     }
 }

@@ -18,6 +18,7 @@ public:
 	void AddTask(std::unique_ptr<AsyncTask>&& task);
 
 	void Update();
+	void Shutdown();
 
 private:
 	std::mutex m_mutex;

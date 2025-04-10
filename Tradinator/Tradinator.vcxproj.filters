@@ -7,6 +7,12 @@
     <Filter Include="Source\Application">
       <UniqueIdentifier>{eece728d-3498-474b-a37e-447dde6fdd60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Application\Windows">
+      <UniqueIdentifier>{8d0abe17-8463-4d96-bf3c-383bb53c8208}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Components">
+      <UniqueIdentifier>{d9869151-1656-4668-9bb8-d999f524bbf8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application\TradinatorApp.h">
@@ -18,6 +24,15 @@
     </ClInclude>
     <ClInclude Include="Source\Application\DashboardWindow.h">
       <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\MainWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Components\SearchBar.h">
+      <Filter>Source\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Components\StatusBar.h">
+      <Filter>Source\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -32,6 +47,15 @@
     </ClCompile>
     <ClCompile Include="Source\Application\DashboardWindow.cpp">
       <Filter>Source\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\MainWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Components\SearchBar.cpp">
+      <Filter>Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Components\StatusBar.cpp">
+      <Filter>Source\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

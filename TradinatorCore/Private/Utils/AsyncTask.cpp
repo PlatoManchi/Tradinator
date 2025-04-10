@@ -57,3 +57,9 @@ AsyncTask::~AsyncTask()
 {
 	m_is_complete = true;
 }
+
+void AsyncTask::Shutdown()
+{
+	// remove all the worker list which will cause for callback to be called when current future completes;
+	m_worker_list.clear();
+}

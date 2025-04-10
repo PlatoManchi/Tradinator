@@ -9,9 +9,14 @@
 class AsyncTask
 {
 public:
-	
+	AsyncTask(std::string human_readable_description, std::vector < std::function<void()> > workers, std::function<void()> callback)
+		: m_is_complete(false)
+		, m_human_readable_description(human_readable_description)
+		, m_callback(callback)
+		, m_worker_list(workers)
+	{ }
 
-	// First function is the callback 
+	// Last function should be callback when all the work is finished
 	template<typename Worker, typename ... WorkersAndCallback>
 	AsyncTask(std::string human_readable_description, Worker worker, WorkersAndCallback ... workers_and_callback)
 		: AsyncTask(workers_and_callback...)
@@ -24,11 +29,12 @@ public:
 
 	virtual ~AsyncTask();
 
+	void Shutdown();
+
 	inline std::future_status Status() const { return m_work_future.wait_for(std::chrono::seconds(0)); };
 
 
 protected:
-	
 	template<typename Worker, typename ... Workers>
 	AsyncTask(Worker worker, Workers ... workers)
 		: AsyncTask(workers...)

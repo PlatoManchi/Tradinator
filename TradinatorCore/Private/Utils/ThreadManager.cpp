@@ -32,3 +32,11 @@ void ThreadManager::Update()
 			return task->m_is_complete;
 		}), m_tasks.end());
 }
+
+void ThreadManager::Shutdown()
+{
+	for (std::unique_ptr<AsyncTask>& task : m_tasks)
+	{
+		task->Shutdown();
+	}
+}
