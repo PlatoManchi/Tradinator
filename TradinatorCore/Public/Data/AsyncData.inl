@@ -6,16 +6,6 @@ template<typename T>
 AsyncData<T>::AsyncData()
 	: m_is_ready(true)
 	, m_was_ready_before(false)
-	, m_tradinator_core_thread_id()
-{
-
-}
-
-template<typename T>
-AsyncData<T>::AsyncData(std::thread::id tradinator_core_thread_id)
-	: m_is_ready(true)
-	, m_was_ready_before(false)
-	, m_tradinator_core_thread_id(tradinator_core_thread_id)
 {
 
 }
@@ -25,7 +15,6 @@ template<typename T>
 T& AsyncData<T>::GetData()
 {
 	assert(m_is_ready && ("Data is not ready to access yet."));
-	//assert((m_tradinator_core_thread_id == std::this_thread::get_id()) && "Cannot access data outside main thread.");
 	return m_data;
 }
 
@@ -33,7 +22,6 @@ template<typename T>
 T& AsyncData<T>::GetAsyncDataCopy()
 {
 	//assert(!m_is_ready && ("Cannot access async data if data is ready. Use GetData to get the data."));
-	//assert((m_tradinator_core_thread_id != std::this_thread::get_id()) && "Cannot access async data copy in main thread.");
 	return m_async_data_copy;
 }
 

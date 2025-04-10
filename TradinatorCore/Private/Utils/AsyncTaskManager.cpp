@@ -1,15 +1,15 @@
-#include "Utils/ThreadManager.h"
+#include "Utils/AsyncTaskManager.h"
 
 #include "Utils/AsyncTask.h"
 
 
-ThreadManager::ThreadManager(std::thread::id tradinator_core_thread_id)
-	: m_tradinator_core_thread_id(tradinator_core_thread_id)
+AsyncTaskManager::AsyncTaskManager()
+	: m_is_shutting_down(false)
 {
 
 }
 
-void ThreadManager::AddTask(std::unique_ptr<AsyncTask>&& task)
+void AsyncTaskManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
 	m_mutex.lock();
 
@@ -19,7 +19,7 @@ void ThreadManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 	m_mutex.unlock();
 }
 
-void ThreadManager::Update()
+void AsyncTaskManager::Update()
 {
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
@@ -33,10 +33,12 @@ void ThreadManager::Update()
 		}), m_tasks.end());
 }
 
-void ThreadManager::Shutdown()
+void AsyncTaskManager::Shutdown()
 {
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
 		task->Shutdown();
 	}
+
+	m_is_shutting_down = true;
 }

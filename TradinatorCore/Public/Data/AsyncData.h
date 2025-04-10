@@ -8,8 +8,7 @@ class AsyncData
 {
 public:
 	AsyncData();
-	AsyncData(std::thread::id tradinator_core_thread_id);
-
+	
 	AsyncData(const AsyncData& other) = default;
 	AsyncData(AsyncData&& other) noexcept = default;
 	AsyncData& operator=(const AsyncData& other) = default;
@@ -31,6 +30,7 @@ public:
 
 private:
 	// Has actual data. When async process is loading the data this is untouched
+	// This is essentially a cached data that other threads can access safely.
 	T m_data;
 
 	// Data that async tasks and threads work on. When data is set to ready for access
@@ -45,10 +45,6 @@ private:
 	bool m_was_ready_before = false;
 
 	std::mutex m_mutex;
-
-	// The ID of thread TradinatorCore is constructed on.
-	// Caching and using this to make debugging easy
-	const std::thread::id m_tradinator_core_thread_id;
 };
 
 

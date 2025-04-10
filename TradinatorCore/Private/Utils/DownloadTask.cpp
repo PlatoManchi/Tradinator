@@ -156,8 +156,6 @@ void DownloadTask::DownloadFile(DownloadRequest request)
     curl_easy_cleanup(curl_handle);
 
     curl_global_cleanup();
-
-    std::chrono::time_point end = std::chrono::steady_clock::now();
 }
 
 

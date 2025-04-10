@@ -3,7 +3,6 @@
 #include <chrono>
 #include <functional>
 #include <future>
-#include <iostream>
 #include <type_traits>
 
 class AsyncTask
@@ -81,5 +80,5 @@ private:
 	void TaskCompleted();
 
 
-	friend class ThreadManager;
+	friend class AsyncTaskManager;
 };

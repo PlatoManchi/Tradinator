@@ -12,8 +12,7 @@ TradinatorApp::TradinatorApp()
 
 void TradinatorApp::Init()
 {
-    // Creating markets that we want to follow
-    m_tradinator_core->AddMarket(std::make_shared<NSE_Market>(m_tradinator_core));
+    
 
     m_dashboard_window.Init();
     m_audo_analysis_update_window.Init();
@@ -24,7 +23,8 @@ void TradinatorApp::Init()
 
 void TradinatorApp::Begin()
 {
-    m_tradinator_core->InitializeAllMarkets();
+    // Creating markets that we want to follow
+    m_tradinator_core->AddMarket(std::make_shared<NSE_Market>());
 
 
 
@@ -40,8 +40,6 @@ void TradinatorApp::Begin()
 
 void TradinatorApp::ShowApp()
 {
-    m_tradinator_core->Update();
-
     ShowMainMenu();
 
     const float search_bar_height = 80.0f;

@@ -39,7 +39,7 @@
     <ClInclude Include="Public\Data\Company.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Utils\ThreadManager.h">
+    <ClInclude Include="Public\Utils\AsyncTaskManager.h">
       <Filter>Public\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Public\Utils\AsyncTask.h">
@@ -60,6 +60,9 @@
     <ClInclude Include="Public\Data\AsyncData.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
+    <ClInclude Include="Public\TradinatorCoreThread.h">
+      <Filter>Public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -71,7 +74,7 @@
     <ClCompile Include="Private\Data\Company.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Utils\ThreadManager.cpp">
+    <ClCompile Include="Private\Utils\AsyncTaskManager.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Private\Data\Security.cpp">
@@ -91,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="Private\Market\NSE_Market.cpp">
       <Filter>Private\Market</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\TradinatorCoreThread.cpp">
+      <Filter>Private</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

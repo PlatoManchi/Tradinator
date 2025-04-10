@@ -3,18 +3,15 @@
 #include "Market.h"
 
 #include <string>
-#include <thread>
 
-
-
-
-class TradinatorCore;
 
 // Class that handles nse market
 class NSE_Market : public Market
 {
 public:
-	NSE_Market(std::shared_ptr<TradinatorCore> tradinator_core);
+	NSE_Market();
+
+	virtual void Init() override;
 
 	virtual bool IsValid() const override;
 

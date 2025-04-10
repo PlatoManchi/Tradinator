@@ -11,7 +11,7 @@
 #include "TradinatorCore.h"
 #include "Data/Candle.h"
 #include "Market/Market.h"
-#include "Utils/ThreadManager.h"
+#include "Utils/AsyncTaskManager.h"
 #include "Utils/AsyncTask.h"
 #include "Utils/DownloadTask.h"
 #include "Utils/Utils.h"
@@ -47,30 +47,23 @@ Security::Security()
 
 void Security::DownloadSecurityData(std::function<void()> callback)
 {
-	std::shared_ptr<Market> parent_market;
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
 
-	if (!(parent_market = m_parent_market.lock()))
-	{
-		return;
-	}
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
 	
 	//TODO: Use std::tmpfile instead of creating temp file like this
 	// store downloaded data in temp file and process to our standards
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::chrono::system_clock::rep count = now.time_since_epoch().count();
-	std::string tmp_file_name = parent_market->GetRawDataFolderPath() + "/" + std::format("{}.tmp", count);
+	std::string tmp_file_name = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.tmp", count);
 
 	std::function<void()> load_historical_data_if_exists = std::bind(&Security::LoadHistoricalDataIfExists, this);
 	std::function<void()> download_daily_data = std::bind(&Security::DownloadDailyData, this, tmp_file_name, callback);
 
-	std::shared_ptr<TradinatorCore> tradinator_core;
-	if (!(tradinator_core = parent_market->GetTradinatorCore().lock()))
-	{
-		return;
-	}
-
 	
-	tradinator_core->GetThreadManager()->AddTask(std::make_unique<AsyncTask>(
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
 			std::format("Gathering historical candles data stored locally for {}", m_symbol),
 			load_historical_data_if_exists,
 			download_daily_data
@@ -150,33 +143,26 @@ void Security::DownloadDailyData(std::string tmp_file_path, std::function<void()
 		return;
 	}
 	
-	
-	std::shared_ptr<TradinatorCore> tradinator_core;
-	std::shared_ptr<Market> parent_market;
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
 
-	if (!(parent_market = m_parent_market.lock()))
-	{
-		return;
-	}
-	if (!(tradinator_core = parent_market->GetTradinatorCore().lock()))
-	{
-		return;
-	}
-	
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
+
 	std::string to = std::format("{:%F}", to_tp);
 	std::string from = std::format("{:%F}", from_tp);
 
 	/* eg url format
 	https://api.upstox.com/v2/historical-candle/NSE_EQ|INE696F01016/day/2025-04-06/2025-04-01*/
 	std::string url = std::format("https://api.upstox.com/v2/historical-candle/{}_{}|{}/day/{}/{}"
-		, parent_market->GetMarketCode()
+		, owning_market->GetMarketCode()
 		, m_series
 		, m_isin_number
 		, to
 		, from);
 
 	
-	tradinator_core->GetThreadManager()->AddTask(std::make_unique<DownloadTask>(
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<DownloadTask>(
 		[tmp_file_path, callback, this]() {
 			// callback
 			ProcessDownloadedData(tmp_file_path, callback);
@@ -258,40 +244,25 @@ void Security::ProcessDownloadedData(std::string tmp_file_path, std::function<vo
 			std::remove(tmp_file_path.c_str());
 		};
 
-	std::shared_ptr<TradinatorCore> tradinator_core;
-	std::shared_ptr<Market> parent_market;
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
 
-	if (!(parent_market = m_parent_market.lock()))
-	{
-		return;
-	}
-	if (!(tradinator_core = parent_market->GetTradinatorCore().lock()))
-	{
-		return;
-	}
-
-	tradinator_core->GetThreadManager()->AddTask(std::make_unique<AsyncTask>(
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
 		std::format("Processing downloded data for {}", m_symbol),
 		process_downloaded_data,
 		callback
 	));
 }
 
-void Security::SetParentMarket(std::weak_ptr<Market> parent)
-{
-	m_parent_market = parent;
-}
 
 
 std::string Security::GetRawHistoricalDataFilePath() const
 {
-	if (std::shared_ptr<Market> parent_market = m_parent_market.lock())
-	{
-		std::string folder_path = parent_market->GetRawDataFolderPath();
-		return folder_path + "/" + m_symbol+".json";
-	}
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
 
-	return "";
+	std::string folder_path = owning_market->GetRawDataFolderPath();
+	return folder_path + "/" + m_symbol + ".json";
 }
 
 bool Security::DoesRawHistoricalDataExist() const

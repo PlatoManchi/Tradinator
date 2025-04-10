@@ -12,6 +12,8 @@
 typedef AsyncData<std::map<std::chrono::system_clock::time_point, Candle, std::greater<std::chrono::system_clock::time_point>>> AsyncCandleData;
 
 class Market;
+class TradinatorCoreThread;
+
 
 class Security : public Company
 {
@@ -24,7 +26,7 @@ public:
 	Security& operator = (const Security& other) = default;
 	Security& operator = (Security&& other) noexcept = default;
 
-	void SetParentMarket(std::weak_ptr<Market> parent);
+	
 	void DownloadSecurityData(std::function<void()> callback);
 
 	bool DoesRawHistoricalDataExist() const;
@@ -38,6 +40,9 @@ public:
 	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncCandleData> GetCandleData() const { return m_candle_data; }
+
+	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
+	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 
 	std::string ToString() const;
 
@@ -58,7 +63,9 @@ protected:
 	uint32_t m_face_value;
 	
 	// market this security belongs to
-	std::weak_ptr<Market> m_parent_market;
+	std::weak_ptr<Market> m_owning_market;
+
+	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
 	
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncCandleData> m_candle_data;

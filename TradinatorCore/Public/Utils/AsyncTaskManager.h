@@ -9,10 +9,10 @@
 
 class AsyncTask;
 
-class ThreadManager
+class AsyncTaskManager
 {
 public:
-	ThreadManager(std::thread::id tradinator_core_thread_id);
+	AsyncTaskManager();
 
 	// taking ownership of task
 	void AddTask(std::unique_ptr<AsyncTask>&& task);
@@ -20,14 +20,13 @@ public:
 	void Update();
 	void Shutdown();
 
+	inline bool CanSafelyShutDown() const { return m_is_shutting_down && (m_tasks.size() == 0); };
+
 private:
 	std::mutex m_mutex;
 
 	std::vector<std::unique_ptr<AsyncTask>> m_tasks;
 
-
-	// The ID of thread TradinatorCore is constructed on.
-	// Caching and using this to make debugging easy
-	const std::thread::id m_tradinator_core_thread_id;
+	bool m_is_shutting_down;
 };
 
