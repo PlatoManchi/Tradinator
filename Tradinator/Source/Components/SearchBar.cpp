@@ -29,7 +29,7 @@ void SearchBar::Show()
 
         if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_NoBordersInBody, { -1, 0 }))
         {
-            ImGui::TableSetupColumn("A", ImGuiTableColumnFlags_None, 0);
+            ImGui::TableSetupColumn("A", ImGuiTableColumnFlags_WidthFixed, 0);
             ImGui::TableSetupColumn("B", ImGuiTableColumnFlags_None, 0);
             //ImGui::TableSetupColumn("C", ImGuiTableColumnFlags_None, 0);
             //ImGui::TableHeadersRow();
@@ -47,6 +47,7 @@ void SearchBar::Show()
             /// @begin Input
             ImGui::TableSetColumnIndex(1);
             //ImGui::NextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
             ImGui::InputText("##value3", search_symbol, 256, ImGuiInputTextFlags_None);
             
             /// @end Input

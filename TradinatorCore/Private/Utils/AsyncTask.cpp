@@ -45,7 +45,10 @@ void AsyncTask::TaskCompleted()
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	std::cout << GetHumanReadableDescription() << " completed in " << std::to_string(std::chrono::duration<double>(end - m_start).count()) << " sec." << std::endl << std::endl << std::endl;
 
-	m_callback();
+	if (!m_is_shut_down) 
+	{
+		m_callback();
+	}
 }
 
 std::string AsyncTask::GetHumanReadableDescription() const
@@ -61,5 +64,6 @@ AsyncTask::~AsyncTask()
 void AsyncTask::Shutdown()
 {
 	// remove all the worker list which will cause for callback to be called when current future completes;
+	m_is_shut_down = true;
 	m_worker_list.clear();
 }

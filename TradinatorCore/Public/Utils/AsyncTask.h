@@ -11,6 +11,7 @@ class AsyncTask
 public:
 	AsyncTask(std::string human_readable_description, std::vector < std::function<void()> > workers, std::function<void()> callback)
 		: m_is_complete(false)
+		, m_is_shut_down(false)
 		, m_human_readable_description(human_readable_description)
 		, m_callback(callback)
 		, m_worker_list(workers)
@@ -22,6 +23,7 @@ public:
 		: AsyncTask(workers_and_callback...)
 	{
 		m_is_complete = false;
+		m_is_shut_down = false;
 		m_human_readable_description = human_readable_description;
 		m_worker_list.push_back(worker);
 	}
@@ -45,6 +47,7 @@ protected:
 	template<typename Callback>
 	AsyncTask(Callback callback)
 		: m_is_complete(false)
+		, m_is_shut_down(false)
 		, m_callback(callback)
 	{
 	}
@@ -52,6 +55,7 @@ protected:
 	// Used by subclasses if they want to take params other than std::function in constructor
 	AsyncTask()
 		: m_is_complete (false)
+		, m_is_shut_down(false)
 	{
 		m_human_readable_description = "";
 	};
@@ -60,6 +64,7 @@ protected:
 	virtual std::string GetHumanReadableDescription() const;
 
 	bool m_is_complete;
+	bool m_is_shut_down;
 	std::future<void> m_work_future;
 
 	std::string m_human_readable_description;
