@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "imgui.h"
 
 #include "TradinatorCore.h"
@@ -7,7 +9,8 @@
 #include "AutoAnalysisUpdateWindow.h"
 #include "DashboardWindow.h"
 #include "Windows/MainWindow.h"
-#include "Components/SearchBar.h"
+#include "Windows/SecurityWindow.h"
+#include "Components/SecuritiesSearchBar.h"
 #include "Components/StatusBar.h"
 
 class TradinatorApp final
@@ -28,7 +31,7 @@ private:
 	AutoAnalysisUpdateWindow m_audo_analysis_update_window;
 	DashboardWindow m_dashboard_window;
 
-	SearchBar m_search_bar;
+	SecuritiesSearchBar m_securities_search_bar;
 	MainWindow m_main_windows;
 	StatusBar m_status_bar;
 
@@ -41,4 +44,5 @@ private:
 	ImGuiID m_status_bar_dockspace_id;
 	
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
+	std::map<std::string, std::shared_ptr<SecurityWindow>> m_security_windows;
 };

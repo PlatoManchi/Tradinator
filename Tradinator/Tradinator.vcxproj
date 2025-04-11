@@ -24,19 +24,26 @@
     <ClInclude Include="Source\Application\DashboardWindow.h" />
     <ClInclude Include="Source\Application\TradinatorApp.h" />
     <ClInclude Include="Source\Application\Windows\MainWindow.h" />
+    <ClInclude Include="Source\Application\Windows\SecurityWindow.h" />
     <ClInclude Include="Source\Components\AutoCompleteInputText.h" />
-    <ClInclude Include="Source\Components\SearchBar.h" />
+    <ClInclude Include="Source\Components\SecuritiesSearchBar.h" />
     <ClInclude Include="Source\Components\StatusBar.h" />
+    <ClInclude Include="Source\Fonts\SegoeUI.h" />
+    <ClInclude Include="Source\imgui_markdown\imgui_markdown.h" />
+    <ClInclude Include="Source\imspinner\imspinner.h" />
+    <ClInclude Include="Source\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application\AutoAnalysisUpdateWindow.cpp" />
     <ClCompile Include="Source\Application\DashboardWindow.cpp" />
     <ClCompile Include="Source\Application\TradinatorApp.cpp" />
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\SecurityWindow.cpp" />
     <ClCompile Include="Source\Components\AutoCompleteInputText.cpp" />
-    <ClCompile Include="Source\Components\SearchBar.cpp" />
+    <ClCompile Include="Source\Components\SecuritiesSearchBar.cpp" />
     <ClCompile Include="Source\Components\StatusBar.cpp" />
     <ClCompile Include="Source\Tradinator.cpp" />
+    <ClCompile Include="Source\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Submodules\imgui\imgui.vcxproj">

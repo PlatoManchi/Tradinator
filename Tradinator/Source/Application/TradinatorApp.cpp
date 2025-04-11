@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include "Utils.h"
+
 #include "Market/NSE_Market.h"
 
 TradinatorApp::TradinatorApp()
@@ -16,13 +18,14 @@ void TradinatorApp::Init()
 
     m_dashboard_window.Init();
     m_audo_analysis_update_window.Init();
-    m_main_windows.Init();
-    m_search_bar.Init();
+    m_main_windows.Init(m_tradinator_core);
+    m_securities_search_bar.Init(m_tradinator_core);
     m_status_bar.Init();
 }
 
 void TradinatorApp::Begin()
 {
+
     // Creating markets that we want to follow
     m_tradinator_core->AddMarket(std::make_shared<NSE_Market>());
 
@@ -31,7 +34,7 @@ void TradinatorApp::Begin()
     m_dashboard_window.Begin();
     m_audo_analysis_update_window.Begin();
     m_main_windows.Begin();
-    m_search_bar.Begin();
+    m_securities_search_bar.Begin();
     m_status_bar.Begin();
 }
 
@@ -53,7 +56,17 @@ void TradinatorApp::ShowApp()
 
     ImGui::SetNextWindowPos(work_pos);
     ImGui::SetNextWindowSize(ImVec2(work_size.x, search_bar_height));
-    m_search_bar.Show();
+    if (std::shared_ptr<Security> security = m_securities_search_bar.Show())
+    {
+        if (!m_security_windows.contains(security->ISIN_Number()))
+        {
+            m_security_windows[security->ISIN_Number()] = std::make_shared<SecurityWindow>(security);
+        }
+        else
+        {
+            //TODO: Bring window to foreground
+        }
+    }
 
     ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + search_bar_height));
     ImGui::SetNextWindowSize(ImVec2(work_size.x, work_size.y - (search_bar_height + status_bar_height)));
@@ -65,7 +78,11 @@ void TradinatorApp::ShowApp()
     m_status_bar.Show();
 
 
-    
+    for (std::pair<std::string, std::shared_ptr<SecurityWindow>> pair : m_security_windows)
+    {
+        ImGui::SetNextWindowSize(ImVec2(1280, 768), ImGuiCond_Once);
+        pair.second->Show();
+    }
 }
 
 
@@ -78,7 +95,7 @@ void TradinatorApp::Shutdown()
     m_dashboard_window.Shutdown();
     m_audo_analysis_update_window.Shutdown();
     m_main_windows.Shutdown();
-    m_search_bar.Shutdown();
+    m_securities_search_bar.Shutdown();
     m_status_bar.Shutdown();
 }
 

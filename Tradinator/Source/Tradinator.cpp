@@ -13,7 +13,10 @@
 #include <dxgi1_4.h>
 #include <tchar.h>
 
+#include "Fonts/SegoeUI.h"
+
 #include "Application/TradinatorApp.h"
+#include "Utils.h"
 
 #ifdef _DEBUG
 #define DX12_ENABLE_DEBUG_LAYER
@@ -28,6 +31,9 @@
 static const int APP_NUM_FRAMES_IN_FLIGHT = 2;
 static const int APP_NUM_BACK_BUFFERS = 2;
 static const int APP_SRV_HEAP_SIZE = 64;
+
+static const float _BODY_FONT_SIZE_ = 16;
+static const float _HEADING_FONT_SIZE_ = 24;
 
 struct FrameContext
 {
@@ -192,6 +198,32 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
 
+    //ImFontConfig segoe_ui_body_config;
+    //segoe_ui_body_config.FontDataOwnedByAtlas = false;
+    //Utils::_BODY_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _BODY_FONT_SIZE_, &segoe_ui_body_config);
+    //Utils::_BODY_FONT_ = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\SansSerifCollection.ttf", _BODY_FONT_SIZE_, &segoe_ui_body_config);
+//C:\Windows\Fonts
+    //bool is_success = io.Fonts->Build();
+
+    /*unsigned char* pixels;
+    int width, height, bytes_per_pixels;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytes_per_pixels);
+    //GLuint id = loadTexture(pixels, width, height, 4);
+    //io.Fonts->SetTexID((void*)id);
+
+    ImFontConfig segoe_ui_heading_config;
+    segoe_ui_heading_config.FontDataOwnedByAtlas = false;
+    Utils::_HEADING_FONT_ = io.Fonts->AddFontFromMemoryTTF(&segoe_ui, segoe_ui_size, _HEADING_FONT_SIZE_, &segoe_ui_heading_config);
+    
+    // Build atlas
+    io.Fonts->Build();
+
+    unsigned char* tex_pixels_2 = nullptr;
+    int tex_width_2, tex_height_2;
+    //io.Fonts->GetTexDataAsRGBA32(&tex_pixels_2, &tex_width_2, &tex_height_2);
+    */
+    //
+
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -227,11 +259,14 @@ int main(int, char**)
         }
         g_SwapChainOccluded = false;
 
+        
+
         // Start the Dear ImGui frame
         ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+        //Utils::PushBodyFont();
 
         if (is_first_frame)
         {
@@ -243,9 +278,11 @@ int main(int, char**)
             tradinator_app.ShowApp();
         }
         
-
+        
+        //Utils::PopFont();
         // Rendering
         ImGui::Render();
+        
 
 
         FrameContext* frameCtx = WaitForNextFrameResources();
@@ -283,6 +320,8 @@ int main(int, char**)
             ImGui::RenderPlatformWindowsDefault();
             // TODO for OpenGL: restore current GL context.
         }
+
+        
 
         // Present
         HRESULT hr = g_pSwapChain->Present(1, 0);   // Present with vsync
@@ -606,11 +645,16 @@ bool UpdateUIScaling(float scale)
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
-    ImFont* font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.0f * scale);
-    if (font == NULL)
-        font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttf", 16.0f * scale); // Windows 7
-    IM_ASSERT(font != NULL);
-    if (font == NULL)
+    ImFontConfig segoe_ui_body_config;
+    segoe_ui_body_config.FontDataOwnedByAtlas = false;
+    Utils::_BODY_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _BODY_FONT_SIZE_ * scale, &segoe_ui_body_config);
+
+    ImFontConfig segoe_ui_heading_config;
+    segoe_ui_heading_config.FontDataOwnedByAtlas = false;
+    Utils::_HEADING_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _HEADING_FONT_SIZE_ * scale, &segoe_ui_heading_config);
+
+    IM_ASSERT(Utils::_BODY_FONT_ != NULL && Utils::_HEADING_FONT_ != NULL);
+    if (Utils::_BODY_FONT_ == NULL || Utils::_HEADING_FONT_ == NULL)
         return false;
 
     return ImGui_ImplDX12_CreateDeviceObjects();

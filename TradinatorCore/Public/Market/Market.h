@@ -37,6 +37,8 @@ public:
 	virtual std::string GetProcessedDataFileName() const = 0;
 
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }
+	inline bool IsSecurityDataAvailable() const { return m_securities_async_data.IsDataReady(); }
+	inline const AsyncData<std::map<std::string, std::shared_ptr<Security>>>& GetSecurityAsyncData() const { return m_securities_async_data; }
 
 protected:
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;

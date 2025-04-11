@@ -13,6 +13,15 @@
     <Filter Include="Source\Components">
       <UniqueIdentifier>{d9869151-1656-4668-9bb8-d999f524bbf8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Fonts">
+      <UniqueIdentifier>{ba38c788-a8c8-4bb8-85b1-a663845effe4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\imspinner">
+      <UniqueIdentifier>{842eb662-dae5-4963-8ea6-e3e42cade9d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\imgui_markdown">
+      <UniqueIdentifier>{924a5e83-d581-4ef3-af66-ae6de48fdfa9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application\TradinatorApp.h">
@@ -28,7 +37,7 @@
     <ClInclude Include="Source\Application\Windows\MainWindow.h">
       <Filter>Source\Application\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Components\SearchBar.h">
+    <ClInclude Include="Source\Components\SecuritiesSearchBar.h">
       <Filter>Source\Components</Filter>
     </ClInclude>
     <ClInclude Include="Source\Components\StatusBar.h">
@@ -36,6 +45,21 @@
     </ClInclude>
     <ClInclude Include="Source\Components\AutoCompleteInputText.h">
       <Filter>Source\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Fonts\SegoeUI.h">
+      <Filter>Source\Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utils.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\imspinner\imspinner.h">
+      <Filter>Source\imspinner</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\imgui_markdown\imgui_markdown.h">
+      <Filter>Source\imgui_markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\SecurityWindow.h">
+      <Filter>Source\Application\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -54,7 +78,7 @@
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp">
       <Filter>Source\Application\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Components\SearchBar.cpp">
+    <ClCompile Include="Source\Components\SecuritiesSearchBar.cpp">
       <Filter>Source\Components</Filter>
     </ClCompile>
     <ClCompile Include="Source\Components\StatusBar.cpp">
@@ -62,6 +86,12 @@
     </ClCompile>
     <ClCompile Include="Source\Components\AutoCompleteInputText.cpp">
       <Filter>Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Utils.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\SecurityWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
