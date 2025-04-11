@@ -1,6 +1,7 @@
 #include "SecurityWindow.h"
 
 #include "imgui.h"
+#include "implot.h"
 
 #include "Data/Security.h"
 
