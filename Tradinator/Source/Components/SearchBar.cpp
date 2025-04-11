@@ -40,16 +40,17 @@ void SearchBar::Show()
 
             /// @begin Text
             ImGuiStyle& style = ImGui::GetStyle();
-            style.SelectableTextAlign = ImVec2(1.0f, 0.5f);
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(1.0f, 0.5f));
             ImGui::Selectable("Search: ", false, ImGuiSelectableFlags_Disabled);
+            ImGui::PopStyleVar();
             /// @end Text
 
             /// @begin Input
             ImGui::TableSetColumnIndex(1);
             //ImGui::NextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
-            ImGui::InputText("##value3", search_symbol, 256, ImGuiInputTextFlags_None);
-            
+            //ImGui::InputText("##value3", search_symbol, 256, ImGuiInputTextFlags_None);
+            m_autocomplete.Draw("##value3", "Te", { "Test1", "Test2", "2 times", "time is bad" });
             /// @end Input
 
 

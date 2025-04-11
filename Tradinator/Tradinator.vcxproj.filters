@@ -34,6 +34,9 @@
     <ClInclude Include="Source\Components\StatusBar.h">
       <Filter>Source\Components</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Components\AutoCompleteInputText.h">
+      <Filter>Source\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Tradinator.cpp">
@@ -55,6 +58,9 @@
       <Filter>Source\Components</Filter>
     </ClCompile>
     <ClCompile Include="Source\Components\StatusBar.cpp">
+      <Filter>Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Components\AutoCompleteInputText.cpp">
       <Filter>Source\Components</Filter>
     </ClCompile>
   </ItemGroup>
