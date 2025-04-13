@@ -4,7 +4,7 @@
 
 template<typename T>
 AsyncData<T>::AsyncData()
-	: m_is_ready(true)
+	: m_is_ready(false)
 	, m_was_ready_before(false)
 {
 
@@ -48,4 +48,21 @@ void AsyncData<T>::SetDataReady(bool is_ready)
 
 		m_is_ready = is_ready;
 	}
+}
+
+template<typename T>
+bool AsyncData<T>::Reset()
+{
+	if (!m_is_ready)
+	{
+		return false;
+	}
+
+	m_is_ready = false;
+	m_was_ready_before = false;
+
+	m_data = T();
+	m_async_data_copy = T();
+
+	return true;
 }

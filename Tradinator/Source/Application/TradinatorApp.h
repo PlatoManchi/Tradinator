@@ -9,7 +9,7 @@
 #include "AutoAnalysisUpdateWindow.h"
 #include "DashboardWindow.h"
 #include "Windows/MainWindow.h"
-#include "Windows/SecurityWindow.h"
+#include "Windows/CounterWindow.h"
 #include "Components/SecuritiesSearchBar.h"
 #include "Components/StatusBar.h"
 
@@ -44,5 +44,5 @@ private:
 	ImGuiID m_status_bar_dockspace_id;
 	
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
-	std::map<std::string, std::shared_ptr<SecurityWindow>> m_security_windows;
+	std::map<std::string, std::shared_ptr<CounterWindow>> m_counter_windows;
 };

@@ -1,4 +1,4 @@
-#include "Data/Security.h"
+#include "Data/Counter.h"
 
 #include <iostream>
 #include <format>
@@ -32,7 +32,7 @@ static std::string _OPEN_INTEREST_ = "open_interest";
 
 
 
-Security::Security()
+Counter::Counter()
 	: Company()
 	, m_series()
 	, m_paid_up_value(0)
@@ -45,7 +45,7 @@ Security::Security()
 
 
 
-void Security::DownloadSecurityData(std::function<void()> callback)
+void Counter::DownloadCounterData(std::function<void()> callback)
 {
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
@@ -55,12 +55,12 @@ void Security::DownloadSecurityData(std::function<void()> callback)
 	
 	//TODO: Use std::tmpfile instead of creating temp file like this
 	// store downloaded data in temp file and process to our standards
-	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-	std::chrono::system_clock::rep count = now.time_since_epoch().count();
-	std::string tmp_file_name = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.tmp", count);
+	//std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	//std::chrono::system_clock::rep count = now.time_since_epoch().count();
+	std::string tmp_file_name = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.tmp", ISIN_Number());
 
-	std::function<void()> load_historical_data_if_exists = std::bind(&Security::LoadHistoricalDataIfExists, this);
-	std::function<void()> download_daily_data = std::bind(&Security::DownloadDailyData, this, tmp_file_name, callback);
+	std::function<void()> load_historical_data_if_exists = std::bind(&Counter::LoadHistoricalDataIfExists, this);
+	std::function<void()> download_daily_data = std::bind(&Counter::DownloadDailyData, this, tmp_file_name, callback);
 
 	
 	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
@@ -70,7 +70,7 @@ void Security::DownloadSecurityData(std::function<void()> callback)
 		));
 }
 
-void Security::LoadHistoricalDataIfExists()
+void Counter::LoadHistoricalDataIfExists()
 {
 	if (DoesRawHistoricalDataExist() && !m_candle_data->WasEverReadyBefore())
 	{
@@ -117,7 +117,7 @@ void Security::LoadHistoricalDataIfExists()
 	}
 }
 
-void Security::DownloadDailyData(std::string tmp_file_path, std::function<void()> callback)
+void Counter::DownloadDailyData(std::string tmp_file_path, std::function<void()> callback)
 {
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::chrono::system_clock::time_point to_tp = now;
@@ -171,7 +171,7 @@ void Security::DownloadDailyData(std::string tmp_file_path, std::function<void()
 	));
 }
 
-void Security::ProcessDownloadedData(std::string tmp_file_path, std::function<void()> callback)
+void Counter::ProcessDownloadedData(std::string tmp_file_path, std::function<void()> callback)
 {
 	std::function process_downloaded_data = [tmp_file_path, this]() 
 		{
@@ -241,7 +241,7 @@ void Security::ProcessDownloadedData(std::string tmp_file_path, std::function<vo
 			}
 
 			// finally delete temp file
-			std::remove(tmp_file_path.c_str());
+			//std::remove(tmp_file_path.c_str());
 		};
 
 	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
@@ -255,8 +255,69 @@ void Security::ProcessDownloadedData(std::string tmp_file_path, std::function<vo
 }
 
 
+void Counter::LoadCandleData()
+{
+	if (m_candle_data->IsDataReady())
+	{
+		std::function load_candle_data_from_file = [&]()
+			{
+				m_candle_data->SetDataReady(false);
+				Json::Value historical_candle_json_data;
+				{
+					if (DoesRawHistoricalDataExist())
+					{
+						std::string raw_historical_file_path = GetRawHistoricalDataFilePath();
+						std::ifstream raw_historical_file(raw_historical_file_path);
+						raw_historical_file >> historical_candle_json_data;
+					}
+				}
 
-std::string Security::GetRawHistoricalDataFilePath() const
+				Json::Value json_candles = historical_candle_json_data[_DATA_][_CANDLES_];
+				Json::ArrayIndex candles_count = json_candles.size();
+
+				for (Json::ArrayIndex i = 0; i < candles_count; ++i)
+				{
+					std::string date_str = json_candles[i][0].asCString();
+					std::istringstream is{ date_str };
+					std::chrono::system_clock::time_point date;
+					is >> std::chrono::parse("%F", date);
+
+					Candle candle_data;
+					candle_data.date = date;
+					candle_data.open = json_candles[i][1].asDouble();
+					candle_data.high = json_candles[i][2].asDouble();
+					candle_data.low = json_candles[i][3].asDouble();
+					candle_data.close = json_candles[i][4].asDouble();
+					candle_data.volume = json_candles[i][5].asLargestUInt();
+					candle_data.open_interest = json_candles[i][6].asLargestUInt();
+
+					// This will fail once I have serial async tasks
+					//m_candle_data.GetData()[date] = candle_data;
+					m_candle_data->GetAsyncDataCopy()[date] = candle_data;
+				}
+
+				m_candle_data->SetDataReady(true);
+			};
+
+		std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+		assert(owning_tradinator_core_thread);
+
+		owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
+			std::format("Loading candle data for {}", m_symbol),
+			load_candle_data_from_file,
+			[]() {}
+		));
+	}
+	
+}
+
+void Counter::UnloadCandleData()
+{
+	m_candle_data->Reset();
+}
+
+
+std::string Counter::GetRawHistoricalDataFilePath() const
 {
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
@@ -265,14 +326,14 @@ std::string Security::GetRawHistoricalDataFilePath() const
 	return folder_path + "/" + m_symbol + ".json";
 }
 
-bool Security::DoesRawHistoricalDataExist() const
+bool Counter::DoesRawHistoricalDataExist() const
 {
 	return Utils::DoesFileExist(GetRawHistoricalDataFilePath());
 }
 
 
 
-void Security::FromString(std::string str)
+void Counter::FromString(std::string str)
 {
 	std::vector<std::string> split_strings;
 	int prev_index = 0;
@@ -313,7 +374,7 @@ string_name = buffer;																\
 delete[] buffer;																	\
 buffer = nullptr;																	\
 
-void Security::ReadFromStream(std::istream& stream)									
+void Counter::ReadFromStream(std::istream& stream)									
 {
 	std::size_t string_size;
 	char* buffer = nullptr;
@@ -341,7 +402,7 @@ stream.write(reinterpret_cast<const char*>(&string_size), sizeof(string_size));	
 /* write the string contents */															\
 stream.write(reinterpret_cast<const char*>(string_name.c_str()), string_size);			\
 
-void Security::WriteToFile(std::ofstream& stream)
+void Counter::WriteToFile(std::ofstream& stream)
 {
 	std::size_t string_size;
 	// Writting in binary format
@@ -358,7 +419,7 @@ void Security::WriteToFile(std::ofstream& stream)
 	stream.write(reinterpret_cast<const char*>(&m_face_value), sizeof(m_face_value));
 }
 
-std::string Security::ToString() const
+std::string Counter::ToString() const
 {
 	return std::format("{},{},{},{},{},{},{},{}"
 		, m_symbol
@@ -372,22 +433,22 @@ std::string Security::ToString() const
 }
 
 
-std::ofstream& operator << (std::ofstream& stream, Security& security)
+std::ofstream& operator << (std::ofstream& stream, Counter& counter)
 {
-	security.WriteToFile(stream);
+	counter.WriteToFile(stream);
 
 	return stream;
 }
 
-std::ostream& operator << (std::ostream& stream, Security& security)
+std::ostream& operator << (std::ostream& stream, Counter& counter)
 {
-	stream << security.ToString();
+	stream << counter.ToString();
 
 	return stream;
 }
 
-std::istream& operator >> (std::istream& stream, Security& security)
+std::istream& operator >> (std::istream& stream, Counter& counter)
 {
-	security.ReadFromStream(stream);
+	counter.ReadFromStream(stream);
 	return stream;
 }

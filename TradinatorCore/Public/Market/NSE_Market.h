@@ -22,7 +22,7 @@ public:
 
 private:
 	void OnGatherSymbolsCompleted();
-	void OnSecurityDataLoaded();
+	void OnCounterDataLoaded();
 
 	std::string GetRawDataFilePathName() const;
 	std::string GetProcessedDataFileName() const;

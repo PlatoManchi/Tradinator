@@ -24,7 +24,7 @@
     <ClInclude Include="Source\Application\DashboardWindow.h" />
     <ClInclude Include="Source\Application\TradinatorApp.h" />
     <ClInclude Include="Source\Application\Windows\MainWindow.h" />
-    <ClInclude Include="Source\Application\Windows\SecurityWindow.h" />
+    <ClInclude Include="Source\Application\Windows\CounterWindow.h" />
     <ClInclude Include="Source\Components\AutoCompleteInputText.h" />
     <ClInclude Include="Source\Components\SecuritiesSearchBar.h" />
     <ClInclude Include="Source\Components\StatusBar.h" />
@@ -38,7 +38,7 @@
     <ClCompile Include="Source\Application\DashboardWindow.cpp" />
     <ClCompile Include="Source\Application\TradinatorApp.cpp" />
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp" />
-    <ClCompile Include="Source\Application\Windows\SecurityWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\CounterWindow.cpp" />
     <ClCompile Include="Source\Components\AutoCompleteInputText.cpp" />
     <ClCompile Include="Source\Components\SecuritiesSearchBar.cpp" />
     <ClCompile Include="Source\Components\StatusBar.cpp" />

@@ -15,19 +15,21 @@ class Market;
 class TradinatorCoreThread;
 
 
-class Security : public Company
+class Counter : public Company
 {
 public:
-	Security();
+	Counter();
 
 	// copy and move sementics
-	Security(const Security& other) = default;
-	Security(Security&& other) noexcept = default;
-	Security& operator = (const Security& other) = default;
-	Security& operator = (Security&& other) noexcept = default;
+	Counter(const Counter& other) = default;
+	Counter(Counter&& other) noexcept = default;
+	Counter& operator = (const Counter& other) = default;
+	Counter& operator = (Counter&& other) noexcept = default;
 
+	void LoadCandleData();
+	void UnloadCandleData();
 	
-	void DownloadSecurityData(std::function<void()> callback);
+	void DownloadCounterData(std::function<void()> callback);
 
 	bool DoesRawHistoricalDataExist() const;
 	inline std::string GetRawHistoricalDataFilePath() const;
@@ -41,6 +43,7 @@ public:
 
 	inline std::shared_ptr<const AsyncCandleData> GetCandleData() const { return m_candle_data; }
 
+	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 
@@ -62,7 +65,7 @@ protected:
 	uint32_t m_market_lot;
 	uint32_t m_face_value;
 	
-	// market this security belongs to
+	// market this counter belongs to
 	std::weak_ptr<Market> m_owning_market;
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
@@ -73,11 +76,11 @@ protected:
 
 
 	// overloaded stream operator
-	friend std::ofstream& operator << (std::ofstream& stream, Security& security);
-	friend std::ostream& operator << (std::ostream& stream, Security& security);
-	friend std::istream& operator >> (std::istream& stream, Security& security);
+	friend std::ofstream& operator << (std::ofstream& stream, Counter& counter);
+	friend std::ostream& operator << (std::ostream& stream, Counter& counter);
+	friend std::istream& operator >> (std::istream& stream, Counter& counter);
 };
 
-std::ofstream& operator << (std::ofstream& stream, Security& security);
-std::ostream& operator << (std::ostream& stream, Security& security);
-std::istream& operator >> (std::istream& stream, Security& security);
+std::ofstream& operator << (std::ofstream& stream, Counter& counter);
+std::ostream& operator << (std::ostream& stream, Counter& counter);
+std::istream& operator >> (std::istream& stream, Counter& counter);

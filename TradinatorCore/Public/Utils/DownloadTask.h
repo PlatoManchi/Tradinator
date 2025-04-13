@@ -13,6 +13,12 @@ public:
 		std::string file_path;
 	};
 
+	// copy and move sementics
+	DownloadTask(const DownloadTask& other) = default;
+	DownloadTask(DownloadTask&& other) noexcept = default;
+	DownloadTask& operator = (const DownloadTask& other) = default;
+	DownloadTask& operator = (DownloadTask&& other) noexcept = default;
+
 	DownloadTask(std::function<void()> callback, std::string url, std::string file_path);
 
 protected:

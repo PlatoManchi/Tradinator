@@ -27,10 +27,15 @@ public:
 		m_worker_list.push_back(worker);
 	}
 
+	// copy and move sementics
+	AsyncTask(const AsyncTask& other) = default;
+	AsyncTask(AsyncTask&& other) noexcept = default;
+	AsyncTask& operator = (const AsyncTask& other) = default;
+	AsyncTask& operator = (AsyncTask&& other) noexcept = default;
 
 	virtual ~AsyncTask();
 
-	void Shutdown();
+	virtual void Shutdown();
 
 	inline std::future_status Status() const { return m_work_future.wait_for(std::chrono::seconds(0)); };
 
@@ -59,7 +64,9 @@ protected:
 		m_human_readable_description = "";
 	};
 
-
+	virtual void StartTask();
+	virtual void Update();
+	virtual void TaskCompleted();
 	virtual std::string GetHumanReadableDescription() const;
 
 	bool m_is_complete;
@@ -73,12 +80,9 @@ protected:
 	// 
 	std::chrono::steady_clock::time_point m_start;
 
-private:
-
-	void StartTask();
-	void Update();
-	void TaskCompleted();
 
 
 	friend class AsyncTaskManager;
+	friend class SerialAsyncTask;
+	friend class ParallelAsyncTask;
 };

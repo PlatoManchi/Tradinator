@@ -58,7 +58,7 @@
     <ClInclude Include="Source\imgui_markdown\imgui_markdown.h">
       <Filter>Source\imgui_markdown</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Application\Windows\SecurityWindow.h">
+    <ClInclude Include="Source\Application\Windows\CounterWindow.h">
       <Filter>Source\Application\Windows</Filter>
     </ClInclude>
   </ItemGroup>
@@ -90,7 +90,7 @@
     <ClCompile Include="Source\Utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Application\Windows\SecurityWindow.cpp">
+    <ClCompile Include="Source\Application\Windows\CounterWindow.cpp">
       <Filter>Source\Application\Windows</Filter>
     </ClCompile>
   </ItemGroup>

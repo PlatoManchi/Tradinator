@@ -12,16 +12,16 @@
 
 
 
-SecurityAutoCompleteItem::SecurityAutoCompleteItem(std::shared_ptr<Security> security)
-    : m_security(security)
+CounterAutoCompleteItem::CounterAutoCompleteItem(std::shared_ptr<Counter> counter)
+    : m_counter(counter)
 {
-    m_cached_description = std::format("{}\n     Symbol: {}\n     ISIN Number: {}", m_security->Name(), m_security->Symbol(), m_security->ISIN_Number());
+    m_cached_description = std::format("{}\n     Symbol: {}\n     ISIN Number: {}", m_counter->Name(), m_counter->Symbol(), m_counter->ISIN_Number());
 }
 
-bool SecurityAutoCompleteItem::CanPassFilter(const char* search_string)
+bool CounterAutoCompleteItem::CanPassFilter(const char* search_string)
 {
     // case insensitive search
-    std::string desc = std::format("{} {} {}", m_security->Symbol(), m_security->Name(), m_security->ISIN_Number());
+    std::string desc = std::format("{} {} {}", m_counter->Symbol(), m_counter->Name(), m_counter->ISIN_Number());
     std::string search = std::string(search_string);
 
     std::transform(desc.begin(), desc.end(), desc.begin(), ::tolower);
@@ -34,7 +34,7 @@ bool SecurityAutoCompleteItem::CanPassFilter(const char* search_string)
     return false;
 }
 
-const std::string& SecurityAutoCompleteItem::GetItemDescription()
+const std::string& CounterAutoCompleteItem::GetItemDescription()
 {
     return m_cached_description;
 }
@@ -50,9 +50,9 @@ void SecuritiesSearchBar::Begin()
 {
 }
 
-std::shared_ptr<Security> SecuritiesSearchBar::Show()
+std::shared_ptr<Counter> SecuritiesSearchBar::Show()
 {
-    std::shared_ptr<Security> result = nullptr;
+    std::shared_ptr<Counter> result = nullptr;
 
     ImGuiWindowFlags no_decoration =
         ImGuiWindowFlags_NoTitleBar |
@@ -74,7 +74,7 @@ std::shared_ptr<Security> SecuritiesSearchBar::Show()
             bool are_all_markets_ready = true;
             for (const std::shared_ptr<Market>& market : markets)
             {
-                if (!market->IsSecurityDataAvailable())
+                if (!market->IsCounterDataAvailable())
                 {
                     are_all_markets_ready = false;
                     break;
@@ -86,14 +86,14 @@ std::shared_ptr<Security> SecuritiesSearchBar::Show()
 
                 for (const std::shared_ptr<Market>& market : markets)
                 {
-                    if (market->IsSecurityDataAvailable())
+                    if (market->IsCounterDataAvailable())
                     {
-                        const AsyncData<std::map<std::string, std::shared_ptr<Security>>>& securities_async_data = market->GetSecurityAsyncData();
-                        const std::map<std::string, std::shared_ptr<Security>>& securities = securities_async_data.GetData();
+                        const AsyncData<std::map<std::string, std::shared_ptr<Counter>>>& securities_async_data = market->GetCounterAsyncData();
+                        const std::map<std::string, std::shared_ptr<Counter>>& securities = securities_async_data.GetData();
 
-                        for (std::pair<std::string, std::shared_ptr<Security>> pair : securities)
+                        for (std::pair<std::string, std::shared_ptr<Counter>> pair : securities)
                         {
-                            std::shared_ptr<SecurityAutoCompleteItem> item = std::make_shared<SecurityAutoCompleteItem>(pair.second);
+                            std::shared_ptr<CounterAutoCompleteItem> item = std::make_shared<CounterAutoCompleteItem>(pair.second);
                             items.push_back(std::move(item));
                         }
                     }
@@ -107,11 +107,11 @@ std::shared_ptr<Security> SecuritiesSearchBar::Show()
         }
         else
         {
-            if (std::shared_ptr<IAutoCommpleteItem> item = m_autocomplete.Show("##SecuritySearchBar", "##SecuritySearchBar", "Search by company name, symbol or keywords ..."))
+            if (std::shared_ptr<IAutoCommpleteItem> item = m_autocomplete.Show("##CounterSearchBar", "##CounterSearchBar", "Search by company name, symbol or keywords ..."))
             {
-                std::shared_ptr<SecurityAutoCompleteItem> security_item = std::dynamic_pointer_cast<SecurityAutoCompleteItem> (item);
-                result = security_item->GetSecurity();
-                std::cout << "Selected item: " << security_item->GetItemDescription() << std::endl;
+                std::shared_ptr<CounterAutoCompleteItem> counter_item = std::dynamic_pointer_cast<CounterAutoCompleteItem> (item);
+                result = counter_item->GetCounter();
+                std::cout << "Selected item: " << counter_item->GetItemDescription() << std::endl;
             }
         }
     }

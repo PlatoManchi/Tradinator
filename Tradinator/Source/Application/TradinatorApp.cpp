@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "implot.h"
 
 #include "Utils.h"
 
@@ -29,8 +30,6 @@ void TradinatorApp::Begin()
     // Creating markets that we want to follow
     m_tradinator_core->AddMarket(std::make_shared<NSE_Market>());
 
-
-
     m_dashboard_window.Begin();
     m_audo_analysis_update_window.Begin();
     m_main_windows.Begin();
@@ -56,11 +55,11 @@ void TradinatorApp::ShowApp()
 
     ImGui::SetNextWindowPos(work_pos);
     ImGui::SetNextWindowSize(ImVec2(work_size.x, search_bar_height));
-    if (std::shared_ptr<Security> security = m_securities_search_bar.Show())
+    if (std::shared_ptr<Counter> counter = m_securities_search_bar.Show())
     {
-        if (!m_security_windows.contains(security->ISIN_Number()))
+        if (!m_counter_windows.contains(counter->ISIN_Number()))
         {
-            m_security_windows[security->ISIN_Number()] = std::make_shared<SecurityWindow>(security);
+            m_counter_windows[counter->ISIN_Number()] = std::make_shared<CounterWindow>(counter);
         }
         else
         {
@@ -78,11 +77,25 @@ void TradinatorApp::ShowApp()
     m_status_bar.Show();
 
 
-    for (std::pair<std::string, std::shared_ptr<SecurityWindow>> pair : m_security_windows)
+    for (std::pair<std::string, std::shared_ptr<CounterWindow>> pair : m_counter_windows)
     {
-        ImGui::SetNextWindowSize(ImVec2(1280, 768), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(1280, 768), ImGuiCond_FirstUseEver);
+        if (pair.second->m_maximize)
+        {
+            pair.second->m_maximize = false;
+
+            ImGuiPlatformMonitor monitor = ImGui::GetPlatformIO().Monitors[0];
+            ImGui::SetNextWindowPos(monitor.WorkPos, ImGuiCond_Always);
+            ImGui::SetNextWindowSize(monitor.WorkSize, ImGuiCond_Always);
+        }
+        
+
         pair.second->Show();
     }
+
+    std::erase_if(m_counter_windows, [](const std::pair<std::string, std::shared_ptr<CounterWindow>>& item) {
+        return item.second->m_close;
+        });
 }
 
 

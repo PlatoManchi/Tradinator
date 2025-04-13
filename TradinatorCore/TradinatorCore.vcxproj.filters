@@ -25,6 +25,12 @@
     <Filter Include="Private\Utils">
       <UniqueIdentifier>{8e3f9df2-a50c-4d87-b123-bbcadf6728f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Private\Indicators">
+      <UniqueIdentifier>{6adb17da-771b-44c4-b275-055d6ff89b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Indicators">
+      <UniqueIdentifier>{aa96d98f-7980-4a81-8b24-31830be01746}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\TradinatorCore.h">
@@ -54,7 +60,7 @@
     <ClInclude Include="Public\Data\Candle.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Data\Security.h">
+    <ClInclude Include="Public\Data\Counter.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
     <ClInclude Include="Public\Data\AsyncData.h">
@@ -62,6 +68,15 @@
     </ClInclude>
     <ClInclude Include="Public\TradinatorCoreThread.h">
       <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Indicators\Indicator.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\ParallelAsyncTask.h">
+      <Filter>Public\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\SerialAsyncTask.h">
+      <Filter>Public\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -77,7 +92,7 @@
     <ClCompile Include="Private\Utils\AsyncTaskManager.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Data\Security.cpp">
+    <ClCompile Include="Private\Data\Counter.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\AsyncTask.cpp">
@@ -97,6 +112,15 @@
     </ClCompile>
     <ClCompile Include="Private\TradinatorCoreThread.cpp">
       <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\Indicator.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\ParallelAsyncTask.cpp">
+      <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\SerialAsyncTask.cpp">
+      <Filter>Private\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

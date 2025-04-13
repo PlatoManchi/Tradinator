@@ -17,6 +17,11 @@ public:
 	T& GetData();
 	T& GetAsyncDataCopy();
 
+	// return true if data is successfully rest.
+	// else false. Reasons for failing can be that the data is actively being loaded by 
+	// async task. (m_is_ready = false)
+	bool Reset();
+
 	// Const versions to access data from other thread as cached version of the data.
 	// Careful when calling these functions
 	const T& GetData() const { return m_data; };

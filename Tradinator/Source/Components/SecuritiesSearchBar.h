@@ -4,20 +4,20 @@
 
 #include "Components/AutoCompleteInputText.h"
 
-class Security;
+class Counter;
 class TradinatorCore;
 
-class SecurityAutoCompleteItem final : public IAutoCommpleteItem
+class CounterAutoCompleteItem final : public IAutoCommpleteItem
 {
 public:
-	SecurityAutoCompleteItem(std::shared_ptr<Security> security);
+	CounterAutoCompleteItem(std::shared_ptr<Counter> counter);
 
 	virtual bool CanPassFilter(const char* search_string) override;
 	virtual const std::string& GetItemDescription() override;
-	inline std::shared_ptr<Security> GetSecurity() const { return m_security; }
+	inline std::shared_ptr<Counter> GetCounter() const { return m_counter; }
 
 private:
-	std::shared_ptr<Security> m_security;
+	std::shared_ptr<Counter> m_counter;
 	std::string m_cached_description;
 };
 
@@ -27,7 +27,7 @@ public:
 
 	void Init(std::shared_ptr<TradinatorCore> tradinator_core);
 	void Begin();
-	std::shared_ptr<Security> Show();
+	std::shared_ptr<Counter> Show();
 	void Shutdown();
 
 private:

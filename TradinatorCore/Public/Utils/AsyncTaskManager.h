@@ -26,6 +26,7 @@ private:
 	std::mutex m_mutex;
 
 	std::vector<std::unique_ptr<AsyncTask>> m_tasks;
+	std::vector<std::unique_ptr<AsyncTask>> m_add_tasks_buffer;
 
 	bool m_is_shutting_down;
 };

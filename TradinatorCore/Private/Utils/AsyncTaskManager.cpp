@@ -11,16 +11,26 @@ AsyncTaskManager::AsyncTaskManager()
 
 void AsyncTaskManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
-	m_mutex.lock();
-
+	std::lock_guard<std::mutex> lock(m_mutex);
+	
 	task->StartTask();
-	m_tasks.push_back(std::move(task));
-
-	m_mutex.unlock();
+	m_add_tasks_buffer.push_back(std::move(task));
 }
 
 void AsyncTaskManager::Update()
 {
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		
+		for (std::unique_ptr<AsyncTask>& task_to_add : m_add_tasks_buffer)
+		{
+			m_tasks.push_back(std::move(task_to_add));
+		}
+
+		// clear buffer
+		m_add_tasks_buffer.clear();
+	}
+
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
 		task->Update();

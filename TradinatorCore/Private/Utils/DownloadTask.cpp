@@ -24,46 +24,10 @@ DownloadTask::DownloadTask(std::function<void()> callback, std::string url, std:
     ));
 }
 
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, FILE* userp)
+size_t write_data(void* ptr, size_t size, size_t nmemb, void* stream)
 {
-    size_t written = fwrite(contents, size, nmemb, userp);
-    
-    // return -1 to cancel the download
+    size_t written = fwrite(ptr, size, nmemb, (FILE*)stream);
     return written;
-}
-
-int progress_func(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded)
-{
-    // It's here you will write the code for the progress message or bar
-    // ensure that the file to be downloaded is not empty
-    // because that would cause a division by zero error later on
-    //std::cout << "TotalToDownload: " << TotalToDownload << "  NowDownloaded : " << NowDownloaded << std::endl;
-    if (TotalToDownload <= 0.0) {
-        return 0;
-    }
-
-    // how wide you want the progress meter to be
-    int totaldotz = 40;
-    double fractiondownloaded = NowDownloaded / TotalToDownload;
-    // part of the progressmeter that's already "full"
-    int dotz = (int)round(fractiondownloaded * totaldotz);
-
-    // create the "meter"
-    int ii = 0;
-    printf("%3.0f%% [", fractiondownloaded * 100);
-    // part  that's full already
-    for (; ii < dotz; ii++) {
-        printf("=");
-    }
-    // remaining part (spaces)
-    for (; ii < totaldotz; ii++) {
-        printf(" ");
-    }
-    // and back to line begin - do not forget the fflush to avoid output buffering problems!
-    printf("]\r");
-    fflush(stdout);
-    // if you don't return 0, the transfer will be aborted - see the documentation
-    return 0;
 }
 
 void DownloadTask::DownloadFile(DownloadRequest request)
@@ -88,7 +52,8 @@ void DownloadTask::DownloadFile(DownloadRequest request)
     //curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);
+    // Need this to prevent curl from using stdout as output
+    //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 
     /* open the file */
     fopen_s(&pagefile, request.file_path.c_str(), "wb");
@@ -97,9 +62,9 @@ void DownloadTask::DownloadFile(DownloadRequest request)
         /* write the page body to this file handle */
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
 
-        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, FALSE);
+        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, true);
         // Install the callback function
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, progress_func);
+        //curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, std::bind(&DownloadTask::progress_func, this));
 
         struct curl_slist* headers = NULL;
         headers = curl_slist_append(headers, "application/json");
@@ -113,37 +78,38 @@ void DownloadTask::DownloadFile(DownloadRequest request)
             curl_off_t val;
 
             /* check for bytes downloaded */
-            res = curl_easy_getinfo(curl_handle, CURLINFO_SIZE_DOWNLOAD_T, &val);
-            if ((CURLE_OK == res) && (val > 0))
-                printf("Data downloaded: %lu bytes.\n", (unsigned long)val);
-
-            /* check for total download time */
-            res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME_T, &val);
-            if ((CURLE_OK == res) && (val > 0))
-                printf("Total download time: %lu.%06lu sec.\n",
-                    (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
-
-            /* check for average download speed */
-            res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_DOWNLOAD_T, &val);
-            if ((CURLE_OK == res) && (val > 0))
-                printf("Average download speed: %lu kbyte/sec.\n",
-                    (unsigned long)(val / 1024));
+            //res = curl_easy_getinfo(curl_handle, CURLINFO_SIZE_DOWNLOAD_T, &val);
+            //if ((CURLE_OK == res) && (val > 0))
+            //    printf("Data downloaded: %lu bytes.\n", (unsigned long)val);
+            //
+            ///* check for total download time */
+            //res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME_T, &val);
+            //if ((CURLE_OK == res) && (val > 0))
+            //    printf("Total download time: %lu.%06lu sec.\n",
+            //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+            //
+            ///* check for average download speed */
+            //res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_DOWNLOAD_T, &val);
+            //if ((CURLE_OK == res) && (val > 0))
+            //    printf("Average download speed: %lu kbyte/sec.\n",
+            //        (unsigned long)(val / 1024));
 
             if (prtall) {
                 /* check for Name resolution time */
-                res = curl_easy_getinfo(curl_handle, CURLINFO_NAMELOOKUP_TIME_T, &val);
-                if ((CURLE_OK == res) && (val > 0))
-                    printf("Name lookup time: %lu.%06lu sec.\n",
-                        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
-
-                /* check for connect time */
-                res = curl_easy_getinfo(curl_handle, CURLINFO_CONNECT_TIME_T, &val);
-                if ((CURLE_OK == res) && (val > 0))
-                    printf("Connect time: %lu.%06lu sec.\n",
-                        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+                //res = curl_easy_getinfo(curl_handle, CURLINFO_NAMELOOKUP_TIME_T, &val);
+                //if ((CURLE_OK == res) && (val > 0))
+                //    printf("Name lookup time: %lu.%06lu sec.\n",
+                //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+                //
+                ///* check for connect time */
+                //res = curl_easy_getinfo(curl_handle, CURLINFO_CONNECT_TIME_T, &val);
+                //if ((CURLE_OK == res) && (val > 0))
+                //    printf("Connect time: %lu.%06lu sec.\n",
+                //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
             }
         }
         else {
+            std::cout << "Error while fetching " << request.url.c_str() << "\n    " << curl_easy_strerror(res) << std::endl;
             fprintf(stderr, "Error while fetching '%s' : %s\n",
                 request.url.c_str(), curl_easy_strerror(res));
         }

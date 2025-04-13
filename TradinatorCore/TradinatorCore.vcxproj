@@ -166,7 +166,8 @@
     <ClInclude Include="Public\Data\AsyncData.h" />
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
-    <ClInclude Include="Public\Data\Security.h" />
+    <ClInclude Include="Public\Data\Counter.h" />
+    <ClInclude Include="Public\Indicators\Indicator.h" />
     <ClInclude Include="Public\Market\Market.h" />
     <ClInclude Include="Public\Market\NSE_Market.h" />
     <ClInclude Include="Public\TradinatorCore.h" />
@@ -174,12 +175,15 @@
     <ClInclude Include="Public\Utils\AsyncTask.h" />
     <ClInclude Include="Public\Utils\DownloadTask.h" />
     <ClInclude Include="Public\Utils\AsyncTaskManager.h" />
+    <ClInclude Include="Public\Utils\ParallelAsyncTask.h" />
+    <ClInclude Include="Public\Utils\SerialAsyncTask.h" />
     <ClInclude Include="Public\Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Data\Candle.cpp" />
     <ClCompile Include="Private\Data\Company.cpp" />
-    <ClCompile Include="Private\Data\Security.cpp" />
+    <ClCompile Include="Private\Data\Counter.cpp" />
+    <ClCompile Include="Private\Indicators\Indicator.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
     <ClCompile Include="Private\Market\NSE_Market.cpp" />
     <ClCompile Include="Private\TradinatorCore.cpp" />
@@ -187,6 +191,8 @@
     <ClCompile Include="Private\Utils\AsyncTask.cpp" />
     <ClCompile Include="Private\Utils\DownloadTask.cpp" />
     <ClCompile Include="Private\Utils\AsyncTaskManager.cpp" />
+    <ClCompile Include="Private\Utils\ParallelAsyncTask.cpp" />
+    <ClCompile Include="Private\Utils\SerialAsyncTask.cpp" />
     <ClCompile Include="Private\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
