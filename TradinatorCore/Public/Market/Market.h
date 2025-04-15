@@ -15,34 +15,39 @@ class Market : public std::enable_shared_from_this<Market>
 public:
 	Market();
 
-	virtual void Init() = 0;
+	virtual void Init();
 	virtual std::string GetMarketName() const = 0;
 	virtual std::string GetMarketCode() const = 0;
 
-	virtual void GatherSymbols() = 0;
 
-	// returns true if the market data is processed and ready.
-	virtual bool IsValid() const { return false; }
 
-	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
-
-	void CreateFolderStructure() const;
+	virtual std::string GetCounterListRawDataFileName() const = 0;
+	virtual std::string GetCounterListProcessedDataFileName() const = 0;
+	
 	std::string GetRawDataFolderPath() const;
 	std::string GetProcessedDataFolderPath() const;
 
-	std::string GetRawDataFilePath() const;
-	std::string GetProcessedDataFilePath() const;
+	std::string GetCounterListRawDataFilePath() const;
+	std::string GetCounterListProcessedDataFilePath() const;
 
-	virtual std::string GetRawDataFilePathName() const = 0;
-	virtual std::string GetProcessedDataFileName() const = 0;
+	
 
+	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }
 	inline bool IsCounterDataAvailable() const { return m_securities_async_data.IsDataReady(); }
 	inline const AsyncData<std::map<std::string, std::shared_ptr<Counter>>>& GetCounterAsyncData() const { return m_securities_async_data; }
 
 protected:
+	// Each market will have different ways of organizing and acquiring data.
+	virtual void ParseCounterListData() = 0;
+	void OnParseCounterListCompleted();
+	void CreateFolderStructure() const;
+
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
 
+	
+
+	// Key is ISIN number but are sorted based on symbols
 	AsyncData<std::map<std::string, std::shared_ptr<Counter>>> m_securities_async_data;
 };
 

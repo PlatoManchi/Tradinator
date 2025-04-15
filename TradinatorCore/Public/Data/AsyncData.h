@@ -49,7 +49,7 @@ private:
 	// If it was, then m_data can be considered as cached data from previous processing.
 	bool m_was_ready_before = false;
 
-	std::mutex m_mutex;
+	std::mutex m_log_to_file_mutex;
 };
 
 

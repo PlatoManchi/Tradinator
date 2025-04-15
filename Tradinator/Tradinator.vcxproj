@@ -52,6 +52,9 @@
     <ProjectReference Include="..\Submodules\implot\implot.vcxproj">
       <Project>{b7ba96ba-1029-4ac8-a572-de5aab0b0e82}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Submodules\SQLiteCpp\SQLiteCpp.vcxproj">
+      <Project>{8758da1d-7ad6-43eb-87b4-017ba22a564f}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\TradinatorCore\TradinatorCore.vcxproj">
       <Project>{10699ffa-7af6-447d-bed0-5bc3f9bb5cfb}</Project>
     </ProjectReference>
@@ -147,7 +150,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;d3dcompiler.lib;dxgi.lib;jsoncpp.lib;libcurl-d.lib;curlcpp.lib;zlibd.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\sqlite3\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
@@ -168,7 +171,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;d3dcompiler.lib;dxgi.lib;jsoncpp.lib;libcurl.lib;curlcpp.lib;zlib.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\sqlite3\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
@@ -185,7 +188,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;d3dcompiler.lib;dxgi.lib;jsoncpp.lib;libcurl-d.lib;curlcpp.lib;zlibd.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\sqlite3\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
@@ -206,7 +209,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;d3dcompiler.lib;dxgi.lib;jsoncpp.lib;libcurl.lib;curlcpp.lib;zlib.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\External\CurlCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\JsonCPP\lib\$(PlatformTarget) $(Configuration)\;$(SolutionDir)..\External\sqlite3\lib\$(PlatformTarget) $(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>

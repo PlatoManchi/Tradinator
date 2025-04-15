@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "Utils/AsyncTaskManager.h"
+
 class AsyncTaskManager;
 class Market;
 
@@ -20,12 +22,15 @@ public:
 	void AddMarket(std::shared_ptr<Market>&& market);
 	bool CanSafelyShutdown() const;
 
+	inline bool IsProcessing() const { return m_async_task_manager->IsProcessing(); }
 
-	inline std::string GetDataFolderPath() const { return m_data_folder_path; }
+	inline std::string GetTradinatorWorkingFolderPath() const { return m_data_folder_path; }
 	inline std::shared_ptr<AsyncTaskManager> GetAsyncTaskManager() const { return m_async_task_manager; }
 	inline std::vector<std::shared_ptr<Market>> GetAllMarkets() const { return m_market_list; }
 	
 private:
+	void InitializeDB();
+
 	// Working directory for all data
 	std::string m_data_folder_path;
 

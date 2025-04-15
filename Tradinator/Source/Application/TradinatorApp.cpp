@@ -21,7 +21,7 @@ void TradinatorApp::Init()
     m_audo_analysis_update_window.Init();
     m_main_windows.Init(m_tradinator_core);
     m_securities_search_bar.Init(m_tradinator_core);
-    m_status_bar.Init();
+    m_status_bar.Init(m_tradinator_core);
 }
 
 void TradinatorApp::Begin()

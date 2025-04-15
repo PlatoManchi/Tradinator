@@ -33,7 +33,7 @@ void MainWindow::Show()
         //ImGui::TextWrapped("This is awesome dashboard. Show new formed IPO details, some market stats like top 10 during last update and show the delta from last update.");
         //Utils::PushHeadingFont();
         ImGui::SeparatorText("Market Status");
-        ImSpinner::SpinnerScaleDots("NSE", 15, 5);
+        ImSpinner::SpinnerIncDots("NSE", 18, 3, ImColor{1.f, 1.f, 1.f, 1.f}, 10.0f);
         //Utils::PopFont();
 
         //ImGui::SetNextWindowPos(ImVec2(0, 0));

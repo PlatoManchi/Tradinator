@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{10699ffa-7af6-447d-bed0-5bc3f9bb5cfb}</ProjectGuid>
-    <RootNamespace>TradinatorCore</RootNamespace>
+    <ProjectGuid>{8758da1d-7ad6-43eb-87b4-017ba22a564f}</ProjectGuid>
+    <RootNamespace>SQLiteCpp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -71,38 +71,35 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <IncludePath>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <IncludePath>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <IncludePath>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <IncludePath>$(ProjectDir)SQLiteCpp\include;$(ProjectDir)SQLiteCpp\sqlite3;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SQLITE_ENABLE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\External\CurlCPP\include;$(SolutionDir)..\External\JsonCPP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -115,11 +112,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;SQLITE_ENABLE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\External\CurlCPP\include;$(SolutionDir)..\External\JsonCPP\include;$(SolutionDir)..\External\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,11 +126,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;SQLITE_ENABLE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\External\CurlCPP\include;$(SolutionDir)..\External\JsonCPP\include;$(SolutionDir)..\External\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,11 +140,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;SQLITE_ENABLE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\External\CurlCPP\include;$(SolutionDir)..\External\JsonCPP\include;$(SolutionDir)..\External\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,47 +151,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Public\Data\AsyncData.h" />
-    <ClInclude Include="Public\Data\Candle.h" />
-    <ClInclude Include="Public\Data\Company.h" />
-    <ClInclude Include="Public\Data\Counter.h" />
-    <ClInclude Include="Public\Indicators\Indicator.h" />
-    <ClInclude Include="Public\Market\Market.h" />
-    <ClInclude Include="Public\Market\NSE_Market.h" />
-    <ClInclude Include="Public\TradinatorCore.h" />
-    <ClInclude Include="Public\TradinatorCoreThread.h" />
-    <ClInclude Include="Public\Utils\AsyncTask.h" />
-    <ClInclude Include="Public\Utils\DownloadTask.h" />
-    <ClInclude Include="Public\Utils\AsyncTaskManager.h" />
-    <ClInclude Include="Public\Utils\Log.h" />
-    <ClInclude Include="Public\Utils\ParallelAsyncTask.h" />
-    <ClInclude Include="Public\Utils\SerialAsyncTask.h" />
-    <ClInclude Include="Public\Utils\Utils.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Assertion.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Backup.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Column.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Database.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Exception.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\ExecuteMany.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Savepoint.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\SQLiteCpp.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\SQLiteCppExport.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Statement.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Transaction.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\Utils.h" />
+    <ClInclude Include="SQLiteCpp\include\SQLiteCpp\VariadicBind.h" />
+    <ClInclude Include="SQLiteCpp\sqlite3\sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Private\Data\Candle.cpp" />
-    <ClCompile Include="Private\Data\Company.cpp" />
-    <ClCompile Include="Private\Data\Counter.cpp" />
-    <ClCompile Include="Private\Indicators\Indicator.cpp" />
-    <ClCompile Include="Private\Market\Market.cpp" />
-    <ClCompile Include="Private\Market\NSE_Market.cpp" />
-    <ClCompile Include="Private\TradinatorCore.cpp" />
-    <ClCompile Include="Private\TradinatorCoreThread.cpp" />
-    <ClCompile Include="Private\Utils\AsyncTask.cpp" />
-    <ClCompile Include="Private\Utils\DownloadTask.cpp" />
-    <ClCompile Include="Private\Utils\AsyncTaskManager.cpp" />
-    <ClCompile Include="Private\Utils\Log.cpp" />
-    <ClCompile Include="Private\Utils\ParallelAsyncTask.cpp" />
-    <ClCompile Include="Private\Utils\SerialAsyncTask.cpp" />
-    <ClCompile Include="Private\Utils\Utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Public\Data\AsyncData.inl" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Submodules\SQLiteCpp\SQLiteCpp.vcxproj">
-      <Project>{8758da1d-7ad6-43eb-87b4-017ba22a564f}</Project>
-    </ProjectReference>
+    <ClCompile Include="SQLiteCpp\sqlite3\sqlite3.c" />
+    <ClCompile Include="SQLiteCpp\src\Backup.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Column.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Database.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Exception.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Savepoint.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Statement.cpp" />
+    <ClCompile Include="SQLiteCpp\src\Transaction.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

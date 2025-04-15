@@ -2,6 +2,23 @@
 
 #include <filesystem>
 
+std::string Utils::_DATA_FOLDER_PATH_;
+
+void Utils::SetTradinatorWorkingFolderPath(std::string path)
+{
+    _DATA_FOLDER_PATH_ = path;
+}
+
+std::string Utils::GetTradinatorDatabasePath()
+{
+    return std::format("{}/Data/Tradinator.db", _DATA_FOLDER_PATH_);
+}
+
+
+void Utils::SetupFolderStructure()
+{
+    std::filesystem::create_directory(_DATA_FOLDER_PATH_ + "/" + "Data");
+}
 
 bool Utils::DoesFileExist(const std::string& file_path)
 {

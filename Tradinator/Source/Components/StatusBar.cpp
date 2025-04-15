@@ -3,8 +3,11 @@
 #include "imgui.h"
 #include "imspinner/imspinner.h"
 
-void StatusBar::Init()
+#include "TradinatorCore.h"
+
+void StatusBar::Init(std::shared_ptr<TradinatorCore> tradinator_core)
 {
+    m_tradinator_core = tradinator_core;
 }
 
 void StatusBar::Begin()
@@ -25,13 +28,16 @@ void StatusBar::Show()
 
     if (ImGui::Begin("StatusBar", nullptr, no_decoration))
     {
-
-        ImSpinner::SpinnerScaleDots("Status", 15, 5); ImGui::SameLine();
-        ImGui::TextWrapped("Status: 100/100"); ImGui::SameLine();
-        ImGui::ProgressBar(0.5f, { 200, 0 }, nullptr);
-
-
-        
+        if (m_tradinator_core->IsProcessing())
+        {
+            ImSpinner::SpinnerIncDots("NSE", 18, 3, ImColor{ 1.f, 1.f, 1.f, 1.f }, 10.0f); ImGui::SameLine();
+            ImGui::TextWrapped("Processing ...");
+            //ImGui::ProgressBar(0.5f, { 200, 0 }, nullptr);
+        }
+        else
+        {
+            ImGui::TextWrapped("Ready"); ImGui::SameLine();
+        }
     }
     ImGui::End();
 }

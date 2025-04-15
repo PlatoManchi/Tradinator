@@ -65,14 +65,14 @@ void CounterWindow::Show()
         }
         else if (candle_data->GetData().size() == 0)
         {
-            ImGuiStyle& style = ImGui::GetStyle();
+            /*ImGuiStyle& style = ImGui::GetStyle();
             std::string label = "No candle data available.\nCheck if '" + m_counter->GetRawHistoricalDataFilePath() +"' exists. \nDeleting the file if nothign works.";
             ImVec2 label_size = ImGui::CalcTextSize(label.c_str());
             ImVec2 avail = ImGui::GetContentRegionAvail();
 
             ImGui::SetCursorPos(ImVec2(avail.x / 2.0f - label_size.x / 2.0f, avail.y / 2.0f - label_size.y / 2.0f));
 
-            ImGui::Text(label.c_str());
+            ImGui::Text(label.c_str());*/
         }
         else
         {

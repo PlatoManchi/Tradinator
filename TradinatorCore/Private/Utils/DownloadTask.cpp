@@ -4,6 +4,7 @@
 #include <fstream>
 #include <chrono>
 #include <format>
+#include <thread>
 
 #include <curl/curl.h>
 
@@ -12,6 +13,7 @@ DownloadTask::DownloadTask(std::function<void()> callback, std::string url, std:
 	: AsyncTask()
     , m_url(url)
     , m_file_path (file)
+    , m_attempts(0)
 {
     m_callback = callback;
     m_human_readable_description = "Downloading ";
@@ -34,94 +36,109 @@ void DownloadTask::DownloadFile(DownloadRequest request)
 {
     std::chrono::time_point start = std::chrono::steady_clock::now();
 
-    CURL* curl_handle;
-    FILE* pagefile;
+    bool is_success = false;
 
-    curl_global_init(CURL_GLOBAL_ALL);
+    while (!is_success)
+    {
+        CURL* curl_handle;
+        FILE* pagefile;
 
-    /* init the curl session */
-    curl_handle = curl_easy_init();
+        curl_global_init(CURL_GLOBAL_ALL);
 
-    /* set URL to get here */
-    curl_easy_setopt(curl_handle, CURLOPT_URL, request.url.c_str());
+        /* init the curl session */
+        curl_handle = curl_easy_init();
 
-    /* Switch on full protocol/debug output while testing */
-    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, false);
+        /* set URL to get here */
+        curl_easy_setopt(curl_handle, CURLOPT_URL, request.url.c_str());
 
-    /* disable progress meter, set to 0L to enable it */
-    //curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+        /* Switch on full protocol/debug output while testing */
+        curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, false);
 
-    /* send all data to this function  */
-    // Need this to prevent curl from using stdout as output
-    //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+        /* disable progress meter, set to 0L to enable it */
+        //curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
-    /* open the file */
-    fopen_s(&pagefile, request.file_path.c_str(), "wb");
-    if (pagefile) {
+        /* send all data to this function  */
+        // Need this to prevent curl from using stdout as output
+        //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 
-        /* write the page body to this file handle */
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
+        /* open the file */
+        fopen_s(&pagefile, request.file_path.c_str(), "wb");
+        if (pagefile) {
 
-        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, true);
-        // Install the callback function
-        //curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, std::bind(&DownloadTask::progress_func, this));
+            /* write the page body to this file handle */
+            curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
 
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, "application/json");
-        curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, true);
+            // Install the callback function
+            //curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, std::bind(&DownloadTask::progress_func, this));
 
-        /* get it! */
-        CURLcode res = curl_easy_perform(curl_handle);
+            struct curl_slist* headers = NULL;
+            headers = curl_slist_append(headers, "application/json");
+            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
 
-        int prtall = 0;
-        if (CURLE_OK == res) {
-            curl_off_t val;
+            /* get it! */
+            CURLcode res = curl_easy_perform(curl_handle);
 
-            /* check for bytes downloaded */
-            //res = curl_easy_getinfo(curl_handle, CURLINFO_SIZE_DOWNLOAD_T, &val);
-            //if ((CURLE_OK == res) && (val > 0))
-            //    printf("Data downloaded: %lu bytes.\n", (unsigned long)val);
-            //
-            ///* check for total download time */
-            //res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME_T, &val);
-            //if ((CURLE_OK == res) && (val > 0))
-            //    printf("Total download time: %lu.%06lu sec.\n",
-            //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
-            //
-            ///* check for average download speed */
-            //res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_DOWNLOAD_T, &val);
-            //if ((CURLE_OK == res) && (val > 0))
-            //    printf("Average download speed: %lu kbyte/sec.\n",
-            //        (unsigned long)(val / 1024));
+            int prtall = 0;
+            if (CURLE_OK == res) {
+                is_success = true;
+                //curl_off_t val;
 
-            if (prtall) {
-                /* check for Name resolution time */
-                //res = curl_easy_getinfo(curl_handle, CURLINFO_NAMELOOKUP_TIME_T, &val);
+                /* check for bytes downloaded */
+                //res = curl_easy_getinfo(curl_handle, CURLINFO_SIZE_DOWNLOAD_T, &val);
                 //if ((CURLE_OK == res) && (val > 0))
-                //    printf("Name lookup time: %lu.%06lu sec.\n",
+                //    printf("Data downloaded: %lu bytes.\n", (unsigned long)val);
+                //
+                ///* check for total download time */
+                //res = curl_easy_getinfo(curl_handle, CURLINFO_TOTAL_TIME_T, &val);
+                //if ((CURLE_OK == res) && (val > 0))
+                //    printf("Total download time: %lu.%06lu sec.\n",
                 //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
                 //
-                ///* check for connect time */
-                //res = curl_easy_getinfo(curl_handle, CURLINFO_CONNECT_TIME_T, &val);
+                ///* check for average download speed */
+                //res = curl_easy_getinfo(curl_handle, CURLINFO_SPEED_DOWNLOAD_T, &val);
                 //if ((CURLE_OK == res) && (val > 0))
-                //    printf("Connect time: %lu.%06lu sec.\n",
-                //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+                //    printf("Average download speed: %lu kbyte/sec.\n",
+                //        (unsigned long)(val / 1024));
+
+                if (prtall) {
+                    /* check for Name resolution time */
+                    //res = curl_easy_getinfo(curl_handle, CURLINFO_NAMELOOKUP_TIME_T, &val);
+                    //if ((CURLE_OK == res) && (val > 0))
+                    //    printf("Name lookup time: %lu.%06lu sec.\n",
+                    //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+                    //
+                    ///* check for connect time */
+                    //res = curl_easy_getinfo(curl_handle, CURLINFO_CONNECT_TIME_T, &val);
+                    //if ((CURLE_OK == res) && (val > 0))
+                    //    printf("Connect time: %lu.%06lu sec.\n",
+                    //        (unsigned long)(val / 1000000), (unsigned long)(val % 1000000));
+                }
             }
-        }
-        else {
-            std::cout << "Error while fetching " << request.url.c_str() << "\n    " << curl_easy_strerror(res) << std::endl;
-            fprintf(stderr, "Error while fetching '%s' : %s\n",
-                request.url.c_str(), curl_easy_strerror(res));
+            else {
+                is_success = false;
+                std::cout << "Error while fetching " << request.url.c_str() << "\n    " << curl_easy_strerror(res) << std::endl;
+                //fprintf(stderr, "Error while fetching '%s' : %s\n",
+                //    request.url.c_str(), curl_easy_strerror(res));
+
+                size_t wait_before_retry = m_retry_intervels[m_attempts > m_retry_intervels.size() ? m_retry_intervels.size() - 1 : m_attempts];
+                m_attempts++;
+
+                std::cout << "Wait for " << wait_before_retry << "sec and retry." << std::endl;
+
+                // Wait before retrying again
+                std::this_thread::sleep_for(std::chrono::seconds(wait_before_retry));
+            }
+
+            /* close the header file */
+            fclose(pagefile);
         }
 
-        /* close the header file */
-        fclose(pagefile);
+        /* cleanup curl stuff */
+        curl_easy_cleanup(curl_handle);
+
+        curl_global_cleanup();
     }
-
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-
-    curl_global_cleanup();
 }
 
 

@@ -5,3 +5,6 @@
 [submodule "Submodules/implot/implot"]
 	path = Submodules/implot/implot
 	url = https://github.com/epezent/implot.git
+[submodule "Submodules/SQLiteCpp/SQLiteCpp"]
+	path = Submodules/SQLiteCpp/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git

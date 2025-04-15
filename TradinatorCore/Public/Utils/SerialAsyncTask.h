@@ -4,14 +4,15 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <string>
 
 class AsyncTaskManager;
 
 class SerialAsyncTask : public AsyncTask
 {
 public:
-	SerialAsyncTask(std::shared_ptr<AsyncTaskManager> async_task_manager, std::function<void()> callback);
-	SerialAsyncTask(std::shared_ptr<AsyncTaskManager> async_task_manager, std::vector<std::unique_ptr<AsyncTask>>&& tasks, std::function<void()> callback);
+	SerialAsyncTask(std::string description, std::shared_ptr<AsyncTaskManager> async_task_manager, std::function<void()> callback);
+	SerialAsyncTask(std::string description, std::shared_ptr<AsyncTaskManager> async_task_manager, std::vector<std::unique_ptr<AsyncTask>>&& tasks, std::function<void()> callback);
 
 	// copy and move sementics
 	SerialAsyncTask(const SerialAsyncTask& other) = default;

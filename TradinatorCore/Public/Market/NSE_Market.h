@@ -11,21 +11,17 @@ class NSE_Market : public Market
 public:
 	NSE_Market();
 
-	virtual void Init() override;
-
-	virtual bool IsValid() const override;
-
-	virtual std::string GetMarketName() const override { return "NSE (National Stock Exchange, India)"; }
+	
+	virtual std::string GetMarketName() const override { return "National Stock Exchange, India"; }
 	virtual std::string GetMarketCode() const override { return "NSE"; }
 
-	virtual void GatherSymbols() override;
+	
+protected:
+	virtual void ParseCounterListData() override;
 
 private:
-	void OnGatherSymbolsCompleted();
-	void OnCounterDataLoaded();
-
-	std::string GetRawDataFilePathName() const;
-	std::string GetProcessedDataFileName() const;
+	std::string GetCounterListRawDataFileName() const;
+	std::string GetCounterListProcessedDataFileName() const;
 
 	bool IsRawFileExist() const;
 	bool IsProcessedFileExist() const;

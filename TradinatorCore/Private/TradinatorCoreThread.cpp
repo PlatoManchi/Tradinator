@@ -2,15 +2,23 @@
 
 #include <thread>
 
+#include "SQLiteCpp/SQLiteCpp.h"
+
 #include "Market/Market.h"
 #include "Utils/AsyncTaskManager.h"
+#include "Utils/Utils.h"
+#include "Utils/Log.h"
 
 TradinatorCoreThread::TradinatorCoreThread(std::string data_folder_path)
 	: m_data_folder_path(data_folder_path)
 	, m_async_task_manager(std::make_shared<AsyncTaskManager>())
 	, m_is_shut_down(false)
 {
+	Log::GetInstance().SetFolderPath(m_data_folder_path);
+	Utils::SetTradinatorWorkingFolderPath(m_data_folder_path);
+	Utils::SetupFolderStructure();
 
+	InitializeDB();
 }
 
 void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
@@ -18,6 +26,26 @@ void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 	std::shared_ptr<Market>& stored_market = m_market_list.emplace_back(market);
 	stored_market->SetOwningTradinatorCoreThread(this->weak_from_this());
 	stored_market->Init();
+}
+
+
+
+void TradinatorCoreThread::InitializeDB()
+{
+	SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+	// Begin transaction
+	SQLite::Transaction transaction(db);
+	db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
+		"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
+		"Name             TEXT         NOT NULL," \
+		"Symbol           TEXT         NOT NULL," \
+		"DateOfListing    INTEGER      NOT NULL," \
+		"Series           TEXT         NOT NULL," \
+		"PaidUpValue      INTEGER      NOT NULL," \
+		"MarkerLot        INTEGER      NOT NULL," \
+		"FaceValue        INTEGER      NOT NULL );");
+	transaction.commit();
 }
 
 void TradinatorCoreThread::Update()

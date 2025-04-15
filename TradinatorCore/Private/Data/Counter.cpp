@@ -6,7 +6,9 @@
 #include <sstream>
 #include <chrono>
 
-#include "json/json.h"
+
+
+#include "SQLiteCpp/SQLiteCpp.h"
 
 #include "TradinatorCore.h"
 #include "Data/Candle.h"
@@ -14,21 +16,15 @@
 #include "Utils/AsyncTaskManager.h"
 #include "Utils/AsyncTask.h"
 #include "Utils/DownloadTask.h"
+#include "Utils/SerialAsyncTask.h"
 #include "Utils/Utils.h"
+#include "Utils/Log.h"
 
 static std::string _STATUS_ = "status";
 static std::string _SUCCESS_ = "success";
 
 static std::string _DATA_ = "data";
 static std::string _CANDLES_ = "candles";
-
-static std::string _DATE_ = "date";
-static std::string _OPEN_ = "open";
-static std::string _HIGH_ = "high";
-static std::string _LOW_ = "low";
-static std::string _CLOSE_ = "close";
-static std::string _VOLUME_ = "volume";
-static std::string _OPEN_INTEREST_ = "open_interest";
 
 
 
@@ -38,110 +34,98 @@ Counter::Counter()
 	, m_paid_up_value(0)
 	, m_market_lot(0)
 	, m_face_value(0)
+	, m_database_connection(Utils::GetTradinatorDatabasePath())
 	, m_candle_data(std::make_shared<AsyncCandleData>())
 {
 
 }
 
 
+std::unique_ptr<AsyncTask> Counter::GetUpdateCandlesDataAndSaveTask()
+{
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
 
-void Counter::DownloadCounterData(std::function<void()> callback)
+	std::vector<std::unique_ptr<AsyncTask>> tasks;
+
+	// Downloading candle data
+	tasks.push_back(std::move(GetDownloadLatestCandleDataTask([]() {})));
+
+	// Process downloaded data and save
+	tasks.push_back(std::move(std::make_unique<AsyncTask>(
+		std::string("Append Downloaded Raw Data To Processed Saved File"),
+		std::bind(&Counter::AppendRawDataToSavedFile, this),
+		[]() {}
+	)));
+
+	std::unique_ptr<SerialAsyncTask> update_and_save = std::make_unique<SerialAsyncTask>(
+		std::string("Update Candles Data And Save"),
+		owning_tradinator_core_thread->GetAsyncTaskManager(),
+		std::move(tasks),
+		[]() {}
+	);
+
+	return update_and_save;
+}
+
+std::string Counter::GetProcessedHistoricalDataFilePath() const
 {
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
 
-	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-	assert(owning_tradinator_core_thread);
-	
-	//TODO: Use std::tmpfile instead of creating temp file like this
-	// store downloaded data in temp file and process to our standards
-	//std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-	//std::chrono::system_clock::rep count = now.time_since_epoch().count();
-	std::string tmp_file_name = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.tmp", ISIN_Number());
-
-	std::function<void()> load_historical_data_if_exists = std::bind(&Counter::LoadHistoricalDataIfExists, this);
-	std::function<void()> download_daily_data = std::bind(&Counter::DownloadDailyData, this, tmp_file_name, callback);
-
-	
-	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
-			std::format("Gathering historical candles data stored locally for {}", m_symbol),
-			load_historical_data_if_exists,
-			download_daily_data
-		));
+	std::string folder_path = owning_market->GetProcessedDataFolderPath();
+	return folder_path + "/" + m_symbol + ".bin";
 }
 
-void Counter::LoadHistoricalDataIfExists()
+bool Counter::DoesProcessedHistoricalDataExist() const
 {
-	if (DoesRawHistoricalDataExist() && !m_candle_data->WasEverReadyBefore())
+	return m_database_connection.tableExists(GetTableName());
+}
+
+std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
+{
+	if (DoesProcessedHistoricalDataExist())
 	{
-		m_candle_data->SetDataReady(false);
-		Json::Value historical_candle_json_data;
-
+		//m_database_connection
+		SQLite::Statement query(m_database_connection, std::format("SELECT \"Date\" FROM \"{}\" ORDER BY \"Date\" desc LIMIT 1", GetTableName()));
+		if (query.executeStep())
 		{
-			// scope to make sure we aren't holding the file for more time than we should
-			std::string raw_historical_file_path = GetRawHistoricalDataFilePath();
-			std::ifstream raw_historical_file(raw_historical_file_path);
-			raw_historical_file >> historical_candle_json_data;
+			std::chrono::system_clock::rep time_count = query.getColumn(0);
+
+			std::chrono::system_clock::duration duration_since_epoch(time_count);
+			std::chrono::system_clock::time_point time(duration_since_epoch);
+			return std::chrono::system_clock::time_point(duration_since_epoch);
 		}
-		
-		Json::Value json_candles = historical_candle_json_data[_DATA_][_CANDLES_];
-		for (Json::Value& candle : json_candles)
-		{
-			// Gather data from json
-			std::string date_str = candle[_DATE_].asCString();
-			std::istringstream is{ date_str };
-			std::chrono::system_clock::time_point date;
-			is >> std::chrono::parse("%F", date);
-
-			double open = candle[_OPEN_].asDouble();
-			double high = candle[_HIGH_].asDouble();
-			double low = candle[_LOW_].asDouble();
-			double close = candle[_CLOSE_].asDouble();
-			uint64_t volume = candle[_VOLUME_].asUInt64();
-			uint64_t open_interest = candle[_OPEN_INTEREST_].asUInt64();
-
-
-			Candle candle_data;
-			candle_data.date = date;
-			candle_data.open = open;
-			candle_data.high = high;
-			candle_data.low = low;
-			candle_data.close = close;
-			candle_data.volume = volume;
-			candle_data.open_interest = open_interest;
-
-			m_candle_data->GetAsyncDataCopy()[date] = candle_data;
-		}
-
-		m_candle_data->SetDataReady(true);
 	}
-}
 
-void Counter::DownloadDailyData(std::string tmp_file_path, std::function<void()> callback)
-{
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point to_tp = now;
+	std::chrono::days delta_time(50 * 365); // 50 years
 
-	std::chrono::days delta_time(50 * 365); // get 50 years of historical data
-	std::chrono::system_clock::time_point from_tp = to_tp - delta_time;
-	
-	// ensuring const version of getters get called 
-	std::shared_ptr<const AsyncCandleData> candle_data = m_candle_data;
+	return now - delta_time;
+}
 
-	if (candle_data->GetData().begin() != candle_data->GetData().end())
-	{
-		// historical data exist
+bool Counter::IsHistoricalCandleDataOutDated() const
+{
+	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
 
-		// Get the latest date until which historical data is available
-		// m_candle_data is sorted by date
-		from_tp = (*candle_data->GetData().begin()).second.date + std::chrono::days(1);
-	}
+	// add an extra day because if candle data is available will 13th then we need data from 14th
+	// don;t need 13th data again
+	std::chrono::system_clock::time_point from_tp = GetLastCandleDataDate() + std::chrono::days(1);
 
 	if (to_tp <= (from_tp + std::chrono::days(1)))
 	{
 		// if to is not more than a day of from, historical data is up to date
-		return;
+		return false;
 	}
+
+	return true;
+}
+
+std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::function<void()> callback)
+{
+	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point from_tp = GetLastCandleDataDate() + std::chrono::days(1);
+
 	
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
@@ -161,176 +145,126 @@ void Counter::DownloadDailyData(std::string tmp_file_path, std::function<void()>
 		, to
 		, from);
 
-	
-	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<DownloadTask>(
-		[tmp_file_path, callback, this]() {
-			// callback
-			ProcessDownloadedData(tmp_file_path, callback);
-		},
-		url, tmp_file_path
-	));
+	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
+	return std::make_unique<DownloadTask>(callback, url, tmp_file_path);
 }
 
-void Counter::ProcessDownloadedData(std::string tmp_file_path, std::function<void()> callback)
+void Counter::AppendRawDataToSavedFile()
 {
-	std::function process_downloaded_data = [tmp_file_path, this]() 
-		{
-			Json::Value downloaded_json_data;
-			{
-				std::ifstream downloaded_tmp_file(tmp_file_path);
-				downloaded_tmp_file >> downloaded_json_data;
-			}
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
+	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
 
-			Json::Value historical_candle_json_data;
-			{
-				if (DoesRawHistoricalDataExist())
-				{
-					std::string raw_historical_file_path = GetRawHistoricalDataFilePath();
-					std::ifstream raw_historical_file(raw_historical_file_path);
-					raw_historical_file >> historical_candle_json_data;
-				}
-			}
-
-			bool should_seralize_data = false;
-
-			if (downloaded_json_data[_STATUS_] == _SUCCESS_ && downloaded_json_data[_DATA_] && downloaded_json_data[_DATA_][_CANDLES_])
-			{
-				Json::Value json_candles = downloaded_json_data[_DATA_][_CANDLES_];
-				Json::ArrayIndex candles_count = json_candles.size();
-
-				for (Json::ArrayIndex i = 0; i < candles_count; ++i)
-				{
-					should_seralize_data = true;
-
-					std::string date_str = json_candles[i][0].asCString();
-					std::istringstream is{ date_str };
-					std::chrono::system_clock::time_point date;
-					is >> std::chrono::parse("%F", date);
-
-					Json::Value candle;
-					candle[_DATE_] = std::format("{:%F}", date);
-					candle[_OPEN_] = json_candles[i][1];
-					candle[_HIGH_] = json_candles[i][2];
-					candle[_LOW_] = json_candles[i][3];
-					candle[_CLOSE_] = json_candles[i][4];
-					candle[_VOLUME_] = json_candles[i][5];
-					candle[_OPEN_INTEREST_] = json_candles[i][6];
-
-					historical_candle_json_data[_DATA_][_CANDLES_].insert(i, candle);
-
-					Candle candle_data;
-					candle_data.date = date;
-					candle_data.open = json_candles[i][1].asDouble();
-					candle_data.high = json_candles[i][2].asDouble();
-					candle_data.low = json_candles[i][3].asDouble();
-					candle_data.close = json_candles[i][4].asDouble();
-					candle_data.volume = json_candles[i][5].asLargestUInt();
-					candle_data.open_interest = json_candles[i][6].asLargestUInt();
-
-					// This will fail once I have serial async tasks
-					//m_candle_data.GetData()[date] = candle_data;
-				}
-			}
-
-			if (should_seralize_data)
-			{
-				// if there is new data seralize it.
-				std::string raw_historical_file_path = GetRawHistoricalDataFilePath();
-				std::ofstream raw_historical_file(raw_historical_file_path);
-				raw_historical_file << historical_candle_json_data;
-			}
-
-			// finally delete temp file
-			//std::remove(tmp_file_path.c_str());
-		};
-
-	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-	assert(owning_tradinator_core_thread);
-
-	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
-		std::format("Processing downloded data for {}", m_symbol),
-		process_downloaded_data,
-		callback
-	));
-}
-
-
-void Counter::LoadCandleData()
-{
-	if (m_candle_data->IsDataReady())
+	Json::Value downloaded_candle_json_data;
 	{
-		std::function load_candle_data_from_file = [&]()
+		// scope to make sure we aren't holding the file for more time than we should
+		std::ifstream downloaded_tmp_file(tmp_file_path);
+		downloaded_tmp_file >> downloaded_candle_json_data;
+	}
+
+	Json::Value json_candles = downloaded_candle_json_data[_DATA_][_CANDLES_];
+	Json::ArrayIndex count = json_candles.size();
+	if (count > 0)
+	{
+		bool is_success = false;
+		while (!is_success)
+		{
+			try
 			{
-				m_candle_data->SetDataReady(false);
-				Json::Value historical_candle_json_data;
+				SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+				if (!DoesProcessedHistoricalDataExist())
 				{
-					if (DoesRawHistoricalDataExist())
-					{
-						std::string raw_historical_file_path = GetRawHistoricalDataFilePath();
-						std::ifstream raw_historical_file(raw_historical_file_path);
-						raw_historical_file >> historical_candle_json_data;
-					}
+					// table that contains daily candle data for this counter
+
+					/*
+					*	std::chrono::system_clock::time_point m_date;
+						double m_open;
+						double m_high;
+						double m_low;
+						double m_close;
+						int64_t m_volume;
+						int64_t m_open_interest;
+					*/
+					std::string query_str = std::format("CREATE TABLE IF NOT EXISTS \"{}\" ("  \
+						"Date     INTEGER PRIMARY KEY     NOT NULL," \
+						"Open             REAL         NOT NULL," \
+						"High             REAL         NOT NULL," \
+						"Low              REAL         NOT NULL," \
+						"Close            REAL         NOT NULL," \
+						"Volume           INTEGER      NOT NULL," \
+						"OpenInterest     INTEGER      NOT NULL);", GetTableName());
+
+
+					SQLite::Transaction transaction(db);
+					db.exec(query_str);
+					transaction.commit();
 				}
 
-				Json::Value json_candles = historical_candle_json_data[_DATA_][_CANDLES_];
-				Json::ArrayIndex candles_count = json_candles.size();
-
-				for (Json::ArrayIndex i = 0; i < candles_count; ++i)
+				SQLite::Transaction transaction(db);
+				for (Json::Value& candle : json_candles)
 				{
-					std::string date_str = json_candles[i][0].asCString();
-					std::istringstream is{ date_str };
-					std::chrono::system_clock::time_point date;
-					is >> std::chrono::parse("%F", date);
-
-					Candle candle_data;
-					candle_data.date = date;
-					candle_data.open = json_candles[i][1].asDouble();
-					candle_data.high = json_candles[i][2].asDouble();
-					candle_data.low = json_candles[i][3].asDouble();
-					candle_data.close = json_candles[i][4].asDouble();
-					candle_data.volume = json_candles[i][5].asLargestUInt();
-					candle_data.open_interest = json_candles[i][6].asLargestUInt();
-
-					// This will fail once I have serial async tasks
-					//m_candle_data.GetData()[date] = candle_data;
-					m_candle_data->GetAsyncDataCopy()[date] = candle_data;
+					WriteCandleToDatabase(db, candle);
 				}
+				transaction.commit();
 
-				m_candle_data->SetDataReady(true);
-			};
-
-		std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-		assert(owning_tradinator_core_thread);
-
-		owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
-			std::format("Loading candle data for {}", m_symbol),
-			load_candle_data_from_file,
-			[]() {}
-		));
+				is_success = true;
+			}
+			catch (std::exception& e)
+			{
+				is_success = false;
+				//Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+				
+				// Database might be locked by another thread. Wait for a bit and try again.
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+		}
 	}
 	
 }
 
-void Counter::UnloadCandleData()
+void Counter::WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle)
 {
-	m_candle_data->Reset();
+	// Gather data from json
+	std::string date_str = candle[0].asCString();
+	std::istringstream is{ date_str };
+	std::chrono::system_clock::time_point date;
+	is >> std::chrono::parse("%F", date);
+
+	std::string query_str = std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
+		"(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
+		, GetTableName()
+		, date.time_since_epoch().count()
+		, candle[1].asDouble()
+		, candle[2].asDouble()
+		, candle[3].asDouble()
+		, candle[4].asDouble()
+		, candle[5].asInt64()
+		, candle[6].asInt64());
+
+	db.exec(query_str);
 }
 
-
-std::string Counter::GetRawHistoricalDataFilePath() const
+void Counter::WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const Json::Value& candle)
 {
-	std::shared_ptr<Market> owning_market = m_owning_market.lock();
-	assert(owning_market);
+	WriteCandleToDatabase(db, candle);
 
-	std::string folder_path = owning_market->GetRawDataFolderPath();
-	return folder_path + "/" + m_symbol + ".json";
+	std::string date_str = candle[0].asCString();
+	std::istringstream is{ date_str };
+	std::chrono::system_clock::time_point date;
+	is >> std::chrono::parse("%F", date);
+
+	Candle candle_data;
+	candle_data.m_date = date;
+	candle_data.m_open = candle[1].asDouble();
+	candle_data.m_high = candle[2].asDouble();
+	candle_data.m_low = candle[3].asDouble();
+	candle_data.m_close = candle[4].asDouble();
+	candle_data.m_volume = candle[5].asUInt64();
+	candle_data.m_open_interest = candle[6].asUInt64();
+
+	m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 }
-
-bool Counter::DoesRawHistoricalDataExist() const
-{
-	return Utils::DoesFileExist(GetRawHistoricalDataFilePath());
-}
-
 
 
 void Counter::FromString(std::string str)

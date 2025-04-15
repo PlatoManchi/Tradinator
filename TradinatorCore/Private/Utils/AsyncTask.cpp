@@ -1,16 +1,17 @@
 #include<iostream>
 
 #include "Utils/AsyncTask.h"
+#include "Utils/Log.h"
 
 
 
 void AsyncTask::StartTask()
 {
-	//std::cout << GetHumanReadableDescription() << " ... " << std::endl;
-
+	Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
+	
 	m_start = std::chrono::steady_clock::now();
 
-	if (m_worker_list.size() > 0)
+	if (!m_is_shut_down && m_worker_list.size() > 0)
 	{
 		m_work_future = std::async(std::launch::async, m_worker_list[m_worker_list.size() - 1]);
 		m_worker_list.pop_back();
@@ -43,8 +44,8 @@ void AsyncTask::TaskCompleted()
 	m_is_complete = true;
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	//std::cout << GetHumanReadableDescription() << " completed in " << std::to_string(std::chrono::duration<double>(end - m_start).count()) << " sec." << std::endl << std::endl << std::endl;
-
+	Log::GetInstance().Write(std::format("{} completed in {} sec.\n", GetHumanReadableDescription(), std::to_string(std::chrono::duration<double>(end - m_start).count())));
+	
 	if (!m_is_shut_down) 
 	{
 		m_callback();

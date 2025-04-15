@@ -6,6 +6,9 @@
 #include <functional>
 #include <map>
 
+#include "json/json.h"
+#include "SQLiteCpp/SQLiteCpp.h"
+
 #include "Data/AsyncData.h"
 #include "Data/Candle.h"
 
@@ -13,7 +16,19 @@ typedef AsyncData<std::map<std::chrono::system_clock::time_point, Candle, std::g
 
 class Market;
 class TradinatorCoreThread;
+class AsyncTask;
+class DownloadTask;
+/*
+Candle data is stored in this format
+Candles in ascending order
 
+size_t - number of candles
+1-1-2001 open high low close volume open_interest   
+2-1-2001 open high low close volume open_interest
+3-1-2001 open high low close volume open_interest
+....
+
+*/
 
 class Counter : public Company
 {
@@ -26,14 +41,12 @@ public:
 	Counter& operator = (const Counter& other) = default;
 	Counter& operator = (Counter&& other) noexcept = default;
 
-	void LoadCandleData();
-	void UnloadCandleData();
-	
-	void DownloadCounterData(std::function<void()> callback);
+	bool IsHistoricalCandleDataOutDated() const;
+	std::unique_ptr<AsyncTask> GetUpdateCandlesDataAndSaveTask();
+	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask(std::function<void()> callback);
+	void AppendRawDataToSavedFile();
 
-	bool DoesRawHistoricalDataExist() const;
-	inline std::string GetRawHistoricalDataFilePath() const;
-	// 
+
 	void FromString(std::string str);
 
 	inline std::string Series() const { return m_series; }
@@ -49,17 +62,25 @@ public:
 
 	std::string ToString() const;
 
+	
 protected:
-	void LoadHistoricalDataIfExists();
-	// tmp_file_path - save downloaded data at this location for processing
-	void DownloadDailyData(std::string tmp_file_path, std::function<void()> callback);
+	// -----------------------------------------------
+	inline std::string GetProcessedHistoricalDataFilePath() const;
+	bool DoesProcessedHistoricalDataExist() const;
+	
+	std::chrono::system_clock::time_point GetLastCandleDataDate() const;
+	
+	void WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle);
+	void WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const Json::Value& candle);
 
-	void ProcessDownloadedData(std::string tmp_file_path, std::function<void()> callback);
-
+	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
+	// -----------------------------------------------
+	
 
 	void ReadFromStream(std::istream& stream);
 	void WriteToFile(std::ofstream& stream);
 
+	
 	std::string m_series;
 	uint32_t m_paid_up_value;
 	uint32_t m_market_lot;
@@ -70,6 +91,10 @@ protected:
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
 	
+	// Don't use this in other async/threads. SQLite works in multithread only when using different connections
+	// per thread.
+	SQLite::Database m_database_connection;
+
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncCandleData> m_candle_data;
 
