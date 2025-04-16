@@ -41,13 +41,6 @@ void SerialAsyncTask::StartTask()
 
 	m_start = std::chrono::steady_clock::now();
 
-	if (m_tasks.size() == 0 || m_is_shut_down)
-	{
-		TaskCompleted();
-
-		return;
-	}
-
 	m_first_task_started = false;
 }
 
@@ -77,7 +70,16 @@ void SerialAsyncTask::Update()
 	if (!m_first_task_started)
 	{
 		m_first_task_started = true;
-		StartTaskAt(0);
+		if (m_tasks.size() == 0 || m_is_shut_down)
+		{
+			TaskCompleted();
+
+			return;
+		}
+		else
+		{
+			StartTaskAt(0);
+		}
 	}
 }
 

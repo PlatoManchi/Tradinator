@@ -10,6 +10,13 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , m_maximize(false)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
+
+    m_counter->LoadCandleDataToMemory();
+}
+
+CounterWindow::~CounterWindow()
+{
+    m_counter->UnloadCandleDataFromMemory();
 }
 
 void CounterWindow::Show()

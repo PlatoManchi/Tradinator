@@ -36,8 +36,14 @@ Counter::Counter()
 	, m_face_value(0)
 	, m_database_connection(Utils::GetTradinatorDatabasePath())
 	, m_candle_data(std::make_shared<AsyncCandleData>())
+	, m_is_downloading(false)
+	, m_is_inserting(false)
+	, m_is_dirty(true)
 {
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	std::chrono::days delta_time(50 * 365); // 50 years
 
+	m_cached_latest_candle_date = now - delta_time;
 }
 
 
@@ -53,13 +59,13 @@ std::unique_ptr<AsyncTask> Counter::GetUpdateCandlesDataAndSaveTask()
 
 	// Process downloaded data and save
 	tasks.push_back(std::move(std::make_unique<AsyncTask>(
-		std::string("Append Downloaded Raw Data To Processed Saved File"),
-		std::bind(&Counter::AppendRawDataToSavedFile, this),
+		std::format("Insert candle data for {} into database", m_symbol),
+		std::bind(&Counter::InsertRawDataToDatabase, this),
 		[]() {}
 	)));
 
 	std::unique_ptr<SerialAsyncTask> update_and_save = std::make_unique<SerialAsyncTask>(
-		std::string("Update Candles Data And Save"),
+		std::format("Update candles data for {} and save", m_symbol),
 		owning_tradinator_core_thread->GetAsyncTaskManager(),
 		std::move(tasks),
 		[]() {}
@@ -84,25 +90,34 @@ bool Counter::DoesProcessedHistoricalDataExist() const
 
 std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
 {
+	if (!m_is_dirty)
+		return m_cached_latest_candle_date;
+
+	
 	if (DoesProcessedHistoricalDataExist())
 	{
-		//m_database_connection
-		SQLite::Statement query(m_database_connection, std::format("SELECT \"Date\" FROM \"{}\" ORDER BY \"Date\" desc LIMIT 1", GetTableName()));
+		SQLite::Statement query(m_database_connection, std::format("SELECT \"LatestCandleData\" FROM Securities WHERE ISIN=\"{}\"", ISIN_Number()));
 		if (query.executeStep())
 		{
 			std::chrono::system_clock::rep time_count = query.getColumn(0);
-
 			std::chrono::system_clock::duration duration_since_epoch(time_count);
-			std::chrono::system_clock::time_point time(duration_since_epoch);
-			return std::chrono::system_clock::time_point(duration_since_epoch);
+
+			// cache
+			m_is_dirty = false;
+			m_cached_latest_candle_date = std::chrono::system_clock::time_point(duration_since_epoch);
+
+			return m_cached_latest_candle_date;
 		}
 	}
+
+	
 
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::chrono::days delta_time(50 * 365); // 50 years
 
 	return now - delta_time;
 }
+
 
 bool Counter::IsHistoricalCandleDataOutDated() const
 {
@@ -145,12 +160,51 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::functio
 		, to
 		, from);
 
+	
+	// Set the counter to updating state
+	std::unique_ptr<AsyncTask> set_updating_true = std::make_unique<AsyncTask>(
+		std::string(""),
+		[&]()
+		{
+			std::lock_guard<std::mutex> lock(m_counter_mutex);
+
+			m_is_downloading = true;
+		},
+		[]() {}
+	);
+
 	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
-	return std::make_unique<DownloadTask>(callback, url, tmp_file_path);
+	std::unique_ptr<AsyncTask> download_task = std::make_unique<DownloadTask>(callback, url, tmp_file_path);
+
+	std::vector<std::unique_ptr<AsyncTask>> tasks;
+	if (!m_is_downloading)
+	{
+		tasks.push_back(std::move(set_updating_true));
+		tasks.push_back(std::move(download_task));
+	}
+
+	return std::make_unique<SerialAsyncTask>(
+		std::string(""), 
+		owning_tradinator_core_thread->GetAsyncTaskManager(),
+		std::move(tasks), 
+		[&]() { 
+			std::lock_guard<std::mutex> lock(m_counter_mutex); 
+			m_is_downloading = false; 
+		});
+	//return download_task;
+	//return std::make_unique<DownloadTask>(callback, url, tmp_file_path);
 }
 
-void Counter::AppendRawDataToSavedFile()
+void Counter::InsertRawDataToDatabase()
 {
+	if (m_is_downloading || m_is_inserting) return;
+	
+	{
+		std::lock_guard<std::mutex> lock(m_counter_mutex);
+		m_is_inserting = true;
+	}
+	
+
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
 	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
@@ -204,9 +258,21 @@ void Counter::AppendRawDataToSavedFile()
 				SQLite::Transaction transaction(db);
 				for (Json::Value& candle : json_candles)
 				{
+					std::string date_str = candle[0].asCString();
+					std::istringstream is{ date_str };
+					std::chrono::system_clock::time_point date;
+					is >> std::chrono::parse("%F", date);
+
+					if (date > m_cached_latest_candle_date)
+					{
+						m_cached_latest_candle_date = date;
+					}
+
 					WriteCandleToDatabase(db, candle);
 				}
 				transaction.commit();
+
+				UpdateLatestCandleDataDate();
 
 				is_success = true;
 			}
@@ -221,6 +287,11 @@ void Counter::AppendRawDataToSavedFile()
 		}
 	}
 	
+	{
+		std::lock_guard<std::mutex> lock(m_counter_mutex);
+		//m_is_dirty = true;
+		m_is_inserting = false;
+	}
 }
 
 void Counter::WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle)
@@ -266,6 +337,59 @@ void Counter::WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const J
 	m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 }
 
+void Counter::LoadCandleDataToMemory()
+{
+	/*std::function<void()> load_candle_data_to_memory = []()
+		{
+
+		};
+
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
+
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
+		std::format("Loading candle data for {}", m_symbol),
+		load_candle_data_to_memory,
+		[]() {}
+	));*/
+}
+
+void Counter::UnloadCandleDataFromMemory()
+{
+
+}
+
+
+void Counter::UpdateLatestCandleDataDate()
+{
+	bool is_success = false;
+	while (!is_success)
+	{
+		try
+		{
+			SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+			// Begin transaction
+			SQLite::Transaction transaction(db);
+			std::string query2 = std::format("UPDATE Securities SET LatestCandleData = \"{}\" WHERE  ISIN = \"{}\";"
+				, m_cached_latest_candle_date.time_since_epoch().count(), ISIN_Number());
+
+			db.exec(query2);
+			transaction.commit();
+
+			is_success = true;
+		}
+
+
+		catch (std::exception& e)
+		{
+			is_success = false;
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+}
 
 void Counter::FromString(std::string str)
 {

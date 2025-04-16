@@ -38,12 +38,13 @@ void Market::Init()
 
 void Market::OnParseCounterListCompleted()
 {
-	m_securities_async_data.SetDataReady(true);
+    m_securities_async_data.SetDataReady(true);
 
     std::vector<std::unique_ptr<AsyncTask>> download_tasks; // downloading latest candle data
     std::vector<std::unique_ptr<AsyncTask>> writting_tasks; // writting downloaded data into db
     const  std::map<std::string, std::shared_ptr<Counter>>& securities_list = m_securities_async_data.GetData();
-    
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+
     for (std::pair<std::string, std::shared_ptr<Counter>> pair : securities_list)
     {
         if (pair.second->IsHistoricalCandleDataOutDated())
@@ -51,12 +52,12 @@ void Market::OnParseCounterListCompleted()
             download_tasks.push_back(std::move(pair.second->GetDownloadLatestCandleDataTask([]() {})));
             writting_tasks.push_back(std::move(std::make_unique<AsyncTask>(
                 std::format("Inserting latest candle data for {} into database", pair.second->Symbol()),
-                std::bind(&Counter::AppendRawDataToSavedFile, pair.second),
+                std::bind(&Counter::InsertRawDataToDatabase, pair.second),
                 []() {}
             )));
         }
     }
-
+    
     std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
     assert(owning_tradinator_core_thread);
 
@@ -66,7 +67,7 @@ void Market::OnParseCounterListCompleted()
         std::move(download_tasks),
         []()
         { }
-        , 100 // Magic number. Don't want to be considered as a DDoS attack by server.
+        , 100 // Magic number. Don't want to be considered as a DDoS attack by server. 
     );
 
     // Writting data into SQLiteCpp database needs to be serial. Otherwise task has to wait for other task to release 
@@ -77,7 +78,7 @@ void Market::OnParseCounterListCompleted()
         std::move(writting_tasks),
         []()
         {
-        }//, 2 // SHould expose this and max download threads as settings
+        }
     );
 
     std::vector<std::unique_ptr<AsyncTask>> download_and_write_serial_tasks;

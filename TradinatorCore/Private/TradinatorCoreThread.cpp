@@ -32,20 +32,33 @@ void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 
 void TradinatorCoreThread::InitializeDB()
 {
-	SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+	try
+	{
+		SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
-	// Begin transaction
-	SQLite::Transaction transaction(db);
-	db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
-		"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
-		"Name             TEXT         NOT NULL," \
-		"Symbol           TEXT         NOT NULL," \
-		"DateOfListing    INTEGER      NOT NULL," \
-		"Series           TEXT         NOT NULL," \
-		"PaidUpValue      INTEGER      NOT NULL," \
-		"MarkerLot        INTEGER      NOT NULL," \
-		"FaceValue        INTEGER      NOT NULL );");
-	transaction.commit();
+		// Begin transaction
+		SQLite::Transaction transaction(db);
+		db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
+			"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
+			"Symbol           TEXT         NOT NULL," \
+			"Name             TEXT         NOT NULL," \
+			"Series           TEXT         NOT NULL," \
+			"DateOfListing    INTEGER      NOT NULL," \
+			"PaidUpValue      INTEGER      NOT NULL," \
+			"MarketLot        INTEGER      NOT NULL," \
+			"FaceValue        INTEGER      NOT NULL," \
+			"LatestCandleData INTEGER      NOT NULL );");
+		transaction.commit();
+	}
+	
+
+	catch (std::exception& e)
+	{
+		Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+
+		// Database might be locked by another thread. Wait for a bit and try again.
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
 }
 
 void TradinatorCoreThread::Update()

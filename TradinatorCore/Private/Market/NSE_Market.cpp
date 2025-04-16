@@ -8,6 +8,8 @@
 
 #include <curl/curl.h>
 
+#include "SQLiteCpp/SQLiteCpp.h"
+
 #include "TradinatorCore.h"
 #include "Utils/AsyncTask.h"
 #include "Utils/DownloadTask.h"
@@ -57,6 +59,42 @@ void NSE_Market::ParseCounterListData()
             counter->SetOwningTradinatorCoreThread(m_owning_tradinator_core_thread);
 
             m_securities_async_data.GetAsyncDataCopy()[counter->Symbol()] = counter;
+        }
+    }
+
+    bool is_success = false;
+    while (!is_success)
+    {
+        try
+        {
+            SQLite::Database db(Utils::GetTradinatorDatabasePath());
+
+            // Begin transaction
+            std::string query_str = std::format("SELECT Symbol, LatestCandleData FROM Securities;");
+            SQLite::Statement query(db, query_str);
+
+            while (query.executeStep())
+            {
+                std::string symbol = query.getColumn(0);
+
+                std::chrono::system_clock::rep time_count = query.getColumn(1);
+                std::chrono::system_clock::duration duration_since_epoch(time_count);
+                std::chrono::system_clock::time_point time(duration_since_epoch);
+
+
+                m_securities_async_data.GetAsyncDataCopy()[symbol]->SetCachedLatestCandleDate(time);
+            }
+
+            is_success = true;
+        }
+
+
+        catch (std::exception& e)
+        {
+            is_success = false;
+            
+            // Database might be locked by another thread. Wait for a bit and try again.
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 }

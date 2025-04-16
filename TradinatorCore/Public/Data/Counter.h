@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <chrono>
 
 #include "json/json.h"
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -44,8 +45,10 @@ public:
 	bool IsHistoricalCandleDataOutDated() const;
 	std::unique_ptr<AsyncTask> GetUpdateCandlesDataAndSaveTask();
 	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask(std::function<void()> callback);
-	void AppendRawDataToSavedFile();
+	void InsertRawDataToDatabase();
 
+	void LoadCandleDataToMemory();
+	void UnloadCandleDataFromMemory();
 
 	void FromString(std::string str);
 
@@ -62,7 +65,17 @@ public:
 
 	std::string ToString() const;
 
+	void SetCachedLatestCandleDate(mutable std::chrono::system_clock::time_point time)
+	{
+		m_cached_latest_candle_date = time;
+		m_is_dirty = false;
+	}
 	
+	void Dirty()
+	{
+		m_is_dirty = true;
+	}
+
 protected:
 	// -----------------------------------------------
 	inline std::string GetProcessedHistoricalDataFilePath() const;
@@ -72,6 +85,8 @@ protected:
 	
 	void WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle);
 	void WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const Json::Value& candle);
+
+	void UpdateLatestCandleDataDate();
 
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
 	// -----------------------------------------------
@@ -98,7 +113,18 @@ protected:
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncCandleData> m_candle_data;
 
+	// Cached latest local candle date
+	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;
+	mutable bool m_is_dirty;
 
+	// Check to make sure there are no double update tasks.
+	// we want to be able to acecss previous historical data that is stored locally while
+	// new data is being downloaded in parallel. 
+	std::mutex m_counter_mutex;
+	bool m_is_downloading = false;
+	bool m_is_inserting = false;
+
+	
 
 	// overloaded stream operator
 	friend std::ofstream& operator << (std::ofstream& stream, Counter& counter);

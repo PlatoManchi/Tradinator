@@ -46,13 +46,6 @@ void ParallelAsyncTask::StartTask()
 
 	m_start = std::chrono::steady_clock::now();
 
-	if (m_tasks.size() == 0 || m_is_shut_down)
-	{
-		TaskCompleted();
-
-		return;
-	}
-
 	m_first_task_started = false;
 
 	// Calling UpdateTask here will call AddTask on async_thread_manager which has a mutex
@@ -66,7 +59,17 @@ void ParallelAsyncTask::Update()
 	if (!m_first_task_started)
 	{
 		m_first_task_started = true;
-		StartFirstBatch();
+
+		if (m_tasks.size() == 0 || m_is_shut_down)
+		{
+			TaskCompleted();
+
+			return;
+		}
+		else
+		{
+			StartFirstBatch();
+		}
 	}
 }
 

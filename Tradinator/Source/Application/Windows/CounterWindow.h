@@ -14,6 +14,8 @@ class CounterWindow
 {
 public:
 	CounterWindow(std::shared_ptr<Counter> counter);
+	~CounterWindow();
+
 	void Show();
 
 	bool m_close;
