@@ -89,7 +89,7 @@ void NSE_Market::ParseCounterListData()
         }
 
 
-        catch (std::exception& e)
+        catch (std::exception&)
         {
             is_success = false;
             

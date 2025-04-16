@@ -27,7 +27,7 @@ bool CounterAutoCompleteItem::CanPassFilter(const char* search_string)
     std::transform(desc.begin(), desc.end(), desc.begin(), ::tolower);
     std::transform(search.begin(), search.end(), search.begin(), ::tolower);
 
-    int search_index = desc.find(search);
+    size_t search_index = desc.find(search);
     if (search_index != -1)
         return true;
 

@@ -276,7 +276,7 @@ void Counter::InsertRawDataToDatabase()
 
 				is_success = true;
 			}
-			catch (std::exception& e)
+			catch (std::exception&)
 			{
 				is_success = false;
 				//Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
@@ -289,7 +289,6 @@ void Counter::InsertRawDataToDatabase()
 	
 	{
 		std::lock_guard<std::mutex> lock(m_counter_mutex);
-		//m_is_dirty = true;
 		m_is_inserting = false;
 	}
 }
@@ -339,9 +338,52 @@ void Counter::WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const J
 
 void Counter::LoadCandleDataToMemory()
 {
-	/*std::function<void()> load_candle_data_to_memory = []()
+	std::function<void()> load_candle_data_to_memory = [&]()
 		{
+			bool is_success = false;
+			while (!is_success)
+			{
+				try
+				{
+					if (m_candle_data->IsDataReady())
+					{
+						m_candle_data->SetDataReady(false);
+					}
 
+
+					std::string query_str = std::format("SELECT * FROM \"{}\"", GetTableName());
+					SQLite::Statement query(m_database_connection, query_str);
+					while (query.executeStep())
+					{
+						// Date, Open, High, Low, Close, Volume, OpenInterest
+						std::chrono::system_clock::rep time_count = query.getColumn(0);
+						std::chrono::system_clock::duration duration_since_epoch(time_count);
+						std::chrono::system_clock::time_point date(duration_since_epoch);
+
+						Candle candle_data;
+						candle_data.m_date = date;
+						candle_data.m_open = query.getColumn(1);
+						candle_data.m_high = query.getColumn(2);
+						candle_data.m_low = query.getColumn(3);
+						candle_data.m_close = query.getColumn(4);
+						candle_data.m_volume = query.getColumn(5);
+						candle_data.m_open_interest = query.getColumn(6);
+
+						m_candle_data->GetAsyncDataCopy()[date] = candle_data;
+					}
+
+					m_candle_data->SetDataReady(true);
+					is_success = true;
+				}
+				catch (std::exception& e)
+				{
+					is_success = false;
+					Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+
+					// Database might be locked by another thread. Wait for a bit and try again.
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+			}
 		};
 
 	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
@@ -351,12 +393,12 @@ void Counter::LoadCandleDataToMemory()
 		std::format("Loading candle data for {}", m_symbol),
 		load_candle_data_to_memory,
 		[]() {}
-	));*/
+	));
 }
 
 void Counter::UnloadCandleDataFromMemory()
 {
-
+	m_candle_data->Reset();
 }
 
 
@@ -381,7 +423,7 @@ void Counter::UpdateLatestCandleDataDate()
 		}
 
 
-		catch (std::exception& e)
+		catch (std::exception&)
 		{
 			is_success = false;
 

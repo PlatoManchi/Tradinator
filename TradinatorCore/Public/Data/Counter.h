@@ -65,7 +65,7 @@ public:
 
 	std::string ToString() const;
 
-	void SetCachedLatestCandleDate(mutable std::chrono::system_clock::time_point time)
+	void SetCachedLatestCandleDate(std::chrono::system_clock::time_point time)
 	{
 		m_cached_latest_candle_date = time;
 		m_is_dirty = false;

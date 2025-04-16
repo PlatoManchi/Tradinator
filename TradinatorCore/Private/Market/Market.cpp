@@ -82,7 +82,7 @@ void Market::OnParseCounterListCompleted()
     );
 
     std::vector<std::unique_ptr<AsyncTask>> download_and_write_serial_tasks;
-    //download_and_write_serial_tasks.push_back(std::move(parallel_download));
+    download_and_write_serial_tasks.push_back(std::move(parallel_download));
     download_and_write_serial_tasks.push_back(std::move(serial_write));
 
     owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(
