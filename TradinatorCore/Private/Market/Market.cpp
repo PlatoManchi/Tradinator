@@ -28,18 +28,71 @@ void Market::Init()
 	assert(owning_tradinator_core_thread);
 
 	m_securities_async_data.SetDataReady(false);
+    
+    std::unique_ptr<AsyncTask> parse_counter_data_task = std::make_unique<AsyncTask>(
+        std::string(""),
+        parse_counter_data,
+        [&]() 
+        {
+            m_securities_async_data.SetDataReady(true);
+        }
+    );
 
-	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
+    std::unique_ptr<AsyncTask> find_ten_newest_iops_task = std::make_unique<AsyncTask>(
+        std::format("Finding Ten Newest IPOs for {}({}) market", GetMarketCode(), GetMarketName()),
+        std::bind(&Market::FindTenNewestIPOs, this),
+        []() {}
+    );
+
+    std::vector<std::unique_ptr<AsyncTask>> tasks;
+    tasks.push_back(std::move(parse_counter_data_task));
+    tasks.push_back(std::move(find_ten_newest_iops_task));
+
+    
+
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<SerialAsyncTask>(
 		std::format("Gathering counter list for {}({}) market", GetMarketCode(), GetMarketName()),
-		parse_counter_data,
-		on_parse_counter_data_completed
+        owning_tradinator_core_thread->GetAsyncTaskManager(),
+		std::move(tasks),
+        on_parse_counter_data_completed
 	));
+}
+
+void Market::FindTenNewestIPOs()
+{
+    m_ten_newest_counters.SetDataReady(false);
+
+    const std::map<std::string, std::shared_ptr<Counter>>& security_data = m_securities_async_data.GetData();
+
+    int count = 0;
+    for (const std::pair<std::string, std::shared_ptr<Counter>>& pair : security_data)
+    {
+        if (count < 10)
+        {
+            count++;
+            m_ten_newest_counters.GetAsyncDataCopy().push_back(pair.second);
+        }
+        else
+        {
+            std::function <bool(std::weak_ptr<Counter>)> comparing_fun = [&](std::weak_ptr<Counter> counter)
+                {
+                    std::shared_ptr<Counter> counter_ptr = counter.lock();
+                    return pair.second->DateOfListing() > counter_ptr->DateOfListing();
+                };
+
+            auto should_replace_itr = std::find_if(m_ten_newest_counters.GetAsyncDataCopy().begin(), m_ten_newest_counters.GetAsyncDataCopy().end(), comparing_fun);
+            if (should_replace_itr != m_ten_newest_counters.GetAsyncDataCopy().end())
+            {
+                *should_replace_itr = pair.second;
+            }
+        }
+    }
+
+    m_ten_newest_counters.SetDataReady(true);
 }
 
 void Market::OnParseCounterListCompleted()
 {
-    m_securities_async_data.SetDataReady(true);
-
     std::vector<std::unique_ptr<AsyncTask>> download_tasks; // downloading latest candle data
     std::vector<std::unique_ptr<AsyncTask>> writting_tasks; // writting downloaded data into db
     const  std::map<std::string, std::shared_ptr<Counter>>& securities_list = m_securities_async_data.GetData();
@@ -82,7 +135,7 @@ void Market::OnParseCounterListCompleted()
     );
 
     std::vector<std::unique_ptr<AsyncTask>> download_and_write_serial_tasks;
-    download_and_write_serial_tasks.push_back(std::move(parallel_download));
+    //download_and_write_serial_tasks.push_back(std::move(parallel_download));
     download_and_write_serial_tasks.push_back(std::move(serial_write));
 
     owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(
@@ -90,6 +143,8 @@ void Market::OnParseCounterListCompleted()
             std::format("---------------- Updating candle data for {}({}) Market ------------", GetMarketCode(), GetMarketName()),
             owning_tradinator_core_thread->GetAsyncTaskManager(),
             std::move(download_and_write_serial_tasks),
+            //parallel_download,
+            //serial_write,
             []()
             { }
         )
@@ -98,27 +153,27 @@ void Market::OnParseCounterListCompleted()
 
 void Market::CreateFolderStructure() const
 {
-	std::filesystem::create_directory(Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode());
+	std::filesystem::create_directory(TradinatorCoreSpace::Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode());
 	std::filesystem::create_directory(GetRawDataFolderPath());
 	std::filesystem::create_directory(GetProcessedDataFolderPath());
 }
 
 std::string Market::GetRawDataFolderPath() const
 {
-	return Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + _RAW_DATA_FOLDER_;
+	return TradinatorCoreSpace::Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + _RAW_DATA_FOLDER_;
 }
 
 std::string Market::GetProcessedDataFolderPath() const
 {
-	return Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + _PROCESSED_DATA_FOLDER_;
+	return TradinatorCoreSpace::Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + _PROCESSED_DATA_FOLDER_;
 }
 
 std::string Market::GetCounterListRawDataFilePath() const
 {
-	return Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + GetCounterListRawDataFileName();
+	return TradinatorCoreSpace::Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + GetCounterListRawDataFileName();
 }
 
 std::string Market::GetCounterListProcessedDataFilePath() const
 {
-	return Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + GetCounterListProcessedDataFileName();
+	return TradinatorCoreSpace::Utils::GetTradinatorWorkingFolderPath() + "/" + GetMarketCode() + "/" + GetCounterListProcessedDataFileName();
 }

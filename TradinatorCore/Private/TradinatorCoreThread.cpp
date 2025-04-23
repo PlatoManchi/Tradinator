@@ -15,8 +15,8 @@ TradinatorCoreThread::TradinatorCoreThread(std::string data_folder_path)
 	, m_is_shut_down(false)
 {
 	Log::GetInstance().SetFolderPath(m_data_folder_path);
-	Utils::SetTradinatorWorkingFolderPath(m_data_folder_path);
-	Utils::SetupFolderStructure();
+	TradinatorCoreSpace::Utils::SetTradinatorWorkingFolderPath(m_data_folder_path);
+	TradinatorCoreSpace::Utils::SetupFolderStructure();
 
 	InitializeDB();
 }
@@ -34,7 +34,7 @@ void TradinatorCoreThread::InitializeDB()
 {
 	try
 	{
-		SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+		SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
 		// Begin transaction
 		SQLite::Transaction transaction(db);
@@ -79,8 +79,8 @@ void TradinatorCoreThread::Update()
 
 		m_async_task_manager->Update();
 
-		// Update 100 times in a second
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		// Update 1000 times in a second. Is it necessary? Can it be 100 times?
+		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
@@ -94,4 +94,9 @@ void TradinatorCoreThread::Shutdown()
 	m_is_shut_down = true;
 
 	m_async_task_manager->Shutdown();
+}
+
+const AsyncData<std::vector<std::weak_ptr<Counter>>>& TradinatorCoreThread::GetTenNewestIPOs() const
+{
+	return m_market_list[0]->GetTenNewestIPOs();
 }

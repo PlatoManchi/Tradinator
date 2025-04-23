@@ -10,13 +10,12 @@
 
 TradinatorApp::TradinatorApp()
     : m_tradinator_core(std::make_shared<TradinatorCore>("D:/Stock Data"))
+    , m_main_windows(*this)
 {
 }
 
 void TradinatorApp::Init()
 {
-    
-
     m_dashboard_window.Init();
     m_audo_analysis_update_window.Init();
     m_main_windows.Init(m_tradinator_core);
@@ -35,6 +34,8 @@ void TradinatorApp::Begin()
     m_main_windows.Begin();
     m_securities_search_bar.Begin();
     m_status_bar.Begin();
+
+    LoadWindowsState();
 }
 
 
@@ -57,14 +58,7 @@ void TradinatorApp::ShowApp()
     ImGui::SetNextWindowSize(ImVec2(work_size.x, search_bar_height));
     if (std::shared_ptr<Counter> counter = m_securities_search_bar.Show())
     {
-        if (!m_counter_windows.contains(counter->ISIN_Number()))
-        {
-            m_counter_windows[counter->ISIN_Number()] = std::make_shared<CounterWindow>(counter);
-        }
-        else
-        {
-            //TODO: Bring window to foreground
-        }
+        ShowCounterWindow(counter);
     }
 
     ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + search_bar_height));
@@ -98,11 +92,23 @@ void TradinatorApp::ShowApp()
         });
 }
 
-
+void TradinatorApp::ShowCounterWindow(std::shared_ptr<Counter> counter)
+{
+    if (!m_counter_windows.contains(counter->ISIN_Number()))
+    {
+        m_counter_windows[counter->ISIN_Number()] = std::make_shared<CounterWindow>(counter);
+    }
+    else
+    {
+        //TODO: Bring window to foreground
+    }
+}
 
 
 void TradinatorApp::Shutdown()
 {
+    SaveWindowsState();
+
     m_tradinator_core->Shutdown();
 
     m_dashboard_window.Shutdown();
@@ -223,4 +229,68 @@ void TradinatorApp::ShowMainMenu_File()
     if (ImGui::MenuItem("Checked", NULL, true)) {}
     ImGui::Separator();
     if (ImGui::MenuItem("Quit", "Alt+F4")) {}
+}
+
+
+void TradinatorApp::LoadWindowsState()
+{
+    const std::vector<std::shared_ptr<Market>>& markets = m_tradinator_core->GetAllMarkets();
+    bool are_all_markets_ready = false;
+    while (!are_all_markets_ready)
+    {
+        are_all_markets_ready = true;
+        for (const std::shared_ptr<Market>& market : markets)
+        {
+            are_all_markets_ready = are_all_markets_ready && market->IsCounterDataAvailable();
+            if (!are_all_markets_ready)
+                break;
+        }
+
+        // wait till the counter data for all markets is available
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    // read from file
+    Json::Value status = TradinatorAppSpace::Utils::LoadWindowsStatus();
+
+    Json::Value::ArrayIndex count = status.size();
+    for (Json::Value::ArrayIndex i = 0; i < count; ++i)
+    {
+        Json::Value window_details = status[i];
+        std::shared_ptr<Counter> counter = nullptr;
+
+        std::string symbol_str = window_details["Symbol"].asString();
+        for (const std::shared_ptr<Market>& market : markets)
+        {
+            const std::map<std::string, std::shared_ptr<Counter>>& data = market->GetCounterAsyncData().GetData();
+            if (data.find(symbol_str) != data.end())
+            {
+                const std::shared_ptr<Counter>& tmp_counter = data.at(symbol_str);
+                if (tmp_counter && tmp_counter->ISIN_Number() == window_details["ISIN"].asString())
+                {
+                    counter = tmp_counter;
+                    break;
+                }
+            }
+        }
+
+        if (counter)
+        {
+            ShowCounterWindow(counter);
+            m_counter_windows[counter->ISIN_Number()]->SetCounterStatus(window_details);
+        }
+    }
+}
+
+void TradinatorApp::SaveWindowsState()
+{
+    Json::Value result(Json::arrayValue);
+
+    for (auto& pair : m_counter_windows)
+    {
+        result.append(pair.second->GetCounterStatus());
+    }
+    
+    // write to file
+    TradinatorAppSpace::Utils::SaveWindowsStatus(result);
 }

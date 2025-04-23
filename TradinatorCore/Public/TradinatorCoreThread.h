@@ -5,9 +5,11 @@
 #include <vector>
 
 #include "Utils/AsyncTaskManager.h"
+#include "Data/AsyncData.h"
 
 class AsyncTaskManager;
 class Market;
+class Counter;
 
 class TradinatorCoreThread : public std::enable_shared_from_this<TradinatorCoreThread>
 {
@@ -21,6 +23,10 @@ public:
 	// and want to make sure that caller understands that caller no longer has ownership
 	void AddMarket(std::shared_ptr<Market>&& market);
 	bool CanSafelyShutdown() const;
+	
+	const AsyncData<std::vector<std::weak_ptr<Counter>>>& GetTenNewestIPOs() const;
+
+
 
 	inline bool IsProcessing() const { return m_async_task_manager->IsProcessing(); }
 
@@ -28,6 +34,7 @@ public:
 	inline std::shared_ptr<AsyncTaskManager> GetAsyncTaskManager() const { return m_async_task_manager; }
 	inline std::vector<std::shared_ptr<Market>> GetAllMarkets() const { return m_market_list; }
 	
+
 private:
 	void InitializeDB();
 

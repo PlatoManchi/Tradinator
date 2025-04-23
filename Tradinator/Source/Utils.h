@@ -1,16 +1,34 @@
 #pragma once
 
+#include <memory>
+
 #include "imgui.h"
 
-class Utils
+#include "json/json.h"
+
+#include "Indicators/Indicator.h"
+
+class Indicator;
+
+namespace TradinatorAppSpace
 {
-public:
-	static void PushBodyFont();
-	static void PushHeadingFont();
-	static void PopFont();
+	class Utils
+	{
+	public:
+		static void PushBodyFont();
+		static void PushHeadingFont();
+		static void PopFont();
+		static ImVec4 GetIndicatorColor(EIndicatorType type);
+		static std::string GetIndicatorTypeStr(EIndicatorType type);
+		static EIndicatorType GetIndicatorType(std::string type_str);
+		static std::shared_ptr<Indicator> GetIndicator(EIndicatorType type);
 
-	static ImFont* _BODY_FONT_;
-	static ImFont* _HEADING_FONT_;
+		static void SaveWindowsStatus(Json::Value status);
+		static Json::Value LoadWindowsStatus();
+		
+		static ImFont* _BODY_FONT_;
+		static ImFont* _HEADING_FONT_;
+		static std::string _SETTINGS_FILE_;
 
-};
-
+	};
+}

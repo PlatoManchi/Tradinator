@@ -81,6 +81,9 @@
     <ClInclude Include="Public\Utils\Log.h">
       <Filter>Public\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Indicators\SMA.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="Private\Utils\Log.cpp">
       <Filter>Private\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\SMA.cpp">
+      <Filter>Private\Indicators</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

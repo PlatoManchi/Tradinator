@@ -651,14 +651,14 @@ bool UpdateUIScaling(float scale)
     //IM_ASSERT(font != NULL);
     ImFontConfig segoe_ui_body_config;
     segoe_ui_body_config.FontDataOwnedByAtlas = false;
-    Utils::_BODY_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _BODY_FONT_SIZE_ * scale, &segoe_ui_body_config);
+    TradinatorAppSpace::Utils::_BODY_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _BODY_FONT_SIZE_ * scale, &segoe_ui_body_config);
 
     ImFontConfig segoe_ui_heading_config;
     segoe_ui_heading_config.FontDataOwnedByAtlas = false;
-    Utils::_HEADING_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _HEADING_FONT_SIZE_ * scale, &segoe_ui_heading_config);
+    TradinatorAppSpace::Utils::_HEADING_FONT_ = io.Fonts->AddFontFromMemoryTTF(segoe_ui, segoe_ui_size, _HEADING_FONT_SIZE_ * scale, &segoe_ui_heading_config);
 
-    IM_ASSERT(Utils::_BODY_FONT_ != NULL && Utils::_HEADING_FONT_ != NULL);
-    if (Utils::_BODY_FONT_ == NULL || Utils::_HEADING_FONT_ == NULL)
+    IM_ASSERT(TradinatorAppSpace::Utils::_BODY_FONT_ != NULL && TradinatorAppSpace::Utils::_HEADING_FONT_ != NULL);
+    if (TradinatorAppSpace::Utils::_BODY_FONT_ == NULL || TradinatorAppSpace::Utils::_HEADING_FONT_ == NULL)
         return false;
 
     return ImGui_ImplDX12_CreateDeviceObjects();

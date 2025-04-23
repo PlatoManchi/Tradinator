@@ -67,7 +67,7 @@ void NSE_Market::ParseCounterListData()
     {
         try
         {
-            SQLite::Database db(Utils::GetTradinatorDatabasePath());
+            SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath());
 
             // Begin transaction
             std::string query_str = std::format("SELECT Symbol, LatestCandleData FROM Securities;");
@@ -101,12 +101,12 @@ void NSE_Market::ParseCounterListData()
 
 bool NSE_Market::IsRawFileExist() const
 {
-    return Utils::DoesFileExist(GetCounterListRawDataFilePath());
+    return TradinatorCoreSpace::Utils::DoesFileExist(GetCounterListRawDataFilePath());
 }
 
 bool NSE_Market::IsProcessedFileExist() const
 {
-    return Utils::DoesFileExist(GetCounterListProcessedDataFilePath());
+    return TradinatorCoreSpace::Utils::DoesFileExist(GetCounterListProcessedDataFilePath());
 }
 
 std::string NSE_Market::GetCounterListRawDataFileName() const

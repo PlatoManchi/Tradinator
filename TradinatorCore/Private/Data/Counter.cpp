@@ -20,6 +20,9 @@
 #include "Utils/Utils.h"
 #include "Utils/Log.h"
 
+#include "Indicators/Indicator.h"
+#include "Indicators/SMA.h"
+
 static std::string _STATUS_ = "status";
 static std::string _SUCCESS_ = "success";
 
@@ -34,8 +37,8 @@ Counter::Counter()
 	, m_paid_up_value(0)
 	, m_market_lot(0)
 	, m_face_value(0)
-	, m_database_connection(Utils::GetTradinatorDatabasePath())
-	, m_candle_data(std::make_shared<AsyncCandleData>())
+	, m_database_connection(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath())
+	, m_candle_data(std::make_shared<AsyncData<AsyncCandleData>>())
 	, m_is_downloading(false)
 	, m_is_inserting(false)
 	, m_is_dirty(true)
@@ -47,32 +50,6 @@ Counter::Counter()
 }
 
 
-std::unique_ptr<AsyncTask> Counter::GetUpdateCandlesDataAndSaveTask()
-{
-	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-	assert(owning_tradinator_core_thread);
-
-	std::vector<std::unique_ptr<AsyncTask>> tasks;
-
-	// Downloading candle data
-	tasks.push_back(std::move(GetDownloadLatestCandleDataTask([]() {})));
-
-	// Process downloaded data and save
-	tasks.push_back(std::move(std::make_unique<AsyncTask>(
-		std::format("Insert candle data for {} into database", m_symbol),
-		std::bind(&Counter::InsertRawDataToDatabase, this),
-		[]() {}
-	)));
-
-	std::unique_ptr<SerialAsyncTask> update_and_save = std::make_unique<SerialAsyncTask>(
-		std::format("Update candles data for {} and save", m_symbol),
-		owning_tradinator_core_thread->GetAsyncTaskManager(),
-		std::move(tasks),
-		[]() {}
-	);
-
-	return update_and_save;
-}
 
 std::string Counter::GetProcessedHistoricalDataFilePath() const
 {
@@ -186,7 +163,7 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::functio
 	return std::make_unique<SerialAsyncTask>(
 		std::string(""), 
 		owning_tradinator_core_thread->GetAsyncTaskManager(),
-		std::move(tasks), 
+		std::move(tasks),
 		[&]() { 
 			std::lock_guard<std::mutex> lock(m_counter_mutex); 
 			m_is_downloading = false; 
@@ -225,7 +202,7 @@ void Counter::InsertRawDataToDatabase()
 		{
 			try
 			{
-				SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+				SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
 				if (!DoesProcessedHistoricalDataExist())
 				{
@@ -340,6 +317,12 @@ void Counter::LoadCandleDataToMemory()
 {
 	std::function<void()> load_candle_data_to_memory = [&]()
 		{
+			if (!DoesProcessedHistoricalDataExist())
+			{
+				m_candle_data->SetDataReady(true);
+				return;
+			}
+
 			bool is_success = false;
 			while (!is_success)
 			{
@@ -409,7 +392,7 @@ void Counter::UpdateLatestCandleDataDate()
 	{
 		try
 		{
-			SQLite::Database db(Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+			SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
 			// Begin transaction
 			SQLite::Transaction transaction(db);
@@ -431,6 +414,15 @@ void Counter::UpdateLatestCandleDataDate()
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
+}
+
+std::vector<std::unique_ptr<Indicator>> Counter::GetAvailableIndicators()
+{
+	std::vector<std::unique_ptr<Indicator>> result;
+	
+	result.push_back(std::make_unique<SMA>(20));
+
+	return result;
 }
 
 void Counter::FromString(std::string str)

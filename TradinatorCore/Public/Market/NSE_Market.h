@@ -4,7 +4,6 @@
 
 #include <string>
 
-
 // Class that handles nse market
 class NSE_Market : public Market
 {

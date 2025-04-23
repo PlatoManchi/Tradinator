@@ -13,12 +13,15 @@
 #include "Data/AsyncData.h"
 #include "Data/Candle.h"
 
-typedef AsyncData<std::map<std::chrono::system_clock::time_point, Candle, std::greater<std::chrono::system_clock::time_point>>> AsyncCandleData;
+typedef std::map<std::chrono::system_clock::time_point, Candle, std::greater<std::chrono::system_clock::time_point>> AsyncCandleData;
 
 class Market;
 class TradinatorCoreThread;
 class AsyncTask;
 class DownloadTask;
+class Indicator;
+
+
 /*
 Candle data is stored in this format
 Candles in ascending order
@@ -43,7 +46,6 @@ public:
 	Counter& operator = (Counter&& other) noexcept = default;
 
 	bool IsHistoricalCandleDataOutDated() const;
-	std::unique_ptr<AsyncTask> GetUpdateCandlesDataAndSaveTask();
 	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask(std::function<void()> callback);
 	void InsertRawDataToDatabase();
 
@@ -52,12 +54,14 @@ public:
 
 	void FromString(std::string str);
 
+	static std::vector<std::unique_ptr<Indicator>> GetAvailableIndicators();
+
 	inline std::string Series() const { return m_series; }
 	inline uint32_t PaidUpValue() const { return m_paid_up_value; }
 	inline uint32_t MarkerLot() const { return m_market_lot; }
 	inline uint32_t FaceValue() const { return m_face_value; }
 
-	inline std::shared_ptr<const AsyncCandleData> GetCandleData() const { return m_candle_data; }
+	inline std::shared_ptr<const AsyncData<AsyncCandleData>> GetCandleData() const { return m_candle_data; }
 
 	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
@@ -111,7 +115,7 @@ protected:
 	SQLite::Database m_database_connection;
 
 	// Candle data sorted from latest to oldest
-	std::shared_ptr<AsyncCandleData> m_candle_data;
+	std::shared_ptr<AsyncData<AsyncCandleData>> m_candle_data;
 
 	// Cached latest local candle date
 	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;

@@ -21,6 +21,7 @@ public:
 	// and want to make sure that caller understands that caller no longer has ownership
 	void AddMarket(std::shared_ptr<Market>&& market);
 
+	inline const AsyncData<std::vector<std::weak_ptr<Counter>>>& GetTenNewestIPOs() const { return m_tradinator_core_thread->GetTenNewestIPOs(); }
 	inline bool IsProcessing() const { return m_tradinator_core_thread->IsProcessing(); }
 
 	inline std::vector<std::shared_ptr<Market>> GetAllMarkets() const { return m_tradinator_core_thread->GetAllMarkets(); }

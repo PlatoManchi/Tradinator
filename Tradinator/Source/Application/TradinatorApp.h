@@ -23,10 +23,14 @@ public:
 	void ShowApp();
 	void Shutdown();
 
+	void ShowCounterWindow(std::shared_ptr<Counter> counter);
+
 private:
 	void ShowMainMenu();
 	void ShowMainMenu_File();
 
+	void LoadWindowsState();
+	void SaveWindowsState();
 
 	AutoAnalysisUpdateWindow m_audo_analysis_update_window;
 	DashboardWindow m_dashboard_window;
