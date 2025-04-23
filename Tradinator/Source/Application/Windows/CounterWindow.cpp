@@ -475,13 +475,16 @@ void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
     const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
     size_t count = indicator_data.m_points.size();
-
-    for (int i = 0; i < count - 1; ++i)
+    
+    if (count != 0)
     {
-        ImVec2 p1 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i].date.time_since_epoch()).count(), indicator_data.m_points[i].value);
-        ImVec2 p2 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i + 1].date.time_since_epoch()).count(), indicator_data.m_points[i + 1].value);
+        for (int i = 0; i < count - 1; ++i)
+        {
+            ImVec2 p1 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i].date.time_since_epoch()).count(), indicator_data.m_points[i].value);
+            ImVec2 p2 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i + 1].date.time_since_epoch()).count(), indicator_data.m_points[i + 1].value);
 
-        draw_list->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(indicator_data.m_color));
+            draw_list->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(indicator_data.m_color));
+        }
     }
 }
 

@@ -71,25 +71,25 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)Public;$(ProjectDir)ispc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)Public;$(ProjectDir)ispc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)Public;$(ProjectDir)ispc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)Public;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)Public;$(ProjectDir)ispc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)Public;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <OutDir>$(SolutionDir)Builds\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ispc\indicator_ispc.h" />
     <ClInclude Include="Public\Data\AsyncData.h" />
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
@@ -200,12 +201,19 @@
     <ClCompile Include="Private\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ispc\indicator.ispc" />
     <None Include="Public\Data\AsyncData.inl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Submodules\SQLiteCpp\SQLiteCpp.vcxproj">
       <Project>{8758da1d-7ad6-43eb-87b4-017ba22a564f}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="ispc\indicator_ispc.o" />
+    <Object Include="ispc\indicator_ispc_avx2.o" />
+    <Object Include="ispc\indicator_ispc_avx512skx.o" />
+    <Object Include="ispc\indicator_ispc_sse2.o" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

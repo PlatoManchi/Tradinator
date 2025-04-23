@@ -31,6 +31,12 @@
     <Filter Include="Public\Indicators">
       <UniqueIdentifier>{aa96d98f-7980-4a81-8b24-31830be01746}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ispc">
+      <UniqueIdentifier>{98a39a7b-7819-473e-ac50-3e49b769c860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ispc\Objects">
+      <UniqueIdentifier>{66f9d045-739a-47b4-89f1-e5775816876d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\TradinatorCore.h">
@@ -83,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="Public\Indicators\SMA.h">
       <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="ispc\indicator_ispc.h">
+      <Filter>ispc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -139,5 +148,22 @@
     <None Include="Public\Data\AsyncData.inl">
       <Filter>Public\Data</Filter>
     </None>
+    <None Include="ispc\indicator.ispc">
+      <Filter>ispc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="ispc\indicator_ispc.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\indicator_ispc_avx2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\indicator_ispc_avx512skx.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\indicator_ispc_sse2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
   </ItemGroup>
 </Project>

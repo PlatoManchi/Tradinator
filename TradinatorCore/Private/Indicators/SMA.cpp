@@ -1,7 +1,11 @@
 #include "Indicators/SMA.h"
 
+#include <iostream>
+
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
+
+#include "indicator_ispc.h"
 
 SMA::SMA(size_t length)
 	: Indicator(length)
@@ -30,16 +34,20 @@ std::vector<IndicatorPoint> SMA::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		size_t count = candle_data->GetData().size();
+		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-		if (count > m_length)
+		size_t count = candle_data->GetData().size();
+		result.reserve(count);
+
+		/*if (count > m_length)
 		{
 			auto itr = candle_data->GetData().begin();
-			for (int i = 0; i < count - m_length; ++i)
+			for (size_t i = 0; i < count; ++i)
 			{
+				size_t window_count = i + m_length < count ? m_length : count - i;
 				auto tmp_itr = itr;
 				double cummulative_closing_price = 0;
-				for (int i = 0; i < m_length; ++i)
+				for (size_t j = 0; j < window_count; ++j)
 				{
 					cummulative_closing_price += (*tmp_itr).second.m_close;
 					std::advance(tmp_itr, 1);
@@ -47,13 +55,41 @@ std::vector<IndicatorPoint> SMA::Calculate()
 
 				IndicatorPoint point;
 				point.date = (*itr).first;
-				point.value = cummulative_closing_price / m_length;
+				point.value = cummulative_closing_price / window_count;
 
 				result.push_back(point);
 
 				std::advance(itr, 1);
 			}
+		}*/
+
+		
+		const AsyncCandleData& data = candle_data->GetData();
+		std::vector<double> ispc_input;
+		std::vector<double> ispc_output(count);
+		ispc_input.reserve(count);
+		
+		for (auto& pair : data)
+		{
+			ispc_input.push_back(pair.second.m_close);
 		}
+
+		ispc::calculate_sma(ispc_input.data(), ispc_output.data(), count, m_length);
+
+		auto itr = candle_data->GetData().begin();
+		for (double sma : ispc_output)
+		{
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = sma;
+
+			result.push_back(point);
+
+			std::advance(itr, 1);
+		}
+
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;
