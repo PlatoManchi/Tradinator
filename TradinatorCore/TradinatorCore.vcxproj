@@ -168,8 +168,10 @@
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
     <ClInclude Include="Public\Data\Counter.h" />
+    <ClInclude Include="Public\Indicators\EMA.h" />
     <ClInclude Include="Public\Indicators\Indicator.h" />
     <ClInclude Include="Public\Indicators\SMA.h" />
+    <ClInclude Include="Public\Indicators\WMA.h" />
     <ClInclude Include="Public\Market\Market.h" />
     <ClInclude Include="Public\Market\NSE_Market.h" />
     <ClInclude Include="Public\TradinatorCore.h" />
@@ -186,8 +188,10 @@
     <ClCompile Include="Private\Data\Candle.cpp" />
     <ClCompile Include="Private\Data\Company.cpp" />
     <ClCompile Include="Private\Data\Counter.cpp" />
+    <ClCompile Include="Private\Indicators\EMA.cpp" />
     <ClCompile Include="Private\Indicators\Indicator.cpp" />
     <ClCompile Include="Private\Indicators\SMA.cpp" />
+    <ClCompile Include="Private\Indicators\WMA.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
     <ClCompile Include="Private\Market\NSE_Market.cpp" />
     <ClCompile Include="Private\TradinatorCore.cpp" />

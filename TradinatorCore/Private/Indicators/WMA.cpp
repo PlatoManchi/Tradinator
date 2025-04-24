@@ -1,4 +1,4 @@
-#include "Indicators/SMA.h"
+#include "Indicators/WMA.h"
 
 #include <iostream>
 
@@ -7,21 +7,8 @@
 
 #include "indicator_ispc.h"
 
-SMA::SMA(size_t length)
-	: Indicator(length)
+std::vector<IndicatorPoint> WMA::Calculate()
 {
-
-}
-
-SMA::SMA(std::weak_ptr<Counter> counter, size_t length)
-	: Indicator(counter, length)
-{
-
-}
-
-std::vector<IndicatorPoint> SMA::Calculate()
-{
-	
 	std::vector<IndicatorPoint> result;
 	if (m_length == 0) return result;
 
@@ -49,15 +36,19 @@ std::vector<IndicatorPoint> SMA::Calculate()
 				size_t window_count = i + m_length < count ? m_length : count - i;
 				auto tmp_itr = itr;
 				double cummulative_closing_price = 0;
+				double weighted_count = 0;
+
 				for (size_t j = 0; j < window_count; ++j)
 				{
-					cummulative_closing_price += (*tmp_itr).second.m_close;
+					cummulative_closing_price += ((window_count - j) * (*tmp_itr).second.m_close);
+					weighted_count += (window_count - j);
+
 					std::advance(tmp_itr, 1);
 				}
 
 				IndicatorPoint point;
 				point.date = (*itr).first;
-				point.value = cummulative_closing_price / window_count;
+				point.value = cummulative_closing_price / weighted_count;
 
 				result.push_back(point);
 
@@ -65,18 +56,18 @@ std::vector<IndicatorPoint> SMA::Calculate()
 			}
 		}*/
 
-		
+
 		const AsyncCandleData& data = candle_data->GetData();
 		std::vector<double> ispc_input;
 		std::vector<double> ispc_output(count);
 		ispc_input.reserve(count);
-		
+
 		for (auto& pair : data)
 		{
 			ispc_input.push_back(pair.second.m_close);
 		}
 
-		ispc::calculate_sma(ispc_input.data(), ispc_output.data(), count, m_length);
+		ispc::calculate_wma(ispc_input.data(), ispc_output.data(), count, m_length);
 
 		auto itr = candle_data->GetData().begin();
 		for (double sma : ispc_output)

@@ -22,6 +22,8 @@
 
 #include "Indicators/Indicator.h"
 #include "Indicators/SMA.h"
+#include "Indicators/WMA.h"
+#include "Indicators/EMA.h"
 
 static std::string _STATUS_ = "status";
 static std::string _SUCCESS_ = "success";
@@ -29,6 +31,16 @@ static std::string _SUCCESS_ = "success";
 static std::string _DATA_ = "data";
 static std::string _CANDLES_ = "candles";
 
+std::vector<std::unique_ptr<Indicator>> Counter::GetAvailableIndicators()
+{
+	std::vector<std::unique_ptr<Indicator>> result;
+
+	result.push_back(std::make_unique<SMA>(20));
+	result.push_back(std::make_unique<WMA>(20));
+	result.push_back(std::make_unique<EMA>(20));
+
+	return result;
+}
 
 
 Counter::Counter()
@@ -278,6 +290,19 @@ void Counter::WriteCandleToDatabase(SQLite::Database& db, const Json::Value& can
 	std::chrono::system_clock::time_point date;
 	is >> std::chrono::parse("%F", date);
 
+	// one candle from the data has negative value for volumes and open interest for some reason and this 
+	// is for that one random wrong value
+	int64_t volume = candle[5].asInt64();
+	if (volume < 0)
+	{
+		volume = 0;
+	}
+	int64_t open_interest = candle[6].asInt64();
+	if (open_interest < 0)
+	{
+		open_interest = 0;
+	}
+
 	std::string query_str = std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
 		"(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
 		, GetTableName()
@@ -286,8 +311,8 @@ void Counter::WriteCandleToDatabase(SQLite::Database& db, const Json::Value& can
 		, candle[2].asDouble()
 		, candle[3].asDouble()
 		, candle[4].asDouble()
-		, candle[5].asInt64()
-		, candle[6].asInt64());
+		, volume
+		, open_interest);
 
 	db.exec(query_str);
 }
@@ -301,14 +326,27 @@ void Counter::WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const J
 	std::chrono::system_clock::time_point date;
 	is >> std::chrono::parse("%F", date);
 
+	// one candle from the data has negative value for volumes and open interest for some reason and this 
+	// is for that one random wrong value
+	int64_t volume = candle[5].asInt64();
+	if (volume < 0)
+	{
+		volume = 0;
+	}
+	int64_t open_interest = candle[6].asInt64();
+	if (open_interest < 0)
+	{
+		open_interest = 0;
+	}
+
 	Candle candle_data;
 	candle_data.m_date = date;
 	candle_data.m_open = candle[1].asDouble();
 	candle_data.m_high = candle[2].asDouble();
 	candle_data.m_low = candle[3].asDouble();
 	candle_data.m_close = candle[4].asDouble();
-	candle_data.m_volume = candle[5].asUInt64();
-	candle_data.m_open_interest = candle[6].asUInt64();
+	candle_data.m_volume = volume;
+	candle_data.m_open_interest = open_interest;
 
 	m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 }
@@ -349,8 +387,8 @@ void Counter::LoadCandleDataToMemory()
 						candle_data.m_high = query.getColumn(2);
 						candle_data.m_low = query.getColumn(3);
 						candle_data.m_close = query.getColumn(4);
-						candle_data.m_volume = query.getColumn(5);
-						candle_data.m_open_interest = query.getColumn(6);
+						candle_data.m_volume = query.getColumn(5).getInt64();
+						candle_data.m_open_interest = query.getColumn(6).getInt64();
 
 						m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 					}
@@ -414,15 +452,6 @@ void Counter::UpdateLatestCandleDataDate()
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
-}
-
-std::vector<std::unique_ptr<Indicator>> Counter::GetAvailableIndicators()
-{
-	std::vector<std::unique_ptr<Indicator>> result;
-	
-	result.push_back(std::make_unique<SMA>(20));
-
-	return result;
 }
 
 void Counter::FromString(std::string str)

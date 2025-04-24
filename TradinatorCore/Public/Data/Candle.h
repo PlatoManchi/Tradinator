@@ -31,8 +31,8 @@ public:
 	double m_high;
 	double m_low;
 	double m_close;
-	int64_t m_volume;
-	int64_t m_open_interest;
+	size_t m_volume;
+	size_t m_open_interest;
 	std::string ToString() const;
 private:
 	void WriteToFile(std::ofstream& stream) const;

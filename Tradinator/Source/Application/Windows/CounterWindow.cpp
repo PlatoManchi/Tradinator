@@ -17,10 +17,12 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , m_close(false)
     , m_maximize(false)
     , m_is_dirty(true)
-    , x_axis_min(DBL_MAX)
-    , x_axis_max(-DBL_MAX)
-    , y_axis_min(DBL_MAX)
-    , y_axis_max(-DBL_MAX)
+    , date_axis_min(SIZE_MAX)
+    , date_axis_max(0)
+    , price_axis_min(DBL_MAX)
+    , price_axis_max(-DBL_MAX)
+    , volume_axis_min(SIZE_MAX)
+    , volume_axis_max(0)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
 
@@ -92,21 +94,76 @@ void CounterWindow::Show()
             static bool tooltip = true;
             ImGui::Checkbox("Show Tooltip", &tooltip);
             ImGui::SameLine();
-            static ImVec4 bullCol = ImVec4(0.000f, 1.000f, 0.441f, 1.000f);
-            static ImVec4 bearCol = ImVec4(0.853f, 0.050f, 0.310f, 1.000f);
+            static ImVec4 bullCol = ImVec4(0.031f, 0.600f, 0.505f, 1.000f);
+            static ImVec4 bearCol = ImVec4(0.949f, 0.211f, 0.270f, 1.000f);
             ImGui::SameLine(); ImGui::ColorEdit4("##Bull", &bullCol.x, ImGuiColorEditFlags_NoInputs);
             ImGui::SameLine(); ImGui::ColorEdit4("##Bear", &bearCol.x, ImGuiColorEditFlags_NoInputs);
             ImPlot::GetStyle().UseLocalTime = false;
 
+
+            float volume_label_width = ImGui::CalcTextSize(std::format("{:.0f}", m_volume_chart_limits.Y.Max).c_str()).x;
+            float price_label_width = ImGui::CalcTextSize(std::format("${:.0f}", m_price_chart_limits.Y.Max).c_str()).x;
+            if (volume_label_width > price_label_width)
+            {
+                ImVec2 plot_padding(volume_label_width - price_label_width + 5, 0); // x = left, y = top
+                ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
+            }
+            
             if (ImPlot::BeginPlot("Candlestick Chart", ImVec2(-1, -1), ImPlotFlags_NoLegend)) {
-                ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-                ImPlot::SetupAxesLimits(x_axis_min, x_axis_max, y_axis_min, y_axis_max);
+                ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
+                ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, price_axis_min, price_axis_max);
                 ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
-                ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, x_axis_min, x_axis_max);
-                ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, x_axis_max - x_axis_min); // 14 days at min and full chat at max
+                ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
+                ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
+                
                 PlotCandlestick(m_counter->Name().c_str(), m_dates.data(), m_opens.data(), m_closes.data(), m_lows.data(), m_highes.data(), m_dates.size(), tooltip, 0.25f, bullCol, bearCol);
+
+                m_price_chart_limits = ImPlot::GetPlotLimits();
+
                 ImPlot::EndPlot();
+            }
+            if (volume_label_width > price_label_width)
+            {
+                ImPlot::PopStyleVar();
+            }
+
+            //ImPlot::SetNextAxesLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+
+            if (volume_label_width < price_label_width)
+            {
+                ImVec2 plot_padding(price_label_width - volume_label_width + 5, 0); // x = left, y = top
+                ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
+            }
+            if (ImPlot::BeginPlot("Bar Plot", ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
+                ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
+
+                ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
+                //ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, volume_axis_min, volume_axis_max);
+                ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, volume_axis_min, volume_axis_max);
+                ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
+                ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
+                ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
+
+                double x_axis_interval = 60 * 60 * 24; // one day in sec
+                ImPlot::PlotBars("Volume", m_dates.data(), m_volumes.data(), m_volumes.size(), x_axis_interval * 0.5);
+
+                m_volume_chart_limits = ImPlot::GetPlotLimits();
+
+                ImPlot::EndPlot();
+            }
+            if (volume_label_width < price_label_width)
+            {
+                ImPlot::PopStyleVar();
+            }
+
+            for (auto& pair : m_applied_indicators_data)
+            {
+                if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+                {
+                    // draw as seperate graphs
+                }
             }
         }
     }
@@ -116,7 +173,7 @@ void CounterWindow::Show()
 void CounterWindow::ShowIndicatorsList()
 {
     float indicator_height = 55.0f;
-    float indicator_width = 550.0f;
+    float indicator_width = 600.0f;
     
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec2 item_spacing = style.ItemSpacing;
@@ -226,12 +283,12 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
     /// @end Text
 
     /// @begin Input
-    ImGui::SetNextItemWidth(50);
+    ImGui::SetNextItemWidth(70);
     std::string indicator_length = std::format("{}", indicator->GetLength());
-    char length_str[4] = "20";
+    char length_str[4] = "";
     std::copy(indicator_length.begin(), indicator_length.end(), length_str);
     
-    if (ImGui::InputText(std::format("##input{}", indicator->GetName()).c_str(), length_str, 3, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##input{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
         indicator->SetLength(length);
@@ -281,12 +338,12 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
     /// @end Text
 
     /// @begin Input
-    ImGui::SetNextItemWidth(50);
+    ImGui::SetNextItemWidth(70);
     std::string indicator_length = std::format("{}", indicator->GetLength());
-    char length_str[4] = "20";
+    char length_str[4] = "";
     std::copy(indicator_length.begin(), indicator_length.end(), length_str);
 
-    if (ImGui::InputText(std::format("##indicator length{}", indicator_data.m_id).c_str(), length_str, 3, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##indicator length{}", indicator_data.m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
         indicator->SetLength(length);
@@ -356,11 +413,12 @@ void CounterWindow::RebuildCachedPlotPoints()
     m_volumes.reserve(count);
     m_open_interests.reserve(count);
 
-    x_axis_min = DBL_MAX;
-    x_axis_max = -DBL_MAX;
-    y_axis_min = DBL_MAX;
-    y_axis_max = -DBL_MAX;
-
+    date_axis_min = SIZE_MAX;
+    date_axis_max = 0;
+    price_axis_min = DBL_MAX;
+    price_axis_max = -DBL_MAX;
+    volume_axis_min = SIZE_MAX;
+    volume_axis_max = 0;
     const auto& candle_data_map = candle_data->GetData();
 
     // processing in reverse direction because plot needs data to be in ascending order of dates
@@ -376,18 +434,23 @@ void CounterWindow::RebuildCachedPlotPoints()
         m_volumes.push_back(iter->second.m_volume);
         m_open_interests.push_back(iter->second.m_open_interest);
 
-        if (x_axis_min > date)
-            x_axis_min = date;
-        if (x_axis_max < date)
-            x_axis_max = date;
+        if (date_axis_min > date)
+            date_axis_min = date;
+        if (date_axis_max < date)
+            date_axis_max = date;
 
         double max = std::max({ iter->second.m_open, iter->second.m_high, iter->second.m_close, iter->second.m_low });
         double min = std::max({ iter->second.m_open, iter->second.m_high, iter->second.m_close, iter->second.m_low });
 
-        if (y_axis_min > min)
-            y_axis_min = min;
-        if (y_axis_max < max)
-            y_axis_max = max;
+        if (price_axis_min > min)
+            price_axis_min = min;
+        if (price_axis_max < max)
+            price_axis_max = max;
+
+        if (volume_axis_min > iter->second.m_volume)
+            volume_axis_min = iter->second.m_volume;
+        if (volume_axis_max < iter->second.m_volume)
+            volume_axis_max = iter->second.m_volume;
 
         count--;
         //if(count <=0 )
@@ -395,11 +458,14 @@ void CounterWindow::RebuildCachedPlotPoints()
     }
 
     // Adding one day padding at start and end of graph
-    x_axis_min -= 60 * 60 * 24;
-    x_axis_max += 60 * 60 * 24;
+    date_axis_min -= 60 * 60 * 24;
+    date_axis_max += 60 * 60 * 24;
+
+    m_shared_limits.X.Min = date_axis_min;
+    m_shared_limits.X.Max = date_axis_max;
 }
 
-void CounterWindow::PlotCandlestick(const char* label_id, const double* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
+void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
 
     // get ImGui window DrawList
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
@@ -407,8 +473,15 @@ void CounterWindow::PlotCandlestick(const char* label_id, const double* xs, cons
     double x_axis_interval = 60 * 60 * 24; // one day in sec
     double half_width = count > 1 ? x_axis_interval * width_percent : width_percent;
 
+    // sharing plot limits so they are all in sync
+    if (ImPlot::IsPlotHovered())
+    {
+        m_shared_limits = ImPlot::GetPlotLimits();
+    }
+
     // custom tool
-    if (ImPlot::IsPlotHovered() && tooltip) {
+    if (ImPlot::IsPlotHovered() && tooltip) 
+    {
         ImPlotPoint mouse = ImPlot::GetPlotMousePos();
         mouse.x = ImPlot::RoundTime(ImPlotTime::FromDouble(mouse.x), ImPlotTimeUnit_Day).ToDouble();
         float  tool_l = ImPlot::PlotToPixels(mouse.x - half_width * 1.5, mouse.y).x;
@@ -459,7 +532,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const double* xs, cons
 
         for (auto& pair : m_applied_indicators_data)
         {
-            if (pair.second.m_show)
+            if (pair.second.m_show && TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
             {
                 PlotIndicator(pair.first);
             }
@@ -488,13 +561,12 @@ void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
     }
 }
 
-template <typename T>
-int CounterWindow::BinarySearch(const T* arr, int l, int r, T x) {
+//template <typename T>
+int CounterWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
     if (r >= l) {
         int mid = l + (r - l) / 2;
         if (arr[mid] == x)
         {
-            //std::cout << "arr[" << mid << "] " << arr[mid] << "    =    " << x << std::endl;
             return mid;
         }
         if (arr[mid] > x)

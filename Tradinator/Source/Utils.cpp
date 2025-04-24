@@ -3,7 +3,8 @@
 #include <fstream>
 
 #include "Indicators/SMA.h"
-
+#include "Indicators/WMA.h"
+#include "Indicators/EMA.h"
 
 namespace TradinatorAppSpace
 {
@@ -39,11 +40,11 @@ namespace TradinatorAppSpace
 		switch (type)
 		{
 		case E_SMA:
-			return ImVec4(0.0f, 0.5f, 1.0f, 1.0f);
+			return ImVec4(0.01f, 0.49f, 1.0f, 1.0f);
 		case E_WMA:
-			break;
+			return ImVec4(0.164f, 0.223f, 0.305f, 1.0f);
 		case E_EMA:
-			break;
+			return ImVec4(0.4f, 1.0f, 0.2f, 1.0f);
 		case E_BOLLINGER_BAND:
 			break;
 		case E_ROC:
@@ -107,9 +108,9 @@ namespace TradinatorAppSpace
 		case E_SMA:
 			return std::make_shared<SMA>();
 		case E_WMA:
-			break;
+			return std::make_shared<WMA>();
 		case E_EMA:
-			break;
+			return std::make_shared<EMA>();
 		case E_BOLLINGER_BAND:
 			break;
 		case E_ROC:
@@ -121,6 +122,14 @@ namespace TradinatorAppSpace
 		}
 
 		return nullptr;
+	}
+
+	bool Utils::IsIndicatorOverlayable(EIndicatorType type)
+	{
+		return type == EIndicatorType::E_SMA ||
+			type == EIndicatorType::E_WMA ||
+			type == EIndicatorType::E_EMA ||
+			type == EIndicatorType::E_BOLLINGER_BAND;
 	}
 
 	void Utils::SaveWindowsStatus(Json::Value status)

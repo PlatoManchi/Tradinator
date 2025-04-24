@@ -93,6 +93,12 @@
     <ClInclude Include="ispc\indicator_ispc.h">
       <Filter>ispc</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Indicators\EMA.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Indicators\WMA.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -141,6 +147,12 @@
       <Filter>Private\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Private\Indicators\SMA.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\WMA.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\EMA.cpp">
       <Filter>Private\Indicators</Filter>
     </ClCompile>
   </ItemGroup>

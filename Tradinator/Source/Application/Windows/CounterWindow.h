@@ -49,31 +49,38 @@ private:
 	void AddIndicator(std::shared_ptr<Indicator> indicator);
 
 	void RebuildCachedPlotPoints();
-	void PlotCandlestick(const char* label_id, const double* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
+	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
 	void PlotIndicator(const std::shared_ptr<Indicator>& indicator);
 
-	template <typename T>
-	int BinarySearch(const T* arr, int l, int r, T x);
+	//template <typename T>
+	int BinarySearch(const size_t* arr, int l, int r, double x);
 
 
-	std::vector<double> m_dates;
+	std::vector<size_t> m_dates;
 	std::vector<double> m_opens;
 	std::vector<double> m_highes;
 	std::vector<double> m_lows;
 	std::vector<double> m_closes;
-	std::vector<int64_t> m_volumes;
-	std::vector<int64_t> m_open_interests;
+	std::vector<size_t> m_volumes;
+	std::vector<size_t> m_open_interests;
 
 	std::vector<std::unique_ptr<Indicator>> m_available_indicators;
 	std::map<std::shared_ptr<Indicator>, IndicatorData> m_applied_indicators_data;
 	std::vector<std::shared_ptr<Indicator>> m_remove_applied_indicators;
 	
-	double x_axis_min, x_axis_max, y_axis_min, y_axis_max;
+	size_t date_axis_min, date_axis_max;
+	double price_axis_min, price_axis_max;
+	size_t volume_axis_min, volume_axis_max;
 
 	std::string m_cached_label_id;
 	std::shared_ptr<Counter> m_counter;
 
 	bool m_is_dirty;
+
+	ImPlotRect m_shared_limits;
+
+	ImPlotRect m_price_chart_limits;
+	ImPlotRect m_volume_chart_limits;
 
 	static size_t _INCREMENTAL_ID_;
 };

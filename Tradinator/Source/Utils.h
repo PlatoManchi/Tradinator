@@ -23,6 +23,9 @@ namespace TradinatorAppSpace
 		static EIndicatorType GetIndicatorType(std::string type_str);
 		static std::shared_ptr<Indicator> GetIndicator(EIndicatorType type);
 
+		// return true if the indicator can be drawn on top of the main chart
+		static bool IsIndicatorOverlayable(EIndicatorType type);
+
 		static void SaveWindowsStatus(Json::Value status);
 		static Json::Value LoadWindowsStatus();
 		

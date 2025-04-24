@@ -1,0 +1,97 @@
+#include "Indicators/EMA.h"
+
+#include <iostream>
+
+#include "Data/Counter.h"
+#include "Data/AsyncData.h"
+
+#include "indicator_ispc.h"
+
+
+std::vector<IndicatorPoint> EMA::Calculate()
+{
+	std::vector<IndicatorPoint> result;
+	if (m_length == 0) return result;
+
+	std::shared_ptr<Counter> counter = m_counter.lock();
+
+	if (counter)
+	{
+		const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = counter->GetCandleData();
+		bool is_ready = candle_data->IsDataReady();
+		while (!is_ready)
+		{
+			is_ready = candle_data->IsDataReady();
+		}
+
+		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+		size_t count = candle_data->GetData().size();
+		result = std::vector<IndicatorPoint>(count);
+
+		if (count > m_length)
+		{
+			auto itr = candle_data->GetData().end();
+
+			itr = std::prev(itr, 1);
+
+			// 0th element is same value as closing
+			IndicatorPoint first_point;
+			first_point.date = (*itr).first;
+			first_point.value = (*itr).second.m_close;
+
+			result[count - 1] = first_point;
+
+			const double factor = 2.0 / (m_length + 1.0);
+
+			itr = std::prev(itr, 1);
+
+			for (int64_t i = count - 2; i >= 0; --i)
+			{
+				IndicatorPoint point;
+				point.date = (*itr).first;
+				point.value = (*itr).second.m_close * factor + result[i+1].value * (1.0 - factor);
+
+				result[i] = point;
+
+				itr = std::prev(itr, 1);
+			}
+		}
+
+
+		/*
+		// Because each value is dependent on previous value, calculations cannot be parallelized.
+		// Which makes ISPC version is slow because of overhead of making it gather previous value
+		const AsyncCandleData& data = candle_data->GetData();
+		std::vector<double> ispc_input;
+		std::vector<double> ispc_output(count);
+		ispc_input.reserve(count);
+
+		// ISPC doesn't like reading from back to front. So reverse the array here and unreverse the output
+		auto itr = candle_data->GetData().end();
+		for (size_t i = 0; i < count; ++i)
+		{
+			itr = std::prev(itr, 1);
+			ispc_input.push_back((*itr).second.m_close);
+		}
+		
+		ispc::calculate_ema(ispc_input.data(), ispc_output.data(), count, m_length);
+
+		itr = candle_data->GetData().end();
+		for (double sma : ispc_output)
+		{
+			itr = std::prev(itr, 1);
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = sma;
+
+			result.push_back(point);
+		}*/
+
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+	}
+
+	return result;
+}
