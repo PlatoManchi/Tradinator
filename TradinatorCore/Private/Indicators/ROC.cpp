@@ -35,7 +35,26 @@ std::vector<IndicatorPoint> ROC::Calculate()
 
 #ifdef _ROC_ISPC_
 #else
+		auto itr = candle_data->GetData().begin();
+		auto end_itr = candle_data->GetData().end();
+		for (size_t i = 0 ; i < count; ++i)
+		{
+			size_t window_count = i + m_length < count ? m_length : count - i;
 
+			double current = (*itr).second.m_close;
+			auto tmp_itr = std::next(itr, window_count);
+			double compare_with = tmp_itr != end_itr ? (*tmp_itr).second.m_close : current;
+
+			double roc_value = ((current - compare_with) / compare_with) * 100.0;
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = roc_value;
+
+			result.emplace_back(point);
+
+			std::advance(itr, 1);
+		}
 #endif // _ROC_ISPC_
 
 

@@ -61,15 +61,15 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		auto itr = candle_data->GetData().begin();
 		for (size_t i = 0; i < count; ++i)
 		{
-			size_t window_count = i + m_length < count ? m_length : count - i;
+			size_t window_size = i + m_length < count ? m_length : count - i;
 			auto tmp_itr = itr;
 			double cummulative_closing_price = 0;
 			double weighted_count = 0;
 
-			for (size_t j = 0; j < window_count; ++j)
+			for (size_t j = 0; j < window_size; ++j)
 			{
-				cummulative_closing_price += ((window_count - j) * (*tmp_itr).second.m_close);
-				weighted_count += (window_count - j);
+				cummulative_closing_price += ((window_size - j) * (*tmp_itr).second.m_close);
+				weighted_count += (window_size - j);
 
 				std::advance(tmp_itr, 1);
 			}

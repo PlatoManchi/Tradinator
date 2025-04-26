@@ -3,6 +3,8 @@
 #include <string>
 #include <chrono>
 
+class Indicator;
+
 namespace TradinatorCoreSpace
 {
 	class Utils
@@ -16,6 +18,8 @@ namespace TradinatorCoreSpace
 		static void SetupFolderStructure();
 
 		static bool DoesFileExist(const std::string& file_path);
+
+		static std::vector<std::unique_ptr<Indicator>> GetAvailableIndicators();
 
 	private:
 		static std::string _DATA_FOLDER_PATH_;

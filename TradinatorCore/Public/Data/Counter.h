@@ -54,8 +54,6 @@ public:
 
 	void FromString(std::string str);
 
-	static std::vector<std::unique_ptr<Indicator>> GetAvailableIndicators();
-
 	inline std::string Series() const { return m_series; }
 	inline uint32_t PaidUpValue() const { return m_paid_up_value; }
 	inline uint32_t MarkerLot() const { return m_market_lot; }

@@ -6,6 +6,8 @@
 #include "Indicators/WMA.h"
 #include "Indicators/EMA.h"
 #include "Indicators/BollingerBand.h"
+#include "Indicators/ROC.h"
+
 
 namespace TradinatorAppSpace
 {
@@ -49,7 +51,7 @@ namespace TradinatorAppSpace
 		case E_BOLLINGER_BAND:
 			return ImVec4(0.368f, 0.368f, 0.972f, 1.0f);
 		case E_ROC:
-			break;
+			return ImVec4(1.0f, 0.501f, 0.0f, 1.0f);
 		case E_RSI:
 			break;
 		case E_MACD:
@@ -115,7 +117,7 @@ namespace TradinatorAppSpace
 		case E_BOLLINGER_BAND:
 			return std::make_shared<BollingerBand>();
 		case E_ROC:
-			break;
+			return std::make_shared<ROC>();
 		case E_RSI:
 			break;
 		case E_MACD:

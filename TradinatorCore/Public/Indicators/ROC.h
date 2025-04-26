@@ -8,8 +8,8 @@ class ROC : public Indicator
 public:
 	ROC() : Indicator() {}
 
-	ROC(size_t length);
-	ROC(std::weak_ptr<Counter> counter, size_t length);
+	ROC(size_t length) : Indicator(length) {}
+	ROC(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
 
 	virtual std::vector<IndicatorPoint> Calculate() override;
 

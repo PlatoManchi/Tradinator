@@ -41,7 +41,11 @@ private:
 
 		ImVec4 m_color;
 		bool m_show = true;
+		bool m_is_hovered = false;
 		size_t m_id = 0;
+
+		ImPlotRect m_chart_limits;
+		float m_label_width;
 	};
 
 

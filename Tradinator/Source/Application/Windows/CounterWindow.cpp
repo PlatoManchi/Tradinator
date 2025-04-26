@@ -9,8 +9,17 @@
 #include "Indicators/BollingerBand.h"
 
 #include "Utils.h"
+#include "Utils/Utils.h"
 
 size_t CounterWindow::_INCREMENTAL_ID_ = 0;
+
+// Getter for IndicatorPoint to draw the plot
+ImPlotPoint indicator_plot_point_getter(int idx, void* data) {
+    std::vector<IndicatorPoint>* point_data = (std::vector<IndicatorPoint>*)(data);
+    const IndicatorPoint& point = (*point_data)[idx];
+
+    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(point.date.time_since_epoch()).count(), point.value);
+}
 
 CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
 	: m_counter(counter)
@@ -28,7 +37,7 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
 
-    m_available_indicators = m_counter->GetAvailableIndicators();
+    m_available_indicators = TradinatorCoreSpace::Utils::GetAvailableIndicators();
 
     m_counter->LoadCandleDataToMemory();
 }
@@ -81,14 +90,60 @@ void CounterWindow::Show()
         }
         else
         {
+            ImGuiStyle& style = ImGui::GetStyle();
+            // close indicators that are marked for closing
             for (std::shared_ptr<Indicator> indicator_to_remove : m_remove_applied_indicators)
             {
                 m_applied_indicators_data.erase(indicator_to_remove);
             }
             m_remove_applied_indicators.clear();
 
+
+            const float PRICE_CHART_MIN_HEIGHT = 400.0f;
+            const float VOLUME_CHART_HEIGHT = 250.0f;
+            const float SEPERATE_CHARTS_HEIGHT = 250.0f;
+
             m_price_chart_height = ImGui::GetWindowHeight();
-            m_price_chart_height -= 300; // remove volume
+            
+            float volume_label_width = ImGui::CalcTextSize(std::format("{:.0f}", m_volume_chart_limits.Y.Max).c_str()).x;
+            float price_label_width = ImGui::CalcTextSize(std::format("${:.0f}", m_price_chart_limits.Y.Max).c_str()).x;
+            float largest_label_width = std::max(volume_label_width, price_label_width);
+
+            size_t seperate_charts_count = 0;
+
+            for (auto& pair : m_applied_indicators_data)
+            {
+                if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+                {
+                    ++seperate_charts_count;
+
+                    float max_range_width = ImGui::CalcTextSize(std::format("${:.0f}", pair.second.m_chart_limits.Y.Max).c_str()).x;
+                    float min_range_width = ImGui::CalcTextSize(std::format("${:.0f}", pair.second.m_chart_limits.Y.Min).c_str()).x;
+
+                    pair.second.m_label_width = std::max(max_range_width, min_range_width);
+                    if (pair.second.m_label_width > largest_label_width)
+                    {
+                        largest_label_width = pair.second.m_label_width;
+                    }
+                }
+            }
+
+            std::string chart_x_axis_label = "Jan\n2018";
+            ImVec2 chart_x_axis_label_size = ImGui::CalcTextSize(chart_x_axis_label.c_str());
+
+            double volume_chart_height = VOLUME_CHART_HEIGHT;
+            if (seperate_charts_count > 0)
+            {
+                // since the label won't be shown remove it from height
+                volume_chart_height -= chart_x_axis_label_size.y;
+
+                m_price_chart_height -= seperate_charts_count * (SEPERATE_CHARTS_HEIGHT + style.ItemSpacing.y);
+                m_price_chart_height -= chart_x_axis_label_size.y; // Last chart should have the label
+            }
+
+            m_price_chart_height -= volume_chart_height; // remove volume chart
+            
+
 
             size_t count = candle_data->GetData().size();
 
@@ -108,21 +163,20 @@ void CounterWindow::Show()
             m_price_chart_height -= 90; // miscellaneous
 
 
-            if (m_price_chart_height < 300.0f)
+            if (m_price_chart_height < PRICE_CHART_MIN_HEIGHT)
             {
                 // Minimum height for the price chart
-                m_price_chart_height = 300.0f;
+                m_price_chart_height = PRICE_CHART_MIN_HEIGHT;
             }
 
-            float volume_label_width = ImGui::CalcTextSize(std::format("{:.0f}", m_volume_chart_limits.Y.Max).c_str()).x;
-            float price_label_width = ImGui::CalcTextSize(std::format("${:.0f}", m_price_chart_limits.Y.Max).c_str()).x;
-            if (volume_label_width > price_label_width)
+            
+            if (largest_label_width > (price_label_width + 5.0f))
             {
-                ImVec2 plot_padding(volume_label_width - price_label_width + 5, 0); // x = left, y = top
+                ImVec2 plot_padding(largest_label_width - price_label_width + 5.0f, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
             
-            if (ImPlot::BeginPlot("Price Chart", ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
+            if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
                 if (m_is_price_chart_hovered)
                 {
@@ -157,23 +211,28 @@ void CounterWindow::Show()
 
                 ImPlot::EndPlot();
             }
-            if (volume_label_width > price_label_width)
+            if (largest_label_width > price_label_width)
             {
                 ImPlot::PopStyleVar();
             }
 
             //ImPlot::SetNextAxesLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
 
-            if (volume_label_width < price_label_width)
+            if (largest_label_width > (volume_label_width + 5.0f))
             {
-                ImVec2 plot_padding(price_label_width - volume_label_width + 5, 0); // x = left, y = top
+                ImVec2 plot_padding(largest_label_width - volume_label_width + 5.0f, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
-            if (ImPlot::BeginPlot("Volume Plot", ImVec2(-1, 300), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
+            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
-
-                ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-                //ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, volume_axis_min, volume_axis_max);
+                //seperate_charts_count
+                ImPlotAxisFlags x_axis_flags = 0;
+                if (seperate_charts_count > 0)
+                {
+                    x_axis_flags |= ImPlotAxisFlags_NoTickLabels;
+                }
+                ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
+                
                 if (m_is_volume_chart_hovered)
                 {
                     ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
@@ -206,16 +265,79 @@ void CounterWindow::Show()
 
                 ImPlot::EndPlot();
             }
-            if (volume_label_width < price_label_width)
+            if (largest_label_width > volume_label_width)
             {
                 ImPlot::PopStyleVar();
             }
 
+            size_t applied_seperate_charts_index = 0;
             for (auto& pair : m_applied_indicators_data)
             {
                 if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
                 {
-                    // draw as seperate graphs
+                    double chart_height = SEPERATE_CHARTS_HEIGHT;
+                    ImPlotAxisFlags x_axis_flags = 0;
+                    if (applied_seperate_charts_index == seperate_charts_count - 1)
+                    {
+                        chart_height += chart_x_axis_label_size.y;
+                    }
+                    else
+                    {
+                        // Don't draw xaxis labels unless its the last chart
+                        x_axis_flags |= ImPlotAxisFlags_NoTickLabels;
+                    }
+                    
+                    // 20 is magic number to get the graphs aligned lol
+                    // its coming from imgui item padding etc
+                    // but why is it not 5.0f like for other graphs?
+                    if (largest_label_width > (pair.second.m_label_width + 20.0f))
+                    {
+                        ImVec2 plot_padding(largest_label_width - pair.second.m_label_width + 20.0f, 0); // x = left, y = top
+                        ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
+                    }
+                    if (ImPlot::BeginPlot(std::format("{}##{}_{}", pair.first->GetName(), m_counter->ISIN_Number(), pair.second.m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly))
+                    {
+                        ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
+
+                        ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
+                        if (pair.second.m_is_hovered)
+                        {
+                            ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
+                        }
+                        else
+                        {
+                            ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                        }
+                        ImPlot::SetupAxisLimits(ImAxis_Y1, volume_axis_min, volume_axis_max);
+
+                        ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
+                        ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
+                        ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
+
+                        ImPlot::SetNextLineStyle(pair.second.m_color, pair.second.m_color.w);
+                        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", pair.first->GetName(), m_counter->ISIN_Number(), pair.second.m_id).c_str()
+                            , indicator_plot_point_getter
+                            , (void*)&pair.second.m_points
+                            , pair.second.m_points.size());
+                        
+                        pair.second.m_chart_limits = ImPlot::GetPlotLimits();
+
+                        if (ImPlot::IsPlotHovered())
+                        {
+                            m_shared_limits = ImPlot::GetPlotLimits();
+                            pair.second.m_is_hovered = true;
+                        }
+                        else
+                        {
+                            pair.second.m_is_hovered = false;
+                        }
+                        ImPlot::EndPlot();
+                    }
+                    if (largest_label_width > (pair.second.m_label_width + 5.0))
+                    {
+                        ImPlot::PopStyleVar();
+                    }
+                    ++applied_seperate_charts_index;
                 }
             }
         }
@@ -703,14 +825,6 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
     }
 }
 
-// Getter for Y2 (e.g., cos curve)
-ImPlotPoint plot_point_getter(int idx, void* data) {
-    std::vector<IndicatorPoint>* point_data = (std::vector<IndicatorPoint>*)(data);
-    const IndicatorPoint& point = (*point_data)[idx];
-
-    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(point.date.time_since_epoch()).count(), point.value);
-}
-
 void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
 {
     const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
@@ -720,18 +834,7 @@ void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
     if (count != 0)
     {
         ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-
-        ImPlot::PlotLineG("Indicators", plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
-
-        for (int i = 0; i < count - 1; ++i)
-        {
-            
-
-            //ImVec2 p1 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i].date.time_since_epoch()).count(), indicator_data.m_points[i].value);
-            //ImVec2 p2 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i + 1].date.time_since_epoch()).count(), indicator_data.m_points[i + 1].value);
-
-            //draw_list->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(indicator_data.m_color));
-        }
+        ImPlot::PlotLineG("Indicators", indicator_plot_point_getter, (void*)&indicator_data.m_points, count);
     }
 }
 
@@ -745,8 +848,8 @@ void CounterWindow::PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& 
         // 10% of alpha of original color for filling
         ImPlot::SetNextFillStyle(indicator_data.m_color, indicator_data.m_color.w * 0.1);
 
-        ImPlot::PlotShadedG("BollingerBand", plot_point_getter, (void*)& indicator_data.m_top_points,
-            plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
+        ImPlot::PlotShadedG("BollingerBand", indicator_plot_point_getter, (void*)& indicator_data.m_top_points,
+            indicator_plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
     }
 }
 
@@ -758,13 +861,13 @@ void CounterWindow::PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>&
     if (count != 0)
     {
         ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Top", plot_point_getter, (void*)&indicator_data.m_top_points, indicator_data.m_top_points.size());
+        ImPlot::PlotLineG("Top", indicator_plot_point_getter, (void*)&indicator_data.m_top_points, indicator_data.m_top_points.size());
 
         ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Top", plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
+        ImPlot::PlotLineG("Top", indicator_plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
 
         ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Bottom", plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
+        ImPlot::PlotLineG("Bottom", indicator_plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
     }
 }
 
