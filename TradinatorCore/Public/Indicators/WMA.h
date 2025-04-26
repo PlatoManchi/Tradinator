@@ -14,7 +14,7 @@ public:
 	virtual std::vector<IndicatorPoint> Calculate() override;
 
 
-	virtual std::string GetName() const override { return "Weighted Moving Average"; }
+	virtual std::string GetName() const override { return std::format("Weighted Moving Average ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_WMA; }
 	virtual std::unique_ptr<Indicator> Clone() override
 	{

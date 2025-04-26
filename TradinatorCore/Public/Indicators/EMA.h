@@ -12,7 +12,7 @@ public:
 	virtual std::vector<IndicatorPoint> Calculate() override;
 
 
-	virtual std::string GetName() const override { return "Exponential Moving Average"; }
+	virtual std::string GetName() const override { return std::format("Exponential Moving Average ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_EMA; }
 	virtual std::unique_ptr<Indicator> Clone() override
 	{

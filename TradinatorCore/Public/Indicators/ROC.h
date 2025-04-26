@@ -13,7 +13,7 @@ public:
 
 	virtual std::vector<IndicatorPoint> Calculate() override;
 
-	virtual std::string GetName() const override { return "Rate Of Change"; }
+	virtual std::string GetName() const override { return std::format("Rate Of Change ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_ROC; }
 	virtual std::unique_ptr<Indicator> Clone() override
 	{

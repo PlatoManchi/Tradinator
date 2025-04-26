@@ -223,7 +223,7 @@ void CounterWindow::Show()
                 ImVec2 plot_padding(largest_label_width - volume_label_width + 5.0f, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
-            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
+            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
                 //seperate_charts_count
                 ImPlotAxisFlags x_axis_flags = 0;
@@ -295,7 +295,7 @@ void CounterWindow::Show()
                         ImVec2 plot_padding(largest_label_width - pair.second.m_label_width + 20.0f, 0); // x = left, y = top
                         ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
                     }
-                    if (ImPlot::BeginPlot(std::format("{}##{}_{}", pair.first->GetName(), m_counter->ISIN_Number(), pair.second.m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly))
+                    if (ImPlot::BeginPlot(std::format("{}##{}_{}", pair.first->GetName(),m_counter->ISIN_Number(), pair.second.m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
                     {
                         ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
 

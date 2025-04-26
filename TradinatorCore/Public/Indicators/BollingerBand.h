@@ -29,7 +29,7 @@ public:
 		m_standard_deviation_multiplier = multiplier;
 	}
 
-	virtual std::string GetName() const override { return "Bollinger Band"; }
+	virtual std::string GetName() const override { return std::format("Bollinger Band ({}, {})", m_length, m_standard_deviation_multiplier); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_BOLLINGER_BAND; }
 	virtual std::unique_ptr<Indicator> Clone() override
 	{
