@@ -1,5 +1,10 @@
 #pragma once
 
+#if 1
+#define _ROC_ISPC_
+#else
+#endif
+
 #include "Indicators/Indicator.h"
 
 

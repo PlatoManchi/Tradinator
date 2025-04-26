@@ -56,7 +56,7 @@ public:
 
 	inline std::string Series() const { return m_series; }
 	inline uint32_t PaidUpValue() const { return m_paid_up_value; }
-	inline uint32_t MarkerLot() const { return m_market_lot; }
+	inline uint32_t MarketLot() const { return m_market_lot; }
 	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncData<AsyncCandleData>> GetCandleData() const { return m_candle_data; }
@@ -65,18 +65,18 @@ public:
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 
+	// true if candle data in memory is out of date with what is in local database.
+	// this can happen if new data is downloaded while candle data is being used.
+	inline bool IsMemoryInSync() const { return m_is_memory_in_sync; }
+
 	std::string ToString() const;
 
 	void SetCachedLatestCandleDate(std::chrono::system_clock::time_point time)
 	{
 		m_cached_latest_candle_date = time;
-		m_is_dirty = false;
+		m_is_latest_date_dirty = false;
 	}
 	
-	void Dirty()
-	{
-		m_is_dirty = true;
-	}
 
 protected:
 	// -----------------------------------------------
@@ -117,7 +117,11 @@ protected:
 
 	// Cached latest local candle date
 	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;
-	mutable bool m_is_dirty;
+	mutable bool m_is_latest_date_dirty;
+
+	// true if candle data in memory is out of date with what is in local database.
+	// this can happen if new data is downloaded while candle data is being used.
+	bool m_is_memory_in_sync;
 
 	// Check to make sure there are no double update tasks.
 	// we want to be able to acecss previous historical data that is stored locally while

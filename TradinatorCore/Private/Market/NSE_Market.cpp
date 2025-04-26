@@ -55,10 +55,15 @@ void NSE_Market::ParseCounterListData()
         {
             std::shared_ptr<Counter> counter = std::make_shared<Counter>();
             counter->FromString(line);
-            counter->SetOwningMarket(this->weak_from_this());
-            counter->SetOwningTradinatorCoreThread(m_owning_tradinator_core_thread);
 
-            m_securities_async_data.GetAsyncDataCopy()[counter->Symbol()] = counter;
+            // We process only securities that are equity
+            if (counter->Series() == "EQ")
+            {
+                counter->SetOwningMarket(this->weak_from_this());
+                counter->SetOwningTradinatorCoreThread(m_owning_tradinator_core_thread);
+
+                m_securities_async_data.GetAsyncDataCopy()[counter->Symbol()] = counter;
+            }
         }
     }
 

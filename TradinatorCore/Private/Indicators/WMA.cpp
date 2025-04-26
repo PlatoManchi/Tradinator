@@ -5,12 +5,11 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#ifdef _WMA_ISPC_
 #include "indicator_helper_ispc.h"
+#endif // _WMA_ISPC_
 
-#if 1
-#define _WMA_ISPC_
-#else
-#endif
+
 
 std::vector<IndicatorPoint> WMA::Calculate()
 {
@@ -31,6 +30,8 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		if (count == 0) return result;
+
 		result.reserve(count);
 
 #ifdef _WMA_ISPC_
@@ -63,12 +64,12 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		{
 			size_t window_size = i + m_length < count ? m_length : count - i;
 			auto tmp_itr = itr;
-			double cummulative_closing_price = 0;
+			double cumulative_closing_price = 0;
 			double weighted_count = 0;
 
 			for (size_t j = 0; j < window_size; ++j)
 			{
-				cummulative_closing_price += ((window_size - j) * (*tmp_itr).second.m_close);
+				cumulative_closing_price += ((window_size - j) * (*tmp_itr).second.m_close);
 				weighted_count += (window_size - j);
 
 				std::advance(tmp_itr, 1);
@@ -76,7 +77,7 @@ std::vector<IndicatorPoint> WMA::Calculate()
 
 			IndicatorPoint point;
 			point.date = (*itr).first;
-			point.value = cummulative_closing_price / weighted_count;
+			point.value = cumulative_closing_price / weighted_count;
 
 			result.emplace_back(std::move(point));
 

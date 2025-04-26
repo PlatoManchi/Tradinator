@@ -100,8 +100,8 @@ void MainWindow::Show()
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(5);
-                        ImGui::PushID(std::format("{}##{}{}", counter->MarkerLot(), counter->ISIN_Number(), "MarkerLot TenNewest").c_str());
-                        ImGui::Text(std::format("{}", counter->MarkerLot()).c_str());
+                        ImGui::PushID(std::format("{}##{}{}", counter->MarketLot(), counter->ISIN_Number(), "MarkerLot TenNewest").c_str());
+                        ImGui::Text(std::format("{}", counter->MarketLot()).c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(6);

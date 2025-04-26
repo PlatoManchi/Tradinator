@@ -7,13 +7,10 @@
 #include "Data/AsyncData.h"
 #include "Indicators/SMA.h"
 
-
+#ifdef _BOLLINGER_BAND_ISPC_
 #include "indicator_helper_ispc.h"
+#endif // _BOLLINGER_BAND_ISPC_
 
-#if 1
-#define _BOLLINGER_BAND_ISPC_
-#else
-#endif
 
 
 std::vector<IndicatorPoint> BollingerBand::Calculate()
@@ -57,6 +54,15 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		if (count == 0)
+		{
+			result.emplace_back(std::move(top));
+			result.emplace_back(std::move(sma));
+			result.emplace_back(std::move(bottom));
+
+			return result;
+		}
+
 		top.reserve(count);
 		bottom.reserve(count);
 
@@ -111,18 +117,18 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 			size_t window_size = i + m_length < count ? m_length : count - i;
 			auto tmp_itr = itr;
 
-			double cummulative_deviation_squared = 0;
+			double cumulative_deviation_squared = 0;
 			double mean = sma[i].value;
 
 			for (size_t j = 0; j < window_size; ++j)
 			{
 				double deviation = (*tmp_itr).second.m_close - mean;
-				cummulative_deviation_squared += (deviation * deviation);
+				cumulative_deviation_squared += (deviation * deviation);
 
 				std::advance(tmp_itr, 1);
 			}
 
-			double variance = cummulative_deviation_squared / window_size;
+			double variance = cumulative_deviation_squared / window_size;
 			double standard_deviation = sqrt(variance);
 
 			IndicatorPoint top_point;

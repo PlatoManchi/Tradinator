@@ -75,7 +75,9 @@ private:
 	std::vector<size_t> m_open_interests;
 
 	std::vector<std::unique_ptr<Indicator>> m_available_indicators;
-	std::map<std::shared_ptr<Indicator>, IndicatorData> m_applied_indicators_data;
+
+	// for visual purpose we want it to be same order as insertion. Map will sort based on key
+	std::vector<std::pair<std::shared_ptr<Indicator>, IndicatorData>> m_applied_indicators_data;
 	std::vector<std::shared_ptr<Indicator>> m_remove_applied_indicators;
 	
 	size_t date_axis_min, date_axis_max;

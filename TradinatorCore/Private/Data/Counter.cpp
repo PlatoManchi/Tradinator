@@ -37,7 +37,8 @@ Counter::Counter()
 	, m_candle_data(std::make_shared<AsyncData<AsyncCandleData>>())
 	, m_is_downloading(false)
 	, m_is_inserting(false)
-	, m_is_dirty(true)
+	, m_is_latest_date_dirty(true)
+	, m_is_memory_in_sync(false)
 {
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::chrono::days delta_time(50 * 365); // 50 years
@@ -63,7 +64,7 @@ bool Counter::DoesProcessedHistoricalDataExist() const
 
 std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
 {
-	if (!m_is_dirty)
+	if (!m_is_latest_date_dirty)
 		return m_cached_latest_candle_date;
 
 	
@@ -76,7 +77,7 @@ std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
 			std::chrono::system_clock::duration duration_since_epoch(time_count);
 
 			// cache
-			m_is_dirty = false;
+			m_is_latest_date_dirty = false;
 			m_cached_latest_candle_date = std::chrono::system_clock::time_point(duration_since_epoch);
 
 			return m_cached_latest_candle_date;
@@ -164,8 +165,6 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::functio
 			std::lock_guard<std::mutex> lock(m_counter_mutex); 
 			m_is_downloading = false; 
 		});
-	//return download_task;
-	//return std::make_unique<DownloadTask>(callback, url, tmp_file_path);
 }
 
 void Counter::InsertRawDataToDatabase()
@@ -247,6 +246,7 @@ void Counter::InsertRawDataToDatabase()
 
 				UpdateLatestCandleDataDate();
 
+				m_is_memory_in_sync = false;
 				is_success = true;
 			}
 			catch (std::exception&)
@@ -377,6 +377,7 @@ void Counter::LoadCandleDataToMemory()
 						m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 					}
 
+					m_is_memory_in_sync = true;
 					m_candle_data->SetDataReady(true);
 					is_success = true;
 				}
@@ -418,8 +419,9 @@ void Counter::UpdateLatestCandleDataDate()
 
 			// Begin transaction
 			SQLite::Transaction transaction(db);
-			std::string query2 = std::format("UPDATE Securities SET LatestCandleData = \"{}\" WHERE  ISIN = \"{}\";"
-				, m_cached_latest_candle_date.time_since_epoch().count(), ISIN_Number());
+			std::string query2 = std::format("INSERT OR REPLACE INTO Securities (ISIN, Symbol, Name, Series, DateOfListing, PaidUpValue, MarketLot, FaceValue, LatestCandleData)\
+				 VALUES (\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\");"
+				, ISIN_Number(), Symbol(), Name(), Series(), DateOfListing().time_since_epoch().count(), PaidUpValue(), MarketLot(), FaceValue(), m_cached_latest_candle_date.time_since_epoch().count());
 
 			db.exec(query2);
 			transaction.commit();
@@ -428,10 +430,10 @@ void Counter::UpdateLatestCandleDataDate()
 		}
 
 
-		catch (std::exception&)
+		catch (std::exception& e)
 		{
 			is_success = false;
-
+			//std::cout << e.what() << std::endl;
 			// Database might be locked by another thread. Wait for a bit and try again.
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}

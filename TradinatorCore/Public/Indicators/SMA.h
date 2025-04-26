@@ -1,4 +1,11 @@
 #pragma once
+
+#if 1
+#define _SMA_ISPC_
+#else
+#endif
+
+
 #include "Indicators/Indicator.h"
 
 #include <memory>
@@ -10,8 +17,8 @@ class SMA final : public Indicator
 public:
 	SMA() : Indicator() {}
 
-	SMA(size_t length);
-	SMA(std::weak_ptr<Counter> counter, size_t length);
+	SMA(size_t length) : Indicator(length) {};
+	SMA(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {};
 
 	virtual std::vector<IndicatorPoint> Calculate() override;
 

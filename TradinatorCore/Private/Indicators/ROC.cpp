@@ -5,12 +5,11 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#ifdef _ROC_ISPC_
 #include "indicator_helper_ispc.h"
+#endif // _ROC_ISPC_
 
-#if 1
-#define _ROC_ISPC_
-#else
-#endif
+
 
 std::vector<IndicatorPoint> ROC::Calculate()
 {
@@ -31,6 +30,8 @@ std::vector<IndicatorPoint> ROC::Calculate()
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		if (count == 0) return result;
+
 		result.reserve(count);
 
 #ifdef _ROC_ISPC_

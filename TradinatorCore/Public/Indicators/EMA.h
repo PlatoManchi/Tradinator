@@ -1,4 +1,13 @@
 #pragma once
+
+// Because each value is dependent on previous value, calculations cannot be parallelized.
+// Which makes ISPC version is slow because of overhead of making it gather previous value
+#if 0
+#define _EMA_ISPC_
+#else
+#endif
+
+
 #include "Indicators/Indicator.h"
 
 class EMA : public Indicator

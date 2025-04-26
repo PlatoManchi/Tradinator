@@ -1,4 +1,10 @@
 #pragma once
+
+#if 1
+#define _BOLLINGER_BAND_ISPC_
+#else
+#endif
+
 #include "Indicators/Indicator.h"
 
 

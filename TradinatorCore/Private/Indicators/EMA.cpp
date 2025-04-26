@@ -5,14 +5,11 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#ifdef _EMA_ISPC_
 #include "indicator_helper_ispc.h"
+#endif // _EMA_ISPC_
 
-// Because each value is dependent on previous value, calculations cannot be parallelized.
-// Which makes ISPC version is slow because of overhead of making it gather previous value
-#if 0
-#define _EMA_ISPC_
-#else
-#endif
+
 
 std::vector<IndicatorPoint> EMA::Calculate()
 {
@@ -33,6 +30,7 @@ std::vector<IndicatorPoint> EMA::Calculate()
 		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		if (count == 0) return result;
 		
 #ifdef _EMA_ISPC_
 		result.reserve(count);

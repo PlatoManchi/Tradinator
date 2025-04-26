@@ -5,25 +5,14 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#ifdef _SMA_ISPC_
 #include "indicator_helper_ispc.h"
-
-#if 1
-#define _SMA_ISPC_
-#else
-#endif
+#endif // _SMA_ISPC_
 
 
-SMA::SMA(size_t length)
-	: Indicator(length)
-{
 
-}
 
-SMA::SMA(std::weak_ptr<Counter> counter, size_t length)
-	: Indicator(counter, length)
-{
 
-}
 
 std::vector<IndicatorPoint> SMA::Calculate()
 {
@@ -45,6 +34,8 @@ std::vector<IndicatorPoint> SMA::Calculate()
 		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		if (count == 0) return result;
+
 		result.reserve(count);
 
 #ifdef _SMA_ISPC_
@@ -77,16 +68,16 @@ std::vector<IndicatorPoint> SMA::Calculate()
 		{
 			size_t window_size = i + m_length < count ? m_length : count - i;
 			auto tmp_itr = itr;
-			double cummulative_closing_price = 0;
+			double cumulative_closing_price = 0;
 			for (size_t j = 0; j < window_size; ++j)
 			{
-				cummulative_closing_price += (*tmp_itr).second.m_close;
+				cumulative_closing_price += (*tmp_itr).second.m_close;
 				std::advance(tmp_itr, 1);
 			}
 
 			IndicatorPoint point;
 			point.date = (*itr).first;
-			point.value = cummulative_closing_price / window_size;
+			point.value = cumulative_closing_price / window_size;
 
 			result.emplace_back(std::move(point));
 

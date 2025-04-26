@@ -1,4 +1,11 @@
 #pragma once
+
+#if 1
+#define _WMA_ISPC_
+#else
+#endif
+
+
 #include "Indicators/Indicator.h"
 
 #include <memory>

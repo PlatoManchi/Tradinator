@@ -57,10 +57,18 @@ void CounterWindow::Show()
         const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = m_counter->GetCandleData();
 
 
-        if (candle_data->IsDataReady() && m_is_dirty)
+        if (candle_data->IsDataReady())
         {
-            m_is_dirty = false;
-            RebuildCachedPlotPoints();
+            if (!m_counter->IsMemoryInSync())
+            {
+                m_counter->LoadCandleDataToMemory();
+            }
+
+            if (m_is_dirty)
+            {
+                m_is_dirty = false;
+                RebuildCachedPlotPoints();
+            }
         }
 
         if (!candle_data->IsDataReady())
@@ -94,7 +102,8 @@ void CounterWindow::Show()
             // close indicators that are marked for closing
             for (std::shared_ptr<Indicator> indicator_to_remove : m_remove_applied_indicators)
             {
-                m_applied_indicators_data.erase(indicator_to_remove);
+                std::erase_if(m_applied_indicators_data, [indicator_to_remove](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) { return other.first == indicator_to_remove; });
+                //m_applied_indicators_data.erase(indicator_to_remove);
             }
             m_remove_applied_indicators.clear();
 
@@ -111,7 +120,7 @@ void CounterWindow::Show()
 
             size_t seperate_charts_count = 0;
 
-            for (auto& pair : m_applied_indicators_data)
+            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
             {
                 if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
                 {
@@ -271,7 +280,7 @@ void CounterWindow::Show()
             }
 
             size_t applied_seperate_charts_index = 0;
-            for (auto& pair : m_applied_indicators_data)
+            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
             {
                 if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
                 {
@@ -333,7 +342,7 @@ void CounterWindow::Show()
                         }
                         ImPlot::EndPlot();
                     }
-                    if (largest_label_width > (pair.second.m_label_width + 5.0))
+                    if (largest_label_width > (pair.second.m_label_width + 20.0))
                     {
                         ImPlot::PopStyleVar();
                     }
@@ -381,7 +390,7 @@ void CounterWindow::ShowIndicatorsList()
         {
             int i = 0;
             int row = -1;
-            for (auto& pair : m_applied_indicators_data)
+            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
             {
                 int tmp_row = i / column_count;
                 if (tmp_row != row)
@@ -474,7 +483,7 @@ void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 co
     indicator_data.m_show = true;
     indicator_data.m_id = _INCREMENTAL_ID_;
 
-    m_applied_indicators_data[indicator] = indicator_data;
+    m_applied_indicators_data.push_back(std::pair<std::shared_ptr<Indicator>, IndicatorData>(indicator, indicator_data));
 
     _INCREMENTAL_ID_++;
 }
@@ -537,7 +546,13 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
 
 void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator) 
 {
-    IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
+        return other.first == indicator;
+        });
+
+    if (itr == m_applied_indicators_data.end()) return;
+
+    IndicatorData& indicator_data = (*itr).second;
     /// @begin Text
     ImGui::SetNextItemWidth(250);
     bool is_selected = false;
@@ -781,7 +796,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
         }
 
         // Draw filling behind the candles otherwise it will cover up the candles
-        for (auto& pair : m_applied_indicators_data)
+        for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
         {
             if (pair.second.m_show &&
                 TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
@@ -804,7 +819,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
             draw_list->AddRectFilled(open_pos, close_pos, color);
         }
 
-        for (auto& pair : m_applied_indicators_data)
+        for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
         {
             if (pair.second.m_show && 
                 TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
@@ -827,7 +842,13 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
 
 void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
 {
-    const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
+        return other.first == indicator;
+        });
+
+    if (itr == m_applied_indicators_data.end()) return;
+
+    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
     size_t count = indicator_data.m_points.size();
     
@@ -840,7 +861,13 @@ void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
 
 void CounterWindow::PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& indicator)
 {
-    const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
+        return other.first == indicator;
+        });
+
+    if (itr == m_applied_indicators_data.end()) return;
+
+    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
     size_t count = indicator_data.m_points.size();
 
     if (count != 0)
@@ -855,7 +882,14 @@ void CounterWindow::PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& 
 
 void CounterWindow::PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>& indicator)
 {
-    const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
+        return other.first == indicator;
+        });
+
+    if (itr == m_applied_indicators_data.end()) return;
+
+    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
+
     size_t count = indicator_data.m_points.size();
 
     if (count != 0)
@@ -896,7 +930,7 @@ Json::Value CounterWindow::GetCounterStatus()
     result["ISIN"] = m_counter->ISIN_Number();
 
     Json::Value applied_indicators(Json::arrayValue);
-    for (auto& indicator : m_applied_indicators_data)
+    for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& indicator : m_applied_indicators_data)
     {
         Json::Value json_indicator;
         json_indicator["Name"] = TradinatorAppSpace::Utils::GetIndicatorTypeStr(indicator.first->IndicatorType());
