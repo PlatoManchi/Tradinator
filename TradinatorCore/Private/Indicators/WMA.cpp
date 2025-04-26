@@ -58,32 +58,29 @@ std::vector<IndicatorPoint> WMA::Calculate()
 			std::advance(itr, 1);
 		}
 #else
-		if (count > m_length)
+		auto itr = candle_data->GetData().begin();
+		for (size_t i = 0; i < count; ++i)
 		{
-			auto itr = candle_data->GetData().begin();
-			for (size_t i = 0; i < count; ++i)
+			size_t window_count = i + m_length < count ? m_length : count - i;
+			auto tmp_itr = itr;
+			double cummulative_closing_price = 0;
+			double weighted_count = 0;
+
+			for (size_t j = 0; j < window_count; ++j)
 			{
-				size_t window_count = i + m_length < count ? m_length : count - i;
-				auto tmp_itr = itr;
-				double cummulative_closing_price = 0;
-				double weighted_count = 0;
+				cummulative_closing_price += ((window_count - j) * (*tmp_itr).second.m_close);
+				weighted_count += (window_count - j);
 
-				for (size_t j = 0; j < window_count; ++j)
-				{
-					cummulative_closing_price += ((window_count - j) * (*tmp_itr).second.m_close);
-					weighted_count += (window_count - j);
-
-					std::advance(tmp_itr, 1);
-				}
-
-				IndicatorPoint point;
-				point.date = (*itr).first;
-				point.value = cummulative_closing_price / weighted_count;
-
-				result.emplace_back(std::move(point));
-
-				std::advance(itr, 1);
+				std::advance(tmp_itr, 1);
 			}
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = cummulative_closing_price / weighted_count;
+
+			result.emplace_back(std::move(point));
+
+			std::advance(itr, 1);
 		}
 #endif // _WMA_ISPC_
 

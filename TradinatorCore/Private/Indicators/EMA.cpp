@@ -66,33 +66,30 @@ std::vector<IndicatorPoint> EMA::Calculate()
 #else
 		result = std::vector<IndicatorPoint>(count);
 
-		if (count > m_length)
+		auto itr = candle_data->GetData().end();
+
+		itr = std::prev(itr, 1);
+
+		// 0th element is same value as closing
+		IndicatorPoint first_point;
+		first_point.date = (*itr).first;
+		first_point.value = (*itr).second.m_close;
+
+		result[count - 1] = first_point;
+
+		const double factor = 2.0 / (m_length + 1.0);
+
+		itr = std::prev(itr, 1);
+
+		for (int64_t i = count - 2; i >= 0; --i)
 		{
-			auto itr = candle_data->GetData().end();
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = (*itr).second.m_close * factor + result[i + 1].value * (1.0 - factor);
+
+			result[i] = point;
 
 			itr = std::prev(itr, 1);
-
-			// 0th element is same value as closing
-			IndicatorPoint first_point;
-			first_point.date = (*itr).first;
-			first_point.value = (*itr).second.m_close;
-
-			result[count - 1] = first_point;
-
-			const double factor = 2.0 / (m_length + 1.0);
-
-			itr = std::prev(itr, 1);
-
-			for (int64_t i = count - 2; i >= 0; --i)
-			{
-				IndicatorPoint point;
-				point.date = (*itr).first;
-				point.value = (*itr).second.m_close * factor + result[i + 1].value * (1.0 - factor);
-
-				result[i] = point;
-
-				itr = std::prev(itr, 1);
-			}
 		}
 #endif // _EMA_ISPC_
 		

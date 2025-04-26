@@ -10,7 +10,7 @@
 
 #include "indicator_helper_ispc.h"
 
-#if 0
+#if 1
 #define _BOLLINGER_BAND_ISPC_
 #else
 #endif
