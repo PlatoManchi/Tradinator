@@ -5,15 +5,15 @@
 // ---------------------------------- SMA -------------------------------------------
 export void calculate_sma(uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int data_size, 
-                            uniform unsigned int window_size) 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
 {
     
     foreach (i = 0 ... data_size) 
     {
         double sum = 0.0f;
         
-        int essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
 
         for (int j = 0; j < essential_window_size; ++j) 
         {
@@ -29,8 +29,8 @@ export void calculate_sma(uniform double* uniform input,
 // ---------------------------------- WMA -------------------------------------------
 export void calculate_wma(uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int data_size, 
-                            uniform unsigned int window_size) 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
 {
     
     foreach (i = 0 ... data_size) 
@@ -38,7 +38,7 @@ export void calculate_wma(uniform double* uniform input,
         double sum = 0.0f;
         int count = 0;
 
-        int32 essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
 
         for (int j = 0; j < essential_window_size; ++j) 
         {
@@ -58,8 +58,8 @@ export void calculate_wma(uniform double* uniform input,
 // than wasting time to launch a SPMD
 export void calculate_ema(uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int data_size, 
-                            uniform unsigned int window_size) 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
 {
     output[0] = input[0];
     uniform double factor = 2.0 / ((double)window_size + 1.0);
@@ -79,15 +79,15 @@ export void calculate_bollinger_band(uniform double* uniform input,
                                         uniform double* uniform top_output,
                                         uniform double* uniform sma_output,
                                         uniform double* uniform bottom_output,
-                                        uniform unsigned int data_size,
-                                        uniform unsigned int window_size,
+                                        uniform unsigned int64 data_size,
+                                        uniform unsigned int64 window_size,
                                         uniform double standard_deviation_multiplier)
 {
     calculate_sma(input, sma_output, data_size, window_size);
 
     foreach (i = 0 ... data_size) 
     {
-        int essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
 
         double mean = sma_output[i];
         double cummulative_deviation_squared = 0;
