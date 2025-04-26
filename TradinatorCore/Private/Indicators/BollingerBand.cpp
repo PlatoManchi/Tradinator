@@ -54,7 +54,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
 		top.reserve(count);
@@ -141,8 +141,8 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 		}
 #endif
 		
-		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		std::cout << "Bollinger Band Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "Bollinger Band Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 
