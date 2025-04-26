@@ -106,3 +106,21 @@ export void calculate_bollinger_band(uniform double* uniform input,
         bottom_output[i] = mean - standard_deviation_multiplier * standard_deviation;
     }
 }
+
+
+// ---------------------------------- ROC -------------------------------------------
+export void calculate_roc(uniform double* uniform input, 
+                            uniform double* uniform output, 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
+{
+    foreach (i = 0 ... data_size) 
+    {
+        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
+
+        double current = input[i];
+        double compare_with = select(i + essential_window_size < data_size, input[i + essential_window_size], input[data_size - 1]);
+
+        output[i] = ((current - compare_with) / compare_with) * 100.0;
+    }
+}
