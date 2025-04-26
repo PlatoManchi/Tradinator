@@ -15,7 +15,6 @@ public:
 
 	virtual std::vector<IndicatorPoint> Calculate() override;
 
-
 	virtual std::string GetName() const override { return "Simple Moving Average"; }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_SMA; }
 	virtual std::unique_ptr<Indicator> Clone() override

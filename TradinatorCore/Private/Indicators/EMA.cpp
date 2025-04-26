@@ -5,8 +5,14 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
-#include "indicator_ispc.h"
+#include "indicator_helper_ispc.h"
 
+// Because each value is dependent on previous value, calculations cannot be parallelized.
+// Which makes ISPC version is slow because of overhead of making it gather previous value
+#if 0
+#define _EMA_ISPC_
+#else
+#endif
 
 std::vector<IndicatorPoint> EMA::Calculate()
 {
@@ -27,6 +33,37 @@ std::vector<IndicatorPoint> EMA::Calculate()
 		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
+		
+#ifdef _EMA_ISPC_
+		result.reserve(count);
+
+		const AsyncCandleData& data = candle_data->GetData();
+		std::vector<double> ispc_input;
+		std::vector<double> ispc_output(count);
+		ispc_input.reserve(count);
+
+		// ISPC doesn't like reading from back to front. So reverse the array here and unreverse the output
+		auto itr = candle_data->GetData().end();
+		for (size_t i = 0; i < count; ++i)
+		{
+			itr = std::prev(itr, 1);
+			ispc_input.emplace_back((*itr).second.m_close);
+		}
+
+		ispc::calculate_ema(ispc_input.data(), ispc_output.data(), count, m_length);
+
+		itr = candle_data->GetData().end();
+		for (double sma : ispc_output)
+		{
+			itr = std::prev(itr, 1);
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = sma;
+
+			result.emplace_back(std::move(point));
+		}
+#else
 		result = std::vector<IndicatorPoint>(count);
 
 		if (count > m_length)
@@ -50,47 +87,17 @@ std::vector<IndicatorPoint> EMA::Calculate()
 			{
 				IndicatorPoint point;
 				point.date = (*itr).first;
-				point.value = (*itr).second.m_close * factor + result[i+1].value * (1.0 - factor);
+				point.value = (*itr).second.m_close * factor + result[i + 1].value * (1.0 - factor);
 
 				result[i] = point;
 
 				itr = std::prev(itr, 1);
 			}
 		}
-
-
-		/*
-		// Because each value is dependent on previous value, calculations cannot be parallelized.
-		// Which makes ISPC version is slow because of overhead of making it gather previous value
-		const AsyncCandleData& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		// ISPC doesn't like reading from back to front. So reverse the array here and unreverse the output
-		auto itr = candle_data->GetData().end();
-		for (size_t i = 0; i < count; ++i)
-		{
-			itr = std::prev(itr, 1);
-			ispc_input.push_back((*itr).second.m_close);
-		}
+#endif // _EMA_ISPC_
 		
-		ispc::calculate_ema(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		itr = candle_data->GetData().end();
-		for (double sma : ispc_output)
-		{
-			itr = std::prev(itr, 1);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			result.push_back(point);
-		}*/
-
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		//std::cout << "EMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

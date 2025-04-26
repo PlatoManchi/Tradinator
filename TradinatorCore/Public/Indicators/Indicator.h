@@ -4,12 +4,21 @@
 #include <chrono>
 #include <vector>
 
+
 class Counter;
 
 struct IndicatorPoint
 {
+	IndicatorPoint() : date(std::chrono::system_clock::duration(0)), value(0) {};
+
 	std::chrono::system_clock::time_point date;
 	double value;
+
+	// copy and move sementics
+	IndicatorPoint(const IndicatorPoint& other) = default;
+	IndicatorPoint(IndicatorPoint&& other) noexcept = default;
+	IndicatorPoint& operator = (const IndicatorPoint& other) = default;
+	IndicatorPoint& operator = (IndicatorPoint&& other) noexcept = default;
 };
 
 enum EIndicatorType {

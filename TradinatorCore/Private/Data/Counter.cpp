@@ -24,6 +24,7 @@
 #include "Indicators/SMA.h"
 #include "Indicators/WMA.h"
 #include "Indicators/EMA.h"
+#include "Indicators/BollingerBand.h"
 
 static std::string _STATUS_ = "status";
 static std::string _SUCCESS_ = "success";
@@ -38,6 +39,7 @@ std::vector<std::unique_ptr<Indicator>> Counter::GetAvailableIndicators()
 	result.push_back(std::make_unique<SMA>(20));
 	result.push_back(std::make_unique<WMA>(20));
 	result.push_back(std::make_unique<EMA>(20));
+	result.push_back(std::make_unique<BollingerBand>(20, 2));
 
 	return result;
 }

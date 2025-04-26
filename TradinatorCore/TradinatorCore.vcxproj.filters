@@ -90,14 +90,17 @@
     <ClInclude Include="Public\Indicators\SMA.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
-    <ClInclude Include="ispc\indicator_ispc.h">
-      <Filter>ispc</Filter>
-    </ClInclude>
     <ClInclude Include="Public\Indicators\EMA.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
     <ClInclude Include="Public\Indicators\WMA.h">
       <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Indicators\BollingerBand.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="ispc\indicator_helper_ispc.h">
+      <Filter>ispc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -155,26 +158,29 @@
     <ClCompile Include="Private\Indicators\EMA.cpp">
       <Filter>Private\Indicators</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Indicators\BollingerBand.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Data\AsyncData.inl">
       <Filter>Public\Data</Filter>
     </None>
-    <None Include="ispc\indicator.ispc">
+    <None Include="ispc\indicator_helper.ispc">
       <Filter>ispc</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Object Include="ispc\indicator_ispc.o">
+    <Object Include="ispc\indicator_helper_ispc.o">
       <Filter>ispc\Objects</Filter>
     </Object>
-    <Object Include="ispc\indicator_ispc_avx2.o">
+    <Object Include="ispc\indicator_helper_ispc_avx2.o">
       <Filter>ispc\Objects</Filter>
     </Object>
-    <Object Include="ispc\indicator_ispc_avx512skx.o">
+    <Object Include="ispc\indicator_helper_ispc_avx512skx.o">
       <Filter>ispc\Objects</Filter>
     </Object>
-    <Object Include="ispc\indicator_ispc_sse2.o">
+    <Object Include="ispc\indicator_helper_ispc_sse2.o">
       <Filter>ispc\Objects</Filter>
     </Object>
   </ItemGroup>

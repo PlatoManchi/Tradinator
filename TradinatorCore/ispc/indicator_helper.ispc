@@ -1,5 +1,5 @@
 // Command to compile and create object and header files
-// ispc indicator.ispc -o indicator_ispc.o -h indicator_ispc.h --target=avx2,avx512skx-x64,sse2
+// ispc indicator_helper.ispc -o indicator_helper_ispc.o -h indicator_helper_ispc.h --target=avx2,avx512skx-x64,sse2
 
 
 // ---------------------------------- SMA -------------------------------------------
@@ -12,19 +12,16 @@ export void calculate_sma(uniform double* uniform input,
     foreach (i = 0 ... data_size) 
     {
         double sum = 0.0f;
-        int count = 0;
-
+        
         int essential_window_size = i + window_size < data_size ? window_size : data_size - i;
 
-        for (int j = 0; j <= essential_window_size; ++j) 
+        for (int j = 0; j < essential_window_size; ++j) 
         {
             int idx = i + j;
-            
             sum += input[idx];
-            count += 1;
         }
 
-        output[i] = sum / count;
+        output[i] = sum / essential_window_size;
     }
 }
 
@@ -72,5 +69,40 @@ export void calculate_ema(uniform double* uniform input,
     for (uniform unsigned int i = 1 ; i < data_size ; ++i) 
     {
         output[i] = input[i] * factor + output[i - 1] * (1.0 - factor);
+    }
+}
+
+
+
+// ---------------------------------- Bollinger Band -------------------------------------------
+export void calculate_bollinger_band(uniform double* uniform input,
+                                        uniform double* uniform top_output,
+                                        uniform double* uniform sma_output,
+                                        uniform double* uniform bottom_output,
+                                        uniform unsigned int data_size,
+                                        uniform unsigned int window_size,
+                                        uniform double standard_deviation_multiplier)
+{
+    calculate_sma(input, sma_output, data_size, window_size);
+
+    foreach (i = 0 ... data_size) 
+    {
+        int essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+
+        double mean = sma_output[i];
+        double cummulative_deviation_squared = 0;
+
+        for (int j = 0; j < essential_window_size; ++j) 
+        {
+            int idx = i + j;
+            double deviation = input[idx] - mean;
+            cummulative_deviation_squared += (deviation * deviation);
+        }
+
+        double variance = cummulative_deviation_squared / essential_window_size;
+        double standard_deviation = sqrt(variance);
+
+        top_output[i] = mean + standard_deviation_multiplier * standard_deviation;
+        bottom_output[i] = mean - standard_deviation_multiplier * standard_deviation;
     }
 }

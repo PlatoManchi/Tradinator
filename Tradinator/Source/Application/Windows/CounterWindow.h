@@ -35,7 +35,10 @@ public:
 private:
 	struct IndicatorData
 	{
+		std::vector<IndicatorPoint> m_top_points;
 		std::vector<IndicatorPoint> m_points;
+		std::vector<IndicatorPoint> m_bottom_points;
+
 		ImVec4 m_color;
 		bool m_show = true;
 		size_t m_id = 0;
@@ -47,10 +50,13 @@ private:
 	void ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator);
 	void ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator);
 	void AddIndicator(std::shared_ptr<Indicator> indicator);
+	void AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 color);
 
 	void RebuildCachedPlotPoints();
 	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
 	void PlotIndicator(const std::shared_ptr<Indicator>& indicator);
+	void PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& indicator);
+	void PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>& indicator);
 
 	//template <typename T>
 	int BinarySearch(const size_t* arr, int l, int r, double x);
@@ -71,6 +77,11 @@ private:
 	size_t date_axis_min, date_axis_max;
 	double price_axis_min, price_axis_max;
 	size_t volume_axis_min, volume_axis_max;
+
+	bool m_is_price_chart_hovered;
+	bool m_is_volume_chart_hovered;
+
+	float m_price_chart_height;
 
 	std::string m_cached_label_id;
 	std::shared_ptr<Counter> m_counter;

@@ -5,6 +5,7 @@
 #include "Indicators/SMA.h"
 #include "Indicators/WMA.h"
 #include "Indicators/EMA.h"
+#include "Indicators/BollingerBand.h"
 
 namespace TradinatorAppSpace
 {
@@ -46,7 +47,7 @@ namespace TradinatorAppSpace
 		case E_EMA:
 			return ImVec4(0.4f, 1.0f, 0.2f, 1.0f);
 		case E_BOLLINGER_BAND:
-			break;
+			return ImVec4(0.368f, 0.368f, 0.972f, 1.0f);
 		case E_ROC:
 			break;
 		case E_RSI:
@@ -112,7 +113,7 @@ namespace TradinatorAppSpace
 		case E_EMA:
 			return std::make_shared<EMA>();
 		case E_BOLLINGER_BAND:
-			break;
+			return std::make_shared<BollingerBand>();
 		case E_ROC:
 			break;
 		case E_RSI:
@@ -130,6 +131,11 @@ namespace TradinatorAppSpace
 			type == EIndicatorType::E_WMA ||
 			type == EIndicatorType::E_EMA ||
 			type == EIndicatorType::E_BOLLINGER_BAND;
+	}
+
+	bool Utils::IsIndicatorEnvelopeType(EIndicatorType type)
+	{
+		return type == EIndicatorType::E_BOLLINGER_BAND;
 	}
 
 	void Utils::SaveWindowsStatus(Json::Value status)

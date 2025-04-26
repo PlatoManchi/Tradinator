@@ -6,7 +6,7 @@
 #include  "json/json.h"
 
 #include "Data/Counter.h"
-#include "Indicators/SMA.h"
+#include "Indicators/BollingerBand.h"
 
 #include "Utils.h"
 
@@ -23,6 +23,8 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , price_axis_max(-DBL_MAX)
     , volume_axis_min(SIZE_MAX)
     , volume_axis_max(0)
+    , m_is_price_chart_hovered(false)
+    , m_is_volume_chart_hovered(false)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
 
@@ -85,6 +87,8 @@ void CounterWindow::Show()
             }
             m_remove_applied_indicators.clear();
 
+            m_price_chart_height = ImGui::GetWindowHeight();
+            m_price_chart_height -= 300; // remove volume
 
             size_t count = candle_data->GetData().size();
 
@@ -100,6 +104,15 @@ void CounterWindow::Show()
             ImGui::SameLine(); ImGui::ColorEdit4("##Bear", &bearCol.x, ImGuiColorEditFlags_NoInputs);
             ImPlot::GetStyle().UseLocalTime = false;
 
+            m_price_chart_height -= 50; // for checkbox and color selector
+            m_price_chart_height -= 90; // miscellaneous
+
+
+            if (m_price_chart_height < 300.0f)
+            {
+                // Minimum height for the price chart
+                m_price_chart_height = 300.0f;
+            }
 
             float volume_label_width = ImGui::CalcTextSize(std::format("{:.0f}", m_volume_chart_limits.Y.Max).c_str()).x;
             float price_label_width = ImGui::CalcTextSize(std::format("${:.0f}", m_price_chart_limits.Y.Max).c_str()).x;
@@ -109,9 +122,19 @@ void CounterWindow::Show()
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
             
-            if (ImPlot::BeginPlot("Candlestick Chart", ImVec2(-1, -1), ImPlotFlags_NoLegend)) {
+            if (ImPlot::BeginPlot("Price Chart", ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-                ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, price_axis_min, price_axis_max);
+                if (m_is_price_chart_hovered)
+                {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
+                }
+                else
+                {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                }
+                //ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, price_axis_min, price_axis_max);
+                
+                ImPlot::SetupAxisLimits(ImAxis_Y1, price_axis_min, price_axis_max);
                 ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
                 ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
@@ -120,6 +143,17 @@ void CounterWindow::Show()
                 PlotCandlestick(m_counter->Name().c_str(), m_dates.data(), m_opens.data(), m_closes.data(), m_lows.data(), m_highes.data(), m_dates.size(), tooltip, 0.25f, bullCol, bearCol);
 
                 m_price_chart_limits = ImPlot::GetPlotLimits();
+
+                // sharing plot limits so they are all in sync
+                if (ImPlot::IsPlotHovered())
+                {
+                    m_shared_limits = ImPlot::GetPlotLimits();
+                    m_is_price_chart_hovered = true;
+                }
+                else
+                {
+                    m_is_price_chart_hovered = false;
+                }
 
                 ImPlot::EndPlot();
             }
@@ -135,13 +169,21 @@ void CounterWindow::Show()
                 ImVec2 plot_padding(price_label_width - volume_label_width + 5, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
-            if (ImPlot::BeginPlot("Bar Plot", ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
+            if (ImPlot::BeginPlot("Volume Plot", ImVec2(-1, 300), ImPlotFlags_NoLegend | ImPlotFlags_CanvasOnly)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
 
                 ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
                 //ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, volume_axis_min, volume_axis_max);
-                ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                if (m_is_volume_chart_hovered)
+                {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
+                }
+                else
+                {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                }
                 ImPlot::SetupAxisLimits(ImAxis_Y1, volume_axis_min, volume_axis_max);
+
                 ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
                 ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
@@ -150,6 +192,17 @@ void CounterWindow::Show()
                 ImPlot::PlotBars("Volume", m_dates.data(), m_volumes.data(), m_volumes.size(), x_axis_interval * 0.5);
 
                 m_volume_chart_limits = ImPlot::GetPlotLimits();
+
+                // sharing plot limits so they are all in sync
+                if (ImPlot::IsPlotHovered())
+                {
+                    m_shared_limits = ImPlot::GetPlotLimits();
+                    m_is_volume_chart_hovered = true;
+                }
+                else
+                {
+                    m_is_volume_chart_hovered = false;
+                }
 
                 ImPlot::EndPlot();
             }
@@ -192,6 +245,9 @@ void CounterWindow::ShowIndicatorsList()
 
     float child_window_height = num_of_rows * indicator_height > 200.0f ? 200.0f : num_of_rows * indicator_height;
     child_window_height += 50; // adding the height for the heading text
+
+    m_price_chart_height -= child_window_height; // remove this height from available space for price chart
+
     /// @begin Child
     ImGui::SameLine(0, 0 * ImGui::GetStyle().ItemSpacing.x);
     ImGui::BeginChild("child1", { table_width, child_window_height }, ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_NoSavedSettings);
@@ -270,6 +326,37 @@ void CounterWindow::ShowIndicatorsList()
     /// @end Child
 }
 
+void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator)
+{
+    AddIndicator(indicator, TradinatorAppSpace::Utils::GetIndicatorColor(indicator->IndicatorType()));
+}
+
+void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 color)
+{
+    IndicatorData indicator_data;
+    indicator_data.m_color = color;
+    if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
+    {
+        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+        std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
+        indicator_data.m_top_points = std::move(envelope_points[0]);
+        indicator_data.m_points = std::move(envelope_points[1]);
+        indicator_data.m_bottom_points = std::move(envelope_points[2]);
+    }
+    else
+    {
+        indicator_data.m_points = std::move(indicator->Calculate());
+    }
+    
+    indicator_data.m_show = true;
+    indicator_data.m_id = _INCREMENTAL_ID_;
+
+    m_applied_indicators_data[indicator] = indicator_data;
+
+    _INCREMENTAL_ID_++;
+}
+
 void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator)
 {
     /// @begin Text
@@ -288,13 +375,30 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
     char length_str[4] = "";
     std::copy(indicator_length.begin(), indicator_length.end(), length_str);
     
-    if (ImGui::InputText(std::format("##input{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##length{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
         indicator->SetLength(length);
     }
     ImGui::SameLine();
     
+    if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
+    {
+        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+        ImGui::SetNextItemWidth(70);
+        std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
+        char multiplier_str[5] = "";
+        std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
+
+        if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator->GetName()).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+        {
+            double multiplier = std::atof(multiplier_str);
+            bollinger_band->SetStandardDeviationMultiplier(multiplier);
+        }
+        ImGui::SameLine();
+    }
+
     /// @end Input
 
     /// @begin Button
@@ -307,19 +411,6 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
         AddIndicator(new_indicator);
         
     }
-}
-
-void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator)
-{
-    IndicatorData indicator_date;
-    indicator_date.m_color = TradinatorAppSpace::Utils::GetIndicatorColor(indicator->IndicatorType());
-    indicator_date.m_points = indicator->Calculate();
-    indicator_date.m_show = true;
-    indicator_date.m_id = _INCREMENTAL_ID_;
-
-    m_applied_indicators_data[indicator] = indicator_date;
-
-    _INCREMENTAL_ID_++;
 }
 
 void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator) 
@@ -348,9 +439,43 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
         int length = std::atoi(length_str);
         indicator->SetLength(length);
 
-        indicator_data.m_points = indicator->Calculate();
+        if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
+        {
+            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+            std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
+            indicator_data.m_top_points = std::move(envelope_points[0]);
+            indicator_data.m_points = std::move(envelope_points[1]);
+            indicator_data.m_bottom_points = std::move(envelope_points[2]);
+        }
+        else
+        {
+            indicator_data.m_points = std::move(indicator->Calculate());
+        }
     }
     ImGui::SameLine();
+
+    if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
+    {
+        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+        ImGui::SetNextItemWidth(70);
+        std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
+        char multiplier_str[5] = "";
+        std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
+
+        if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator_data.m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+        {
+            double multiplier = std::atof(multiplier_str);
+            bollinger_band->SetStandardDeviationMultiplier(multiplier);
+
+            std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
+            indicator_data.m_top_points = std::move(envelope_points[0]);
+            indicator_data.m_points = std::move(envelope_points[1]);
+            indicator_data.m_bottom_points = std::move(envelope_points[2]);
+        }
+        ImGui::SameLine();
+    }
 
     /// @end Input
     ImGui::ColorEdit4(std::format("##plot color{}", indicator_data.m_id).c_str(), &indicator_data.m_color.x, ImGuiColorEditFlags_NoInputs);
@@ -384,19 +509,26 @@ void CounterWindow::ShowTitle()
     //ImGui::SetCursorPosX(available_space.x - button_size.x);
     ImVec2 prev_cursor_pos = ImGui::GetCursorPos();
     ImGui::SetCursorPos(ImVec2(window_size.x - button_size.x, top - 16));
+
+    // remove padding after x button so that there is no scrolling
+    // but this isn't working. 
+    // TODO: Figure out how to remove padding after x button so that page won't scroll horizontally
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0)); 
     if (ImGui::Button(" X ", button_size))
     {
         m_close = true;
-        // TODO: Unload counter candle and other data to save memory
     }
     ImGui::SetCursorPos(ImVec2(window_size.x - button_size.x * 2.0f, top - 16));
     if (ImGui::Button(" [] ", button_size))
     {
         m_maximize = true;
     }
+    ImGui::PopStyleVar();
     ImGui::SetCursorPos(prev_cursor_pos);
 
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+
+    m_price_chart_height -= (button_size.x + 20); // title height and sepertor
 }
 
 void CounterWindow::RebuildCachedPlotPoints()
@@ -473,12 +605,6 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
     double x_axis_interval = 60 * 60 * 24; // one day in sec
     double half_width = count > 1 ? x_axis_interval * width_percent : width_percent;
 
-    // sharing plot limits so they are all in sync
-    if (ImPlot::IsPlotHovered())
-    {
-        m_shared_limits = ImPlot::GetPlotLimits();
-    }
-
     // custom tool
     if (ImPlot::IsPlotHovered() && tooltip) 
     {
@@ -499,11 +625,23 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
             ImGui::BeginTooltip();
             char buff[32];
             ImPlot::FormatDate(ImPlotTime::FromDouble(xs[idx]), buff, 32, ImPlotDateFmt_DayMoYr, ImPlot::GetStyle().UseISO8601);
-            ImGui::Text("Day:   %s", buff);
-            ImGui::Text("Open:  $%.2f", opens[idx]);
-            ImGui::Text("Close: $%.2f", closes[idx]);
-            ImGui::Text("Low:   $%.2f", lows[idx]);
-            ImGui::Text("High:  $%.2f", highs[idx]);
+
+            std::string text = std::format(
+                "Day:    {}\n\n"
+                "Open:   ${}\n"
+                "Close:  ${}\n"
+                "Low:    ${}\n"
+                "High:   ${}\n\n"
+                "Volume: {}", buff, opens[idx], closes[idx], lows[idx], highs[idx], m_volumes[idx]);
+
+            /*ImGui::Text("Day:    %s", buff);
+            ImGui::Text("Open:   $%.2f", opens[idx]);
+            ImGui::Text("Close:  $%.2f", closes[idx]);
+            ImGui::Text("Low:    $%.2f", lows[idx]);
+            ImGui::Text("High:   $%.2f", highs[idx]);
+            ImGui::Text("\nVolume: %.0f", m_volumes[idx]);*/
+            ImGui::Text(text.c_str());
+
             ImGui::EndTooltip();
         }
     }
@@ -519,6 +657,20 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
                 ImPlot::FitPoint(ImPlotPoint(xs[i], highs[i]));
             }
         }
+
+        // Draw filling behind the candles otherwise it will cover up the candles
+        for (auto& pair : m_applied_indicators_data)
+        {
+            if (pair.second.m_show &&
+                TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+            {
+                if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(pair.first->IndicatorType()))
+                {
+                    PlotEnvelopeIndicatorFill(pair.first);
+                }
+            }
+        }
+
         // render data
         for (int i = 0; i < count; ++i) {
             ImVec2 open_pos = ImPlot::PlotToPixels(xs[i] - half_width, opens[i]);
@@ -532,15 +684,31 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
 
         for (auto& pair : m_applied_indicators_data)
         {
-            if (pair.second.m_show && TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+            if (pair.second.m_show && 
+                TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
             {
-                PlotIndicator(pair.first);
+                if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(pair.first->IndicatorType()))
+                {
+                    PlotEnvelopeIndicatorLines(pair.first);
+                }
+                else
+                {
+                    PlotIndicator(pair.first);
+                }
             }
         }
 
         // end plot item
         ImPlot::EndItem();
     }
+}
+
+// Getter for Y2 (e.g., cos curve)
+ImPlotPoint plot_point_getter(int idx, void* data) {
+    std::vector<IndicatorPoint>* point_data = (std::vector<IndicatorPoint>*)(data);
+    const IndicatorPoint& point = (*point_data)[idx];
+
+    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(point.date.time_since_epoch()).count(), point.value);
 }
 
 void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
@@ -551,13 +719,52 @@ void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
     
     if (count != 0)
     {
+        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
+
+        ImPlot::PlotLineG("Indicators", plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
+
         for (int i = 0; i < count - 1; ++i)
         {
-            ImVec2 p1 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i].date.time_since_epoch()).count(), indicator_data.m_points[i].value);
-            ImVec2 p2 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i + 1].date.time_since_epoch()).count(), indicator_data.m_points[i + 1].value);
+            
 
-            draw_list->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(indicator_data.m_color));
+            //ImVec2 p1 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i].date.time_since_epoch()).count(), indicator_data.m_points[i].value);
+            //ImVec2 p2 = ImPlot::PlotToPixels(std::chrono::duration_cast<std::chrono::seconds>(indicator_data.m_points[i + 1].date.time_since_epoch()).count(), indicator_data.m_points[i + 1].value);
+
+            //draw_list->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(indicator_data.m_color));
         }
+    }
+}
+
+void CounterWindow::PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& indicator)
+{
+    const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    size_t count = indicator_data.m_points.size();
+
+    if (count != 0)
+    {
+        // 10% of alpha of original color for filling
+        ImPlot::SetNextFillStyle(indicator_data.m_color, indicator_data.m_color.w * 0.1);
+
+        ImPlot::PlotShadedG("BollingerBand", plot_point_getter, (void*)& indicator_data.m_top_points,
+            plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
+    }
+}
+
+void CounterWindow::PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>& indicator)
+{
+    const CounterWindow::IndicatorData& indicator_data = m_applied_indicators_data[indicator];
+    size_t count = indicator_data.m_points.size();
+
+    if (count != 0)
+    {
+        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
+        ImPlot::PlotLineG("Top", plot_point_getter, (void*)&indicator_data.m_top_points, indicator_data.m_top_points.size());
+
+        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
+        ImPlot::PlotLineG("Top", plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
+
+        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
+        ImPlot::PlotLineG("Bottom", plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
     }
 }
 
@@ -592,6 +799,21 @@ Json::Value CounterWindow::GetCounterStatus()
         json_indicator["Name"] = TradinatorAppSpace::Utils::GetIndicatorTypeStr(indicator.first->IndicatorType());
         json_indicator["Length"] = indicator.first->GetLength();
 
+        if (indicator.first->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
+        {
+            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.first.get());
+            json_indicator["Multiplier"] = bollinger_band->GetStandardDeviationMultiplier();
+        }
+
+        Json::Value color;
+
+        color["R"] = indicator.second.m_color.x;
+        color["G"] = indicator.second.m_color.y;
+        color["B"] = indicator.second.m_color.z;
+        color["A"] = indicator.second.m_color.w;
+
+        json_indicator["Color"] = color;
+
         applied_indicators.append(json_indicator);
     }
 
@@ -616,7 +838,19 @@ void CounterWindow::SetCounterStatus(Json::Value status)
             indicator->SetCounter(m_counter);
             indicator->SetLength(json_indicator["Length"].asUInt64());
 
-            AddIndicator(indicator);
+            if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
+            {
+                BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+                bollinger_band->SetStandardDeviationMultiplier(json_indicator["Multiplier"].asDouble());
+            }
+
+            ImVec4 color;
+            color.x = json_indicator["Color"]["R"].asFloat();
+            color.y = json_indicator["Color"]["G"].asFloat();
+            color.z = json_indicator["Color"]["B"].asFloat();
+            color.w = json_indicator["Color"]["A"].asFloat();
+
+            AddIndicator(indicator, color);
         }
     }
 }

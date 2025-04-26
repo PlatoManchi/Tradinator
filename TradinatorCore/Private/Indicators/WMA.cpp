@@ -5,7 +5,12 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
-#include "indicator_ispc.h"
+#include "indicator_helper_ispc.h"
+
+#if 1
+#define _WMA_ISPC_
+#else
+#endif
 
 std::vector<IndicatorPoint> WMA::Calculate()
 {
@@ -28,7 +33,32 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		size_t count = candle_data->GetData().size();
 		result.reserve(count);
 
-		/*if (count > m_length)
+#ifdef _WMA_ISPC_
+		const AsyncCandleData& data = candle_data->GetData();
+		std::vector<double> ispc_input;
+		std::vector<double> ispc_output(count);
+		ispc_input.reserve(count);
+
+		for (auto& pair : data)
+		{
+			ispc_input.emplace_back(pair.second.m_close);
+		}
+
+		ispc::calculate_wma(ispc_input.data(), ispc_output.data(), count, m_length);
+
+		auto itr = candle_data->GetData().begin();
+		for (double sma : ispc_output)
+		{
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = sma;
+
+			result.emplace_back(std::move(point));
+
+			std::advance(itr, 1);
+		}
+#else
+		if (count > m_length)
 		{
 			auto itr = candle_data->GetData().begin();
 			for (size_t i = 0; i < count; ++i)
@@ -50,39 +80,17 @@ std::vector<IndicatorPoint> WMA::Calculate()
 				point.date = (*itr).first;
 				point.value = cummulative_closing_price / weighted_count;
 
-				result.push_back(point);
+				result.emplace_back(std::move(point));
 
 				std::advance(itr, 1);
 			}
-		}*/
-
-
-		const AsyncCandleData& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
-		{
-			ispc_input.push_back(pair.second.m_close);
 		}
+#endif // _WMA_ISPC_
 
-		ispc::calculate_wma(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
-		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			result.push_back(point);
-
-			std::advance(itr, 1);
-		}
+		
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		//std::cout << "WMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;
