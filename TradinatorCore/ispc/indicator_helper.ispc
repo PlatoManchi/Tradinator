@@ -90,16 +90,16 @@ export void calculate_bollinger_band(uniform double* uniform input,
         int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
 
         double mean = sma_output[i];
-        double cummulative_deviation_squared = 0;
+        double cumulative_deviation_squared = 0;
 
         for (int j = 0; j < essential_window_size; ++j) 
         {
             int idx = i + j;
             double deviation = input[idx] - mean;
-            cummulative_deviation_squared += (deviation * deviation);
+            cumulative_deviation_squared += (deviation * deviation);
         }
 
-        double variance = cummulative_deviation_squared / essential_window_size;
+        double variance = cumulative_deviation_squared / essential_window_size;
         double standard_deviation = sqrt(variance);
 
         top_output[i] = mean + standard_deviation_multiplier * standard_deviation;
@@ -123,4 +123,36 @@ export void calculate_roc(uniform double* uniform input,
 
         output[i] = ((current - compare_with) / compare_with) * 100.0;
     }
+}
+
+
+// ---------------------------------- RSI -------------------------------------------
+export void calculate_rsi(uniform double* uniform input, 
+                            uniform double* uniform output, 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
+{
+    uniform double zero = 0.0;
+    foreach (i = 0 ... data_size - 1)
+    {
+        int64 essential_window_size = select(i + window_size < data_size - 1, window_size, data_size - i - 1);
+
+        double cumulative_gain = 0;
+        double cumulative_loss = 0;
+
+        for (int j = 0; j < essential_window_size; ++j) 
+        {
+            int idx = i + j;
+            
+            double diff = input[idx] - input[idx + 1];
+
+            cumulative_gain += select(diff > 0.0, diff, zero);
+            cumulative_loss += select(diff < 0.0, diff, zero);
+        }
+
+        double relative_strength = cumulative_gain / abs(cumulative_loss);
+        output[i] = 100.0 - 100.0 / (1 + relative_strength);
+    }
+
+    output[data_size - 1] = 0;
 }

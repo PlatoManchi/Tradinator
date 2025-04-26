@@ -1,0 +1,114 @@
+#include "Indicators/RSI.h"
+
+#include <iostream>
+
+#include "Data/Counter.h"
+#include "Data/AsyncData.h"
+
+#ifdef _RSI_ISPC_
+#include "indicator_helper_ispc.h"
+#endif // _RSI_ISPC_
+
+
+
+std::vector<IndicatorPoint> RSI::Calculate()
+{
+	std::vector<IndicatorPoint> result;
+	if (m_length == 0) return result;
+
+	std::shared_ptr<Counter> counter = m_counter.lock();
+
+	if (counter)
+	{
+		const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = counter->GetCandleData();
+		bool is_ready = candle_data->IsDataReady();
+		while (!is_ready)
+		{
+			is_ready = candle_data->IsDataReady();
+		}
+
+		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+		size_t count = candle_data->GetData().size();
+		if (count == 0) return result;
+
+		result.reserve(count);
+
+
+#ifdef _RSI_ISPC_
+		const AsyncCandleData& data = candle_data->GetData();
+		std::vector<double> ispc_input;
+		std::vector<double> ispc_output(count);
+		ispc_input.reserve(count);
+
+		for (auto& pair : data)
+		{
+			ispc_input.emplace_back(pair.second.m_close);
+		}
+
+		ispc::calculate_rsi(ispc_input.data(), ispc_output.data(), count, m_length);
+
+		auto itr = candle_data->GetData().begin();
+		for (double sma : ispc_output)
+		{
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = sma;
+
+			result.emplace_back(std::move(point));
+
+			std::advance(itr, 1);
+		}
+#else
+		auto itr = candle_data->GetData().begin();
+		auto end_itr = candle_data->GetData().end();
+
+		for (size_t i = 0; i < count-1; ++i)
+		{
+			size_t window_size = i + m_length < count - 1 ? m_length : count - i - 1;
+			auto tmp_itr = itr;
+			
+			double cumulative_gain = 0;
+			double cumulative_loss = 0;
+
+			for (size_t j = 0; j < window_size; ++j)
+			{
+				double current = (*tmp_itr).second.m_close;
+
+				std::advance(tmp_itr, 1);
+				
+				double prev = (*tmp_itr).second.m_close;
+
+				double diff = current - prev;
+				if (diff > 0)
+					cumulative_gain += diff;
+				else if (diff < 0)
+					cumulative_loss += diff;
+			}
+			double relative_strength = cumulative_gain / fabs(cumulative_loss);
+			double relative_strength_index = 100.0 - 100.0 / (1 + relative_strength);
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = relative_strength_index;
+
+			result.emplace_back(std::move(point));
+
+			std::advance(itr, 1);
+		}
+
+		IndicatorPoint point;
+		point.date = (*itr).first;
+		point.value = 0;
+
+		result.emplace_back(std::move(point));
+#endif // _RSI_ISPC_
+
+
+
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "RSI Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+	}
+
+	return result;
+}
