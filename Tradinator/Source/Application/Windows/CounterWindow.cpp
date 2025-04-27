@@ -519,6 +519,9 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
             int length = std::atoi(length_str);
             indicator->SetLength(length);
         }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Length");
+        }
         ImGui::SameLine();
 
         if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
@@ -534,6 +537,9 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
             {
                 double multiplier = std::atof(multiplier_str);
                 bollinger_band->SetStandardDeviationMultiplier(multiplier);
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Standard Deviation Multiplier");
             }
             ImGui::SameLine();
         }
@@ -552,6 +558,9 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
 
         AddIndicator(new_indicator);
         
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Apply {}", indicator->GetName()).c_str());
     }
 
     if (is_disabled)
@@ -608,6 +617,9 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
                 indicator_data.m_points = std::move(indicator->Calculate());
             }
         }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Length");
+        }
         ImGui::SameLine();
 
         if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
@@ -629,6 +641,9 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
                 indicator_data.m_points = std::move(envelope_points[1]);
                 indicator_data.m_bottom_points = std::move(envelope_points[2]);
             }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Standard Deviation Multiplier");
+            }
             ImGui::SameLine();
         }
 
@@ -644,6 +659,9 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
     if (ImGui::Button(std::format(" x ##remove indicator{}", indicator_data.m_id).c_str(), { 0, 0 }))
     {
         m_remove_applied_indicators.push_back(indicator);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Remove {}", indicator->GetName()).c_str());
     }
 }
 
