@@ -490,6 +490,12 @@ void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 co
 
 void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator)
 {
+    bool is_disabled = !CanApplyIndicatorOfType(indicator->IndicatorType());
+    if (is_disabled)
+    {
+        ImGui::BeginDisabled();
+    }
+
     /// @begin Text
     ImGui::SetNextItemWidth(350);
     bool is_selected = false;
@@ -500,37 +506,42 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
     ImGui::TextUnformatted(indicator->GetName().c_str()); ImGui::SameLine();
     /// @end Text
 
-    /// @begin Input
-    ImGui::SetNextItemWidth(70);
-    std::string indicator_length = std::format("{}", indicator->GetLength());
-    char length_str[4] = "";
-    std::copy(indicator_length.begin(), indicator_length.end(), length_str);
-    
-    if (ImGui::InputText(std::format("##length{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    if (indicator->IndicatorType() != EIndicatorType::E_OBV)
     {
-        int length = std::atoi(length_str);
-        indicator->SetLength(length);
-    }
-    ImGui::SameLine();
-    
-    if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-    {
-        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
+        /// @begin Input
         ImGui::SetNextItemWidth(70);
-        std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
-        char multiplier_str[5] = "";
-        std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
+        std::string indicator_length = std::format("{}", indicator->GetLength());
+        char length_str[4] = "";
+        std::copy(indicator_length.begin(), indicator_length.end(), length_str);
 
-        if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator->GetName()).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+        if (ImGui::InputText(std::format("##length{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
         {
-            double multiplier = std::atof(multiplier_str);
-            bollinger_band->SetStandardDeviationMultiplier(multiplier);
+            int length = std::atoi(length_str);
+            indicator->SetLength(length);
         }
         ImGui::SameLine();
-    }
 
-    /// @end Input
+        if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
+        {
+            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+            ImGui::SetNextItemWidth(70);
+            std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
+            char multiplier_str[5] = "";
+            std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
+
+            if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator->GetName()).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+            {
+                double multiplier = std::atof(multiplier_str);
+                bollinger_band->SetStandardDeviationMultiplier(multiplier);
+            }
+            ImGui::SameLine();
+        }
+        /// @end Input
+    }
+    
+
+    
 
     /// @begin Button
     ImGui::SetNextItemWidth(50);
@@ -541,6 +552,11 @@ void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& ind
 
         AddIndicator(new_indicator);
         
+    }
+
+    if (is_disabled)
+    {
+        ImGui::EndDisabled();
     }
 }
 
@@ -564,57 +580,62 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
     ImGui::Checkbox(std::format("##show/hide{}", indicator_data.m_id).c_str(), &indicator_data.m_show); ImGui::SameLine();
     ImGui::TextUnformatted(indicator->GetName().c_str()); ImGui::SameLine();
     /// @end Text
-
-    /// @begin Input
-    ImGui::SetNextItemWidth(70);
-    std::string indicator_length = std::format("{}", indicator->GetLength());
-    char length_str[4] = "";
-    std::copy(indicator_length.begin(), indicator_length.end(), length_str);
-
-    if (ImGui::InputText(std::format("##indicator length{}", indicator_data.m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    
+    if (indicator->IndicatorType() != EIndicatorType::E_OBV)
     {
-        int length = std::atoi(length_str);
-        indicator->SetLength(length);
+        /// @begin Input
+        ImGui::SetNextItemWidth(70);
+        std::string indicator_length = std::format("{}", indicator->GetLength());
+        char length_str[4] = "";
+        std::copy(indicator_length.begin(), indicator_length.end(), length_str);
 
-        if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
+        if (ImGui::InputText(std::format("##indicator length{}", indicator_data.m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+        {
+            int length = std::atoi(length_str);
+            indicator->SetLength(length);
+
+            if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
+            {
+                BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
+
+                std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
+                indicator_data.m_top_points = std::move(envelope_points[0]);
+                indicator_data.m_points = std::move(envelope_points[1]);
+                indicator_data.m_bottom_points = std::move(envelope_points[2]);
+            }
+            else
+            {
+                indicator_data.m_points = std::move(indicator->Calculate());
+            }
+        }
+        ImGui::SameLine();
+
+        if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
         {
             BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
 
-            std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
-            indicator_data.m_top_points = std::move(envelope_points[0]);
-            indicator_data.m_points = std::move(envelope_points[1]);
-            indicator_data.m_bottom_points = std::move(envelope_points[2]);
+            ImGui::SetNextItemWidth(70);
+            std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
+            char multiplier_str[5] = "";
+            std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
+
+            if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator_data.m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+            {
+                double multiplier = std::atof(multiplier_str);
+                bollinger_band->SetStandardDeviationMultiplier(multiplier);
+
+                std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
+                indicator_data.m_top_points = std::move(envelope_points[0]);
+                indicator_data.m_points = std::move(envelope_points[1]);
+                indicator_data.m_bottom_points = std::move(envelope_points[2]);
+            }
+            ImGui::SameLine();
         }
-        else
-        {
-            indicator_data.m_points = std::move(indicator->Calculate());
-        }
-    }
-    ImGui::SameLine();
 
-    if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-    {
-        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
-        ImGui::SetNextItemWidth(70);
-        std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
-        char multiplier_str[5] = "";
-        std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
-
-        if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator_data.m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
-        {
-            double multiplier = std::atof(multiplier_str);
-            bollinger_band->SetStandardDeviationMultiplier(multiplier);
-
-            std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
-            indicator_data.m_top_points = std::move(envelope_points[0]);
-            indicator_data.m_points = std::move(envelope_points[1]);
-            indicator_data.m_bottom_points = std::move(envelope_points[2]);
-        }
-        ImGui::SameLine();
+        /// @end Input
     }
 
-    /// @end Input
+    
     ImGui::ColorEdit4(std::format("##plot color{}", indicator_data.m_id).c_str(), &indicator_data.m_color.x, ImGuiColorEditFlags_NoInputs);
 
     ::ImGui::SameLine();
@@ -624,6 +645,31 @@ void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indic
     {
         m_remove_applied_indicators.push_back(indicator);
     }
+}
+
+bool CounterWindow::CanApplyIndicatorOfType(EIndicatorType type)
+{
+    auto available_itr = std::find_if(m_available_indicators.begin(), m_available_indicators.end(),
+        [type](const std::unique_ptr<Indicator>& other) -> bool
+        {
+            return other->IndicatorType() == type;
+        });
+    
+    if (available_itr != m_available_indicators.end())
+    {
+        if ((*available_itr)->IsSingleInstanceType())
+        {
+            auto applied_itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(),
+                [type](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) -> bool
+                {
+                    return other.first->IndicatorType() == type;
+                });
+
+            return applied_itr == m_applied_indicators_data.end();
+        }
+    }
+
+    return true;
 }
 
 void CounterWindow::ShowTitle()

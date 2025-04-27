@@ -37,7 +37,7 @@ namespace TradinatorAppSpace
 		ImGui::PopFont();
 	}
 
-	ImVec4 Utils::GetIndicatorColor(EIndicatorType type)
+	ImVec4 Utils::GetIndicatorColor(EIndicatorType type, size_t index)
 	{
 		assert(type != EIndicatorType::MIN && type != EIndicatorType::MAX);
 
@@ -55,7 +55,21 @@ namespace TradinatorAppSpace
 			return ImVec4(1.0f, 0.501f, 0.0f, 1.0f);
 		case E_RSI:
 			return ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
+		case E_OBV:
+			return ImVec4(0.298f, 0.686f, 0.314f, 1.0f);
 		case E_MACD:
+			if (index == 0)
+			{
+				return ImVec4(0.0f, 0.5f, 1.0f, 1.0f);
+			}
+			if (index == 1)
+			{
+				return ImVec4(0.0f, 0.607f, 0.0f, 1.0f);
+			}
+			if (index == 3)
+			{
+				return ImVec4(1.0f, 0.349f, 0.349f, 1.0f);
+			}
 			break;
 		}
 
@@ -78,6 +92,8 @@ namespace TradinatorAppSpace
 			return "ROC";
 		case E_RSI:
 			return "RSI";
+		case E_OBV:
+			return "OBV";
 		case E_MACD:
 			return "MACD";
 		}
@@ -99,6 +115,8 @@ namespace TradinatorAppSpace
 			return EIndicatorType::E_ROC;
 		else if (type_str == "RSI")
 			return EIndicatorType::E_RSI;
+		else if(type_str == "OBV")
+			return EIndicatorType::E_OBV;
 		else if (type_str == "MACD")
 			return EIndicatorType::E_MACD;
 

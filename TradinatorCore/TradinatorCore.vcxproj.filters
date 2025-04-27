@@ -108,6 +108,9 @@
     <ClInclude Include="Public\Indicators\RSI.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Indicators\OBV.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -171,6 +174,9 @@
       <Filter>Private\Indicators</Filter>
     </ClCompile>
     <ClCompile Include="Private\Indicators\RSI.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\OBV.cpp">
       <Filter>Private\Indicators</Filter>
     </ClCompile>
   </ItemGroup>

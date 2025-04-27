@@ -30,6 +30,7 @@ enum EIndicatorType {
 	E_BOLLINGER_BAND,
 	E_ROC,
 	E_RSI,
+	E_OBV,
 	E_MACD,
 
 
@@ -47,6 +48,9 @@ public:
 	virtual std::string GetName() const = 0;
 	virtual EIndicatorType IndicatorType() const = 0;
 	virtual std::unique_ptr<Indicator> Clone() = 0;
+
+	// If true: only one instance of this indicator can be applied to a counter
+	virtual bool IsSingleInstanceType() const { return false; }
 	
 	void SetCounter(std::weak_ptr<Counter> counter) { m_counter = counter; }
 	void SetLength(size_t length) { m_length = length; }

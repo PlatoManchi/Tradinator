@@ -53,6 +53,7 @@ private:
 	void ShowIndicatorsList();
 	void ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator);
 	void ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator);
+	bool CanApplyIndicatorOfType(EIndicatorType type);
 	void AddIndicator(std::shared_ptr<Indicator> indicator);
 	void AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 color);
 

@@ -8,6 +8,7 @@
 #include "Indicators/BollingerBand.h"
 #include "Indicators/ROC.h"
 #include "Indicators/RSI.h"
+#include "Indicators/OBV.h"
 
 
 std::string TradinatorCoreSpace::Utils::_DATA_FOLDER_PATH_;
@@ -23,6 +24,7 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
     result.push_back(std::make_unique<BollingerBand>(20, 2));
     result.push_back(std::make_unique<ROC>(12));
     result.push_back(std::make_unique<RSI>(14));
+    result.push_back(std::make_unique<OBV>());
 
     return result;
 }

@@ -18,7 +18,7 @@ namespace TradinatorAppSpace
 		static void PushBodyFont();
 		static void PushHeadingFont();
 		static void PopFont();
-		static ImVec4 GetIndicatorColor(EIndicatorType type);
+		static ImVec4 GetIndicatorColor(EIndicatorType type, size_t index = 0);
 		static std::string GetIndicatorTypeStr(EIndicatorType type);
 		static EIndicatorType GetIndicatorType(std::string type_str);
 		static std::shared_ptr<Indicator> GetIndicator(EIndicatorType type);
