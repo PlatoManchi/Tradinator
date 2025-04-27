@@ -8,7 +8,9 @@
 #include "Indicators/BollingerBand.h"
 #include "Indicators/ROC.h"
 #include "Indicators/RSI.h"
+#include "Indicators/OBV.h"
 
+#include "Components/IndicatorWrappers.h"
 
 namespace TradinatorAppSpace
 {
@@ -120,31 +122,82 @@ namespace TradinatorAppSpace
 		else if (type_str == "MACD")
 			return EIndicatorType::E_MACD;
 
-		EIndicatorType::MAX;
+		return EIndicatorType::MAX;
 	}
 
-	std::shared_ptr<Indicator> Utils::GetIndicator(EIndicatorType type)
+	std::unique_ptr<Indicator> Utils::GetIndicator(EIndicatorType type)
 	{
 		switch (type)
 		{
 		case E_SMA:
-			return std::make_shared<SMA>();
+			return std::make_unique<SMA>();
 		case E_WMA:
-			return std::make_shared<WMA>();
+			return std::make_unique<WMA>();
 		case E_EMA:
-			return std::make_shared<EMA>();
+			return std::make_unique<EMA>();
 		case E_BOLLINGER_BAND:
-			return std::make_shared<BollingerBand>();
+			return std::make_unique<BollingerBand>();
 		case E_ROC:
-			return std::make_shared<ROC>();
+			return std::make_unique<ROC>();
 		case E_RSI:
-			return std::make_shared<RSI>();
+			return std::make_unique<RSI>();
+		case E_OBV:
+			return std::make_unique<OBV>();
 		case E_MACD:
 			break;
 		}
 
 		return nullptr;
 	}
+
+	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(EIndicatorType type)
+	{
+		std::unique_ptr<IIndicatorWrapper> wrapper = nullptr;
+		switch (type)
+		{
+		case E_SMA:
+		case E_WMA:
+		case E_EMA:
+		case E_MACD:
+			wrapper = std::move(std::make_unique<GenericIndicatorWrapper>());
+			break;
+		case E_ROC:
+			wrapper = std::move(std::make_unique<ROCIndicatorWrapper>());
+			break;
+		case E_RSI:
+			wrapper = std::move(std::make_unique<RSIIndicatorWrapper>());
+			break;
+		case E_BOLLINGER_BAND:
+			wrapper = std::move(std::make_unique<BollingerBandIndicatorWrapper>());
+			break;
+		case E_OBV:
+			wrapper = std::move(std::make_unique<OBVIndicatorWrapper>());
+			break;
+		}
+
+		if (wrapper)
+		{
+			wrapper->SetIndicator(GetIndicator(type));
+		}
+
+		return wrapper;
+	}
+
+	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+	{
+		std::unique_ptr<IIndicatorWrapper> wrapper = std::move(GetIndicatorWrapper(indicator->IndicatorType()));
+		if (wrapper)
+		{
+			wrapper->SetIndicator(std::move(indicator));
+			wrapper->SetCounter(counter);
+
+
+			return wrapper;
+		}
+		
+		return nullptr;
+	}
+
 
 	bool Utils::IsIndicatorOverlayable(EIndicatorType type)
 	{

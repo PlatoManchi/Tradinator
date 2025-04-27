@@ -61,6 +61,9 @@
     <ClInclude Include="Source\Application\Windows\CounterWindow.h">
       <Filter>Source\Application\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Components\IndicatorWrappers.h">
+      <Filter>Source\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Tradinator.cpp">
@@ -92,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="Source\Application\Windows\CounterWindow.cpp">
       <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Components\IndicatorWrappers.cpp">
+      <Filter>Source\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

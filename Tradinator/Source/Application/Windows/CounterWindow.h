@@ -16,6 +16,8 @@
 #include "Indicators/Indicator.h"
 
 class Counter;
+class IIndicatorWrapper;
+
 
 class CounterWindow
 {
@@ -51,18 +53,11 @@ private:
 
 	void ShowTitle();
 	void ShowIndicatorsList();
-	void ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator);
-	void ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator);
 	bool CanApplyIndicatorOfType(EIndicatorType type);
-	void AddIndicator(std::shared_ptr<Indicator> indicator);
-	void AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 color);
-
+	
 	void RebuildCachedPlotPoints();
 	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
-	void PlotIndicator(const std::shared_ptr<Indicator>& indicator);
-	void PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& indicator);
-	void PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>& indicator);
-
+	
 	//template <typename T>
 	int BinarySearch(const size_t* arr, int l, int r, double x);
 
@@ -75,12 +70,10 @@ private:
 	std::vector<size_t> m_volumes;
 	std::vector<size_t> m_open_interests;
 
-	std::vector<std::unique_ptr<Indicator>> m_available_indicators;
+	std::vector<std::unique_ptr<IIndicatorWrapper>> m_available_indicator_wrappers;
+	std::vector<std::unique_ptr<IIndicatorWrapper>> m_applied_indicator_wrappers;
+	std::vector<size_t> m_remove_applied_indicator_ids;
 
-	// for visual purpose we want it to be same order as insertion. Map will sort based on key
-	std::vector<std::pair<std::shared_ptr<Indicator>, IndicatorData>> m_applied_indicators_data;
-	std::vector<std::shared_ptr<Indicator>> m_remove_applied_indicators;
-	
 	size_t date_axis_min, date_axis_max;
 	double price_axis_min, price_axis_max;
 	size_t volume_axis_min, volume_axis_max;
@@ -100,6 +93,8 @@ private:
 	ImPlotRect m_price_chart_limits;
 	ImPlotRect m_volume_chart_limits;
 
-	static size_t _INCREMENTAL_ID_;
+	float m_first_time_chart_limit_x_min;
+	float m_first_time_chart_limit_x_max;
+	bool m_is_first_time_limit_set;
 };
 

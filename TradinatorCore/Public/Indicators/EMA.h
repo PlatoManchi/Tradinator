@@ -19,6 +19,7 @@ public:
 	EMA(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
 
 	virtual std::vector<IndicatorPoint> Calculate() override;
+	static void CalculateRaw(double* input, double* output, int64_t data_size, int64_t window_size);
 
 
 	virtual std::string GetName() const override { return std::format("Exponential Moving Average ({})", m_length); }

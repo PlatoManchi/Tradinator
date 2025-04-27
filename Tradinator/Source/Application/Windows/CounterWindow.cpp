@@ -10,11 +10,10 @@
 
 #include "Utils.h"
 #include "Utils/Utils.h"
-
-size_t CounterWindow::_INCREMENTAL_ID_ = 0;
+#include "Components/IndicatorWrappers.h"
 
 // Getter for IndicatorPoint to draw the plot
-ImPlotPoint indicator_plot_point_getter(int idx, void* data) {
+ImPlotPoint indicator_plot_point_getter2(int idx, void* data) {
     std::vector<IndicatorPoint>* point_data = (std::vector<IndicatorPoint>*)(data);
     const IndicatorPoint& point = (*point_data)[idx];
 
@@ -34,10 +33,15 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , volume_axis_max(0)
     , m_is_price_chart_hovered(false)
     , m_is_volume_chart_hovered(false)
+    , m_is_first_time_limit_set(false)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
 
-    m_available_indicators = TradinatorCoreSpace::Utils::GetAvailableIndicators();
+    std::vector<std::unique_ptr<Indicator>> indicators = TradinatorCoreSpace::Utils::GetAvailableIndicators();
+    for (std::unique_ptr<Indicator>& indicator : indicators)
+    {
+        m_available_indicator_wrappers.push_back(TradinatorAppSpace::Utils::GetIndicatorWrapper(std::move(indicator)));
+    }
 
     m_counter->LoadCandleDataToMemory();
 }
@@ -49,7 +53,6 @@ CounterWindow::~CounterWindow()
 
 void CounterWindow::Show()
 {
-    ImGui::GetFocusID();
     if (ImGui::Begin(m_cached_label_id.c_str(), nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse))
     {
         ShowTitle();
@@ -100,13 +103,15 @@ void CounterWindow::Show()
         {
             ImGuiStyle& style = ImGui::GetStyle();
             // close indicators that are marked for closing
-            for (std::shared_ptr<Indicator> indicator_to_remove : m_remove_applied_indicators)
+            for (size_t id : m_remove_applied_indicator_ids)
             {
-                std::erase_if(m_applied_indicators_data, [indicator_to_remove](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) { return other.first == indicator_to_remove; });
-                //m_applied_indicators_data.erase(indicator_to_remove);
+                std::erase_if(m_applied_indicator_wrappers, 
+                    [id](const std::unique_ptr<IIndicatorWrapper>& other) -> bool
+                    {
+                        return other->GetID() == id;
+                    });
             }
-            m_remove_applied_indicators.clear();
-
+            m_remove_applied_indicator_ids.clear();
 
             const float PRICE_CHART_MIN_HEIGHT = 400.0f;
             const float VOLUME_CHART_HEIGHT = 250.0f;
@@ -120,19 +125,19 @@ void CounterWindow::Show()
 
             size_t seperate_charts_count = 0;
 
-            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
+            for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
             {
-                if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+                if (wrapper->ShouldShow() && !wrapper->IsIndicatorOverlayable())
                 {
+                    GenericChartIndicatorWrapper* chart_wrapper = dynamic_cast<GenericChartIndicatorWrapper*>(wrapper.get());
+                    assert(chart_wrapper);
+
                     ++seperate_charts_count;
-
-                    float max_range_width = ImGui::CalcTextSize(std::format("${:.0f}", pair.second.m_chart_limits.Y.Max).c_str()).x;
-                    float min_range_width = ImGui::CalcTextSize(std::format("${:.0f}", pair.second.m_chart_limits.Y.Min).c_str()).x;
-
-                    pair.second.m_label_width = std::max(max_range_width, min_range_width);
-                    if (pair.second.m_label_width > largest_label_width)
+                    
+                    chart_wrapper->CalculateLabelWidth();
+                    if (chart_wrapper->GetLabelWidth() > largest_label_width)
                     {
-                        largest_label_width = pair.second.m_label_width;
+                        largest_label_width = chart_wrapper->GetLabelWidth();
                     }
                 }
             }
@@ -187,14 +192,35 @@ void CounterWindow::Show()
             
             if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-                if (m_is_price_chart_hovered)
+                if (!m_is_first_time_limit_set)
                 {
-                    ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
+                    if (m_first_time_chart_limit_x_min < 1.0f || m_first_time_chart_limit_x_max < 1.0f)
+                    {
+                        // bad ranges
+                        // default range to last 60 days
+                        m_first_time_chart_limit_x_max = date_axis_max;
+                        m_first_time_chart_limit_x_min = m_first_time_chart_limit_x_max - 60 * 60 * 24 * 60;
+                    }
+                    // Zoom to the region that was left at
+                    ImPlot::SetupAxisLimits(ImAxis_X1, m_first_time_chart_limit_x_min, m_first_time_chart_limit_x_max, ImGuiCond_Always);
+                    
+                    m_shared_limits.X.Min = m_first_time_chart_limit_x_min;
+                    m_shared_limits.X.Max = m_first_time_chart_limit_x_max;
+
+                    m_is_first_time_limit_set = true;;
                 }
                 else
                 {
-                    ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                    if (m_is_price_chart_hovered)
+                    {
+                        ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
+                    }
+                    else
+                    {
+                        ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
+                    }
                 }
+                
                 //ImPlot::SetupAxesLimits(date_axis_min, date_axis_max, price_axis_min, price_axis_max);
                 
                 ImPlot::SetupAxisLimits(ImAxis_Y1, price_axis_min, price_axis_max);
@@ -220,7 +246,7 @@ void CounterWindow::Show()
 
                 ImPlot::EndPlot();
             }
-            if (largest_label_width > price_label_width)
+            if (largest_label_width > (price_label_width + 5.0f))
             {
                 ImPlot::PopStyleVar();
             }
@@ -274,16 +300,19 @@ void CounterWindow::Show()
 
                 ImPlot::EndPlot();
             }
-            if (largest_label_width > volume_label_width)
+            if (largest_label_width > (volume_label_width + 5.0f))
             {
                 ImPlot::PopStyleVar();
             }
 
             size_t applied_seperate_charts_index = 0;
-            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
+            for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
             {
-                if (pair.second.m_show && !TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+                if (wrapper->ShouldShow() && !wrapper->IsIndicatorOverlayable())
                 {
+                    GenericChartIndicatorWrapper* chart_wrapper = dynamic_cast<GenericChartIndicatorWrapper*>(wrapper.get());
+                    assert(chart_wrapper);
+
                     double chart_height = SEPERATE_CHARTS_HEIGHT;
                     ImPlotAxisFlags x_axis_flags = 0;
                     if (applied_seperate_charts_index == seperate_charts_count - 1)
@@ -295,54 +324,19 @@ void CounterWindow::Show()
                         // Don't draw xaxis labels unless its the last chart
                         x_axis_flags |= ImPlotAxisFlags_NoTickLabels;
                     }
-                    
+
                     // 20 is magic number to get the graphs aligned lol
                     // its coming from imgui item padding etc
                     // but why is it not 5.0f like for other graphs?
-                    if (largest_label_width > (pair.second.m_label_width + 20.0f))
+                    if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0f))
                     {
-                        ImVec2 plot_padding(largest_label_width - pair.second.m_label_width + 20.0f, 0); // x = left, y = top
+                        ImVec2 plot_padding(largest_label_width - chart_wrapper->GetLabelWidth() + 20.0f, 0); // x = left, y = top
                         ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
                     }
-                    if (ImPlot::BeginPlot(std::format("{}##{}_{}", pair.first->GetName(),m_counter->ISIN_Number(), pair.second.m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
-                    {
-                        ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
 
-                        ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
-                        if (pair.second.m_is_hovered)
-                        {
-                            ImPlot::SetupAxisLimits(ImAxis_X1, date_axis_min, date_axis_max);
-                        }
-                        else
-                        {
-                            ImPlot::SetupAxisLimits(ImAxis_X1, m_shared_limits.X.Min, m_shared_limits.X.Max, ImGuiCond_Always);
-                        }
-                        ImPlot::SetupAxisLimits(ImAxis_Y1, volume_axis_min, volume_axis_max);
+                    chart_wrapper->DrawCustomChart(chart_height, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit, m_shared_limits);
 
-                        ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
-                        ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
-                        ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
-
-                        ImPlot::SetNextLineStyle(pair.second.m_color, pair.second.m_color.w);
-                        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", pair.first->GetName(), m_counter->ISIN_Number(), pair.second.m_id).c_str()
-                            , indicator_plot_point_getter
-                            , (void*)&pair.second.m_points
-                            , pair.second.m_points.size());
-                        
-                        pair.second.m_chart_limits = ImPlot::GetPlotLimits();
-
-                        if (ImPlot::IsPlotHovered())
-                        {
-                            m_shared_limits = ImPlot::GetPlotLimits();
-                            pair.second.m_is_hovered = true;
-                        }
-                        else
-                        {
-                            pair.second.m_is_hovered = false;
-                        }
-                        ImPlot::EndPlot();
-                    }
-                    if (largest_label_width > (pair.second.m_label_width + 20.0))
+                    if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0))
                     {
                         ImPlot::PopStyleVar();
                     }
@@ -368,8 +362,8 @@ void CounterWindow::ShowIndicatorsList()
 
     float max_height = 300.0f;
 
-    int total_applied_indicators = m_applied_indicators_data.size();
-    int total_available_indicators = m_available_indicators.size();
+    int total_applied_indicators = m_applied_indicator_wrappers.size();
+    int total_available_indicators = m_available_indicator_wrappers.size();
     int max_indicators = std::max(total_applied_indicators, total_available_indicators);
     
     int num_of_rows = (max_indicators % column_count) == 0 ? (max_indicators / column_count) : (max_indicators / column_count) + 1;
@@ -388,9 +382,8 @@ void CounterWindow::ShowIndicatorsList()
         /// @begin Table
         if (ImGui::BeginTable("AppliedIndicators", column_count, ImGuiTableFlags_ScrollY, { -1, 0 }))
         {
-            int i = 0;
             int row = -1;
-            for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
+            for (int i = 0; i < total_applied_indicators; ++i)
             {
                 int tmp_row = i / column_count;
                 if (tmp_row != row)
@@ -401,21 +394,15 @@ void CounterWindow::ShowIndicatorsList()
 
                 ImGui::TableSetColumnIndex(i % column_count);
 
-                ShowAppliedIndicator(pair.first);
-
-                ++i;
+                if (m_applied_indicator_wrappers[i]->DrawAsAppliedIndicator())
+                {
+                    m_remove_applied_indicator_ids.push_back(m_applied_indicator_wrappers[i]->GetID());
+                }
             }
-
-            /// @separator
-
-
-            /// @separator
-            
             ImGui::EndTable();
         }
         /// @end Table
 
-        /// @separator
         ImGui::EndChild();
     }
     /// @end Child
@@ -441,249 +428,46 @@ void CounterWindow::ShowIndicatorsList()
 
                 ImGui::TableSetColumnIndex(i % column_count);
 
-                ShowAvailableIndicator(m_available_indicators[i]);
+                bool can_apply = CanApplyIndicatorOfType(m_available_indicator_wrappers[i]->IndicatorType());
+                if (!can_apply)
+                {
+                    ImGui::BeginDisabled();
+                }
+                if (m_available_indicator_wrappers[i]->DrawAsAvailableIndicator())
+                {
+                    std::unique_ptr<IIndicatorWrapper> clone_wrapper = m_available_indicator_wrappers[i]->Clone();
+                    clone_wrapper->SetCounter(m_counter);
+                    clone_wrapper->Calculate();
+
+                    m_applied_indicator_wrappers.push_back(std::move(clone_wrapper));
+                }
+                if (!can_apply)
+                {
+                    ImGui::EndDisabled();
+                }
             }
-            /// @separator
-
-
-            /// @separator
             ImGui::EndTable();
         }
         /// @end Table
 
-        /// @separator
         ImGui::EndChild();
     }
     /// @end Child
 }
 
-void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator)
-{
-    AddIndicator(indicator, TradinatorAppSpace::Utils::GetIndicatorColor(indicator->IndicatorType()));
-}
-
-void CounterWindow::AddIndicator(std::shared_ptr<Indicator> indicator, ImVec4 color)
-{
-    IndicatorData indicator_data;
-    indicator_data.m_color = color;
-    if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
-    {
-        BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
-        std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
-        indicator_data.m_top_points = std::move(envelope_points[0]);
-        indicator_data.m_points = std::move(envelope_points[1]);
-        indicator_data.m_bottom_points = std::move(envelope_points[2]);
-    }
-    else
-    {
-        indicator_data.m_points = std::move(indicator->Calculate());
-    }
-    
-    indicator_data.m_show = true;
-    indicator_data.m_id = _INCREMENTAL_ID_;
-
-    m_applied_indicators_data.push_back(std::pair<std::shared_ptr<Indicator>, IndicatorData>(indicator, indicator_data));
-
-    _INCREMENTAL_ID_++;
-}
-
-void CounterWindow::ShowAvailableIndicator(const std::unique_ptr<Indicator>& indicator)
-{
-    bool is_disabled = !CanApplyIndicatorOfType(indicator->IndicatorType());
-    if (is_disabled)
-    {
-        ImGui::BeginDisabled();
-    }
-
-    /// @begin Text
-    ImGui::SetNextItemWidth(350);
-    bool is_selected = false;
-    
-    //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, style.CellPadding.y * 2)); // Fix
-    //ImGui::Selectable(std::format("{}##{}", indicator->GetName(), indicator->GetName()).c_str(), &is_selected); ImGui::SameLine();
-    //ImGui::PopStyleVar();
-    ImGui::TextUnformatted(indicator->GetName().c_str()); ImGui::SameLine();
-    /// @end Text
-
-    if (indicator->IndicatorType() != EIndicatorType::E_OBV)
-    {
-        /// @begin Input
-        ImGui::SetNextItemWidth(70);
-        std::string indicator_length = std::format("{}", indicator->GetLength());
-        char length_str[4] = "";
-        std::copy(indicator_length.begin(), indicator_length.end(), length_str);
-
-        if (ImGui::InputText(std::format("##length{}", indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
-        {
-            int length = std::atoi(length_str);
-            indicator->SetLength(length);
-        }
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Length");
-        }
-        ImGui::SameLine();
-
-        if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-        {
-            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
-            ImGui::SetNextItemWidth(70);
-            std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
-            char multiplier_str[5] = "";
-            std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
-
-            if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator->GetName()).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
-            {
-                double multiplier = std::atof(multiplier_str);
-                bollinger_band->SetStandardDeviationMultiplier(multiplier);
-            }
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Standard Deviation Multiplier");
-            }
-            ImGui::SameLine();
-        }
-        /// @end Input
-    }
-    
-
-    
-
-    /// @begin Button
-    ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" + ##{}", indicator->GetName()).c_str(), { 0, 0 }))
-    {
-        std::shared_ptr<Indicator> new_indicator = indicator->Clone();
-        new_indicator->SetCounter(m_counter);
-
-        AddIndicator(new_indicator);
-        
-    }
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip(std::format("Apply {}", indicator->GetName()).c_str());
-    }
-
-    if (is_disabled)
-    {
-        ImGui::EndDisabled();
-    }
-}
-
-void CounterWindow::ShowAppliedIndicator(const std::shared_ptr<Indicator>& indicator) 
-{
-    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
-        return other.first == indicator;
-        });
-
-    if (itr == m_applied_indicators_data.end()) return;
-
-    IndicatorData& indicator_data = (*itr).second;
-    /// @begin Text
-    ImGui::SetNextItemWidth(250);
-    bool is_selected = false;
-
-    //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, style.CellPadding.y * 2)); // Fix
-    //ImGui::Selectable(std::format("{}##{}", indicator->GetName(), indicator->GetName()).c_str(), &is_selected); ImGui::SameLine();
-    //ImGui::PopStyleVar();
-
-    ImGui::Checkbox(std::format("##show/hide{}", indicator_data.m_id).c_str(), &indicator_data.m_show); ImGui::SameLine();
-    ImGui::TextUnformatted(indicator->GetName().c_str()); ImGui::SameLine();
-    /// @end Text
-    
-    if (indicator->IndicatorType() != EIndicatorType::E_OBV)
-    {
-        /// @begin Input
-        ImGui::SetNextItemWidth(70);
-        std::string indicator_length = std::format("{}", indicator->GetLength());
-        char length_str[4] = "";
-        std::copy(indicator_length.begin(), indicator_length.end(), length_str);
-
-        if (ImGui::InputText(std::format("##indicator length{}", indicator_data.m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
-        {
-            int length = std::atoi(length_str);
-            indicator->SetLength(length);
-
-            if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(indicator->IndicatorType()))
-            {
-                BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
-                std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
-                indicator_data.m_top_points = std::move(envelope_points[0]);
-                indicator_data.m_points = std::move(envelope_points[1]);
-                indicator_data.m_bottom_points = std::move(envelope_points[2]);
-            }
-            else
-            {
-                indicator_data.m_points = std::move(indicator->Calculate());
-            }
-        }
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Length");
-        }
-        ImGui::SameLine();
-
-        if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-        {
-            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-
-            ImGui::SetNextItemWidth(70);
-            std::string indicator_length = std::format("{:.1f}", bollinger_band->GetStandardDeviationMultiplier());
-            char multiplier_str[5] = "";
-            std::copy(indicator_length.begin(), indicator_length.end(), multiplier_str);
-
-            if (ImGui::InputText(std::format("##standard deviation multiplier{}", indicator_data.m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
-            {
-                double multiplier = std::atof(multiplier_str);
-                bollinger_band->SetStandardDeviationMultiplier(multiplier);
-
-                std::vector<std::vector<IndicatorPoint>> envelope_points = std::move(bollinger_band->CalculateEnvelope());
-                indicator_data.m_top_points = std::move(envelope_points[0]);
-                indicator_data.m_points = std::move(envelope_points[1]);
-                indicator_data.m_bottom_points = std::move(envelope_points[2]);
-            }
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Standard Deviation Multiplier");
-            }
-            ImGui::SameLine();
-        }
-
-        /// @end Input
-    }
-
-    
-    ImGui::ColorEdit4(std::format("##plot color{}", indicator_data.m_id).c_str(), &indicator_data.m_color.x, ImGuiColorEditFlags_NoInputs);
-
-    ::ImGui::SameLine();
-    /// @begin Button
-    ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" x ##remove indicator{}", indicator_data.m_id).c_str(), { 0, 0 }))
-    {
-        m_remove_applied_indicators.push_back(indicator);
-    }
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip(std::format("Remove {}", indicator->GetName()).c_str());
-    }
-}
-
 bool CounterWindow::CanApplyIndicatorOfType(EIndicatorType type)
 {
-    auto available_itr = std::find_if(m_available_indicators.begin(), m_available_indicators.end(),
-        [type](const std::unique_ptr<Indicator>& other) -> bool
+    auto applied_itr = std::find_if(m_applied_indicator_wrappers.begin(), m_applied_indicator_wrappers.end(),
+        [type](const std::unique_ptr<IIndicatorWrapper>& other) -> bool
         {
             return other->IndicatorType() == type;
         });
     
-    if (available_itr != m_available_indicators.end())
+    if (applied_itr != m_applied_indicator_wrappers.end())
     {
-        if ((*available_itr)->IsSingleInstanceType())
+        if ((*applied_itr)->IsSingleInstanceType())
         {
-            auto applied_itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(),
-                [type](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) -> bool
-                {
-                    return other.first->IndicatorType() == type;
-                });
-
-            return applied_itr == m_applied_indicators_data.end();
+            return false;
         }
     }
 
@@ -796,6 +580,11 @@ void CounterWindow::RebuildCachedPlotPoints()
 
     m_shared_limits.X.Min = date_axis_min;
     m_shared_limits.X.Max = date_axis_max;
+
+    for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
+    {
+        wrapper->Calculate();
+    }
 }
 
 void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
@@ -859,18 +648,14 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
             }
         }
 
-        // Draw filling behind the candles otherwise it will cover up the candles
-        for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
+        for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
         {
-            if (pair.second.m_show &&
-                TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+            if (wrapper->ShouldShow() && wrapper->IsIndicatorOverlayable())
             {
-                if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(pair.first->IndicatorType()))
-                {
-                    PlotEnvelopeIndicatorFill(pair.first);
-                }
+                wrapper->PlotPreCandle();
             }
         }
+
 
         // render data
         for (int i = 0; i < count; ++i) {
@@ -883,89 +668,15 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
             draw_list->AddRectFilled(open_pos, close_pos, color);
         }
 
-        for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& pair : m_applied_indicators_data)
+        for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
         {
-            if (pair.second.m_show && 
-                TradinatorAppSpace::Utils::IsIndicatorOverlayable(pair.first->IndicatorType()))
+            if (wrapper->ShouldShow() && wrapper->IsIndicatorOverlayable())
             {
-                if (TradinatorAppSpace::Utils::IsIndicatorEnvelopeType(pair.first->IndicatorType()))
-                {
-                    PlotEnvelopeIndicatorLines(pair.first);
-                }
-                else
-                {
-                    PlotIndicator(pair.first);
-                }
+                wrapper->PlotPostCandle();
             }
         }
-
         // end plot item
         ImPlot::EndItem();
-    }
-}
-
-void CounterWindow::PlotIndicator(const std::shared_ptr<Indicator>& indicator)
-{
-    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
-        return other.first == indicator;
-        });
-
-    if (itr == m_applied_indicators_data.end()) return;
-
-    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
-    ImDrawList* draw_list = ImPlot::GetPlotDrawList();
-    size_t count = indicator_data.m_points.size();
-    
-    if (count != 0)
-    {
-        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Indicators", indicator_plot_point_getter, (void*)&indicator_data.m_points, count);
-    }
-}
-
-void CounterWindow::PlotEnvelopeIndicatorFill(const std::shared_ptr<Indicator>& indicator)
-{
-    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
-        return other.first == indicator;
-        });
-
-    if (itr == m_applied_indicators_data.end()) return;
-
-    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
-    size_t count = indicator_data.m_points.size();
-
-    if (count != 0)
-    {
-        // 10% of alpha of original color for filling
-        ImPlot::SetNextFillStyle(indicator_data.m_color, indicator_data.m_color.w * 0.1);
-
-        ImPlot::PlotShadedG("BollingerBand", indicator_plot_point_getter, (void*)& indicator_data.m_top_points,
-            indicator_plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
-    }
-}
-
-void CounterWindow::PlotEnvelopeIndicatorLines(const std::shared_ptr<Indicator>& indicator)
-{
-    auto itr = std::find_if(m_applied_indicators_data.begin(), m_applied_indicators_data.end(), [indicator](const std::pair<std::shared_ptr<Indicator>, IndicatorData>& other) {
-        return other.first == indicator;
-        });
-
-    if (itr == m_applied_indicators_data.end()) return;
-
-    const CounterWindow::IndicatorData& indicator_data = (*itr).second;
-
-    size_t count = indicator_data.m_points.size();
-
-    if (count != 0)
-    {
-        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Top", indicator_plot_point_getter, (void*)&indicator_data.m_top_points, indicator_data.m_top_points.size());
-
-        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Top", indicator_plot_point_getter, (void*)&indicator_data.m_points, indicator_data.m_points.size());
-
-        ImPlot::SetNextLineStyle(indicator_data.m_color, indicator_data.m_color.w);
-        ImPlot::PlotLineG("Bottom", indicator_plot_point_getter, (void*)&indicator_data.m_bottom_points, indicator_data.m_bottom_points.size());
     }
 }
 
@@ -992,30 +703,14 @@ Json::Value CounterWindow::GetCounterStatus()
 
     result["Symbol"] = m_counter->Symbol();
     result["ISIN"] = m_counter->ISIN_Number();
+    result["Range"]["Min"] = m_price_chart_limits.X.Min;
+    result["Range"]["Max"] = m_price_chart_limits.X.Max;
 
     Json::Value applied_indicators(Json::arrayValue);
-    for (std::pair<std::shared_ptr<Indicator>, IndicatorData>& indicator : m_applied_indicators_data)
+
+    for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
     {
-        Json::Value json_indicator;
-        json_indicator["Name"] = TradinatorAppSpace::Utils::GetIndicatorTypeStr(indicator.first->IndicatorType());
-        json_indicator["Length"] = indicator.first->GetLength();
-
-        if (indicator.first->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-        {
-            BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.first.get());
-            json_indicator["Multiplier"] = bollinger_band->GetStandardDeviationMultiplier();
-        }
-
-        Json::Value color;
-
-        color["R"] = indicator.second.m_color.x;
-        color["G"] = indicator.second.m_color.y;
-        color["B"] = indicator.second.m_color.z;
-        color["A"] = indicator.second.m_color.w;
-
-        json_indicator["Color"] = color;
-
-        applied_indicators.append(json_indicator);
+        applied_indicators.append(wrapper->ToJson());
     }
 
     result["Applied_Indicators"] = applied_indicators;
@@ -1025,33 +720,20 @@ Json::Value CounterWindow::GetCounterStatus()
 
 void CounterWindow::SetCounterStatus(Json::Value status)
 {
-    Json::Value applied_indicators = status["Applied_Indicators"];
+    m_first_time_chart_limit_x_min = status["Range"]["Min"].asFloat();
+    m_first_time_chart_limit_x_max = status["Range"]["Max"].asFloat();
 
+    Json::Value applied_indicators = status["Applied_Indicators"];
     Json::Value::ArrayIndex count = applied_indicators.size();
 
-    for (Json::Value::ArrayIndex i = 0; i < count; ++i)
+    for (int i = 0; i < count; ++i)
     {
-        Json::Value json_indicator = applied_indicators[i];
-        EIndicatorType type = TradinatorAppSpace::Utils::GetIndicatorType(json_indicator["Name"].asString());
-        std::shared_ptr<Indicator> indicator = TradinatorAppSpace::Utils::GetIndicator(type);
-        if (indicator)
-        {
-            indicator->SetCounter(m_counter);
-            indicator->SetLength(json_indicator["Length"].asUInt64());
+        EIndicatorType type = TradinatorAppSpace::Utils::GetIndicatorType(applied_indicators[i]["Name"].asString());
+        std::unique_ptr<IIndicatorWrapper> wrapper = TradinatorAppSpace::Utils::GetIndicatorWrapper(type);
+        wrapper->FromJson(applied_indicators[i]);
+        wrapper->SetCounter(m_counter);
+        wrapper->Calculate();
 
-            if (indicator->IndicatorType() == EIndicatorType::E_BOLLINGER_BAND)
-            {
-                BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(indicator.get());
-                bollinger_band->SetStandardDeviationMultiplier(json_indicator["Multiplier"].asDouble());
-            }
-
-            ImVec4 color;
-            color.x = json_indicator["Color"]["R"].asFloat();
-            color.y = json_indicator["Color"]["G"].asFloat();
-            color.z = json_indicator["Color"]["B"].asFloat();
-            color.w = json_indicator["Color"]["A"].asFloat();
-
-            AddIndicator(indicator, color);
-        }
+        m_applied_indicator_wrappers.push_back(std::move(wrapper));
     }
 }

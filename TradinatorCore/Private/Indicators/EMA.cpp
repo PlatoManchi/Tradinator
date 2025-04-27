@@ -97,3 +97,14 @@ std::vector<IndicatorPoint> EMA::Calculate()
 
 	return result;
 }
+
+void EMA::CalculateRaw(double* input, double* output, int64_t data_size, int64_t window_size)
+{
+	output[data_size - 1] = input[data_size - 1];
+
+	const double factor = 2.0 / (window_size + 1.0);
+	for (int64_t i = data_size - 2; i >= 0; --i)
+	{
+		output[i] = input[i] * factor + output[i + 1] * (1.0 - factor);
+	}
+}

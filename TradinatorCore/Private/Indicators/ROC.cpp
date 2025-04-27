@@ -27,7 +27,7 @@ std::vector<IndicatorPoint> ROC::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -82,8 +82,8 @@ std::vector<IndicatorPoint> ROC::Calculate()
 #endif // _ROC_ISPC_
 
 
-		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		std::cout << "ROC Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "ROC Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;
