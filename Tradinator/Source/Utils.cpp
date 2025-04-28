@@ -48,7 +48,7 @@ namespace TradinatorAppSpace
 		case E_SMA:
 			return ImVec4(0.01f, 0.49f, 1.0f, 1.0f);
 		case E_WMA:
-			return ImVec4(0.164f, 0.223f, 0.305f, 1.0f);
+			return ImVec4(0.298f, 0.458f, 0.678f, 1.0f);
 		case E_EMA:
 			return ImVec4(0.4f, 1.0f, 0.2f, 1.0f);
 		case E_BOLLINGER_BAND:
@@ -56,7 +56,7 @@ namespace TradinatorAppSpace
 		case E_ROC:
 			return ImVec4(1.0f, 0.501f, 0.0f, 1.0f);
 		case E_RSI:
-			return ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
+			return ImVec4(0.870f, 0.0f, 0.870f, 1.0f);
 		case E_OBV:
 			return ImVec4(0.298f, 0.686f, 0.314f, 1.0f);
 		case E_MACD:

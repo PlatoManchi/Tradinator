@@ -103,7 +103,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 
 		// Get the sma
 		SMA sma_indicator(m_counter, m_length);
-		sma = std::move(sma_indicator.Calculate());
+		sma = std::move(sma_indicator.Calculate()[0]);
 
 		auto itr = candle_data->GetData().begin();
 		for (size_t i = 0; i < count; ++i)

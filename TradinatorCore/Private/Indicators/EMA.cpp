@@ -32,9 +32,10 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 		
+		std::vector<IndicatorPoint> ema;
 
 #ifdef _EMA_ISPC_
-		result.reserve(count);
+		ema.reserve(count);
 
 		const AsyncCandleData& data = candle_data->GetData();
 		std::vector<double> ispc_input;
@@ -60,10 +61,10 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 			point.date = (*itr).first;
 			point.value = sma;
 
-			result.emplace_back(std::move(point));
+			ema.emplace_back(std::move(point));
 		}
 #else
-		std::vector<IndicatorPoint> ema = std::move(std::vector<IndicatorPoint>(count));
+		ema = std::move(std::vector<IndicatorPoint>(count));
 
 		auto itr = candle_data->GetData().end();
 
@@ -90,10 +91,10 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 
 			itr = std::prev(itr, 1);
 		}
-
-		result.emplace_back(std::move(ema));
 #endif // _EMA_ISPC_
 		
+		result.emplace_back(std::move(ema));
+
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "EMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
