@@ -156,3 +156,32 @@ export void calculate_rsi(uniform double* uniform input,
 
     output[data_size - 1] = 0;
 }
+
+
+// ---------------------------------- MACD -------------------------------------------
+export void calculate_mcda(uniform double* uniform input, 
+                            uniform double* uniform ema_period_1_buffer,
+                            uniform double* uniform ema_period_2_buffer,
+                            uniform double* uniform mcda_output, 
+                            uniform double* uniform signal_output, 
+                            uniform double* uniform histogram_output,  
+                            uniform unsigned int64 period_1,
+                            uniform unsigned int64 period_2,
+                            uniform unsigned int64 signal_period,
+                            uniform unsigned int64 data_size) 
+{
+    calculate_ema(input, ema_period_1_buffer, data_size, period_1);
+    calculate_ema(input, ema_period_2_buffer, data_size, period_2);
+
+    foreach(i = 0 ... data_size)
+    {
+        mcda_output[i] = ema_period_1_buffer[i] - ema_period_2_buffer[i];
+    }
+
+    calculate_ema(mcda_output, signal_output, data_size, signal_period);
+
+    foreach(i = 0 ... data_size)
+    {
+        histogram_output[i] = mcda_output[i] - signal_output[i];
+    }
+}

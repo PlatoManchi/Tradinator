@@ -171,6 +171,7 @@
     <ClInclude Include="Public\Indicators\BollingerBand.h" />
     <ClInclude Include="Public\Indicators\EMA.h" />
     <ClInclude Include="Public\Indicators\Indicator.h" />
+    <ClInclude Include="Public\Indicators\MACD.h" />
     <ClInclude Include="Public\Indicators\OBV.h" />
     <ClInclude Include="Public\Indicators\ROC.h" />
     <ClInclude Include="Public\Indicators\RSI.h" />
@@ -195,6 +196,7 @@
     <ClCompile Include="Private\Indicators\BollingerBand.cpp" />
     <ClCompile Include="Private\Indicators\EMA.cpp" />
     <ClCompile Include="Private\Indicators\Indicator.cpp" />
+    <ClCompile Include="Private\Indicators\MACD.cpp" />
     <ClCompile Include="Private\Indicators\OBV.cpp" />
     <ClCompile Include="Private\Indicators\ROC.cpp" />
     <ClCompile Include="Private\Indicators\RSI.cpp" />
