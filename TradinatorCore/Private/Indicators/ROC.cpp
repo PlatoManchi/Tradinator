@@ -11,9 +11,9 @@
 
 
 
-std::vector<IndicatorPoint> ROC::Calculate()
+std::vector<std::vector<IndicatorPoint>> ROC::Calculate()
 {
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Counter> counter = m_counter.lock();
@@ -32,7 +32,8 @@ std::vector<IndicatorPoint> ROC::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 
-		result.reserve(count);
+		std::vector<IndicatorPoint> roc;
+		roc.reserve(count);
 
 #ifdef _ROC_ISPC_
 		const AsyncCandleData& data = candle_data->GetData();
@@ -54,7 +55,7 @@ std::vector<IndicatorPoint> ROC::Calculate()
 			point.date = (*itr).first;
 			point.value = sma;
 
-			result.emplace_back(std::move(point));
+			roc.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -75,12 +76,13 @@ std::vector<IndicatorPoint> ROC::Calculate()
 			point.date = (*itr).first;
 			point.value = roc_value;
 
-			result.emplace_back(point);
+			roc.emplace_back(point);
 
 			std::advance(itr, 1);
 		}
 #endif // _ROC_ISPC_
 
+		result.emplace_back(std::move(roc));
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "ROC Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;

@@ -11,7 +11,7 @@ public:
 
 	OBV(std::weak_ptr<Counter> counter) : Indicator(counter, 0) {};
 
-	virtual std::vector<IndicatorPoint> Calculate() override;
+	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 
 	virtual std::string GetName() const override { return std::format("On Balance Volume"); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_OBV; }

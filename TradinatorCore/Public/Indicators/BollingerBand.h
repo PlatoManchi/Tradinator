@@ -26,9 +26,8 @@ public:
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
-	virtual std::vector<IndicatorPoint> Calculate() override;
-	std::vector<std::vector<IndicatorPoint>> CalculateEnvelope();
-
+	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
+	
 	double GetStandardDeviationMultiplier() const { return m_standard_deviation_multiplier; }
 	void SetStandardDeviationMultiplier(double multiplier)
 	{

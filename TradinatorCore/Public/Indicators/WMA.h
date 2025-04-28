@@ -18,7 +18,7 @@ public:
 	WMA(size_t length) : Indicator(length) {}
 	WMA(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
 
-	virtual std::vector<IndicatorPoint> Calculate() override;
+	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 
 
 	virtual std::string GetName() const override { return std::format("Weighted Moving Average ({})", m_length); }

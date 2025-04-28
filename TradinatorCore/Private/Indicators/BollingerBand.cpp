@@ -13,13 +13,7 @@
 
 
 
-std::vector<IndicatorPoint> BollingerBand::Calculate()
-{
-	assert("This is a envelope style indicator. Use CalculateEnvelope to get the values.");
-	return std::vector<IndicatorPoint>();
-}
-
-std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
+std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 {
 	std::vector<std::vector<IndicatorPoint>> result;
 	result.reserve(3);
@@ -72,7 +66,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 		std::vector<double> ispc_output_top(count);
 		std::vector<double> ispc_output_sma(count);
 		std::vector<double> ispc_output_bottom(count);
-		
+
 		ispc_input.reserve(count);
 
 		for (auto& pair : data)
@@ -106,7 +100,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 #else
 		// standard deviation calculation
 		// https://en.wikipedia.org/wiki/Standard_deviation
-		
+
 		// Get the sma
 		SMA sma_indicator(m_counter, m_length);
 		sma = std::move(sma_indicator.Calculate());
@@ -146,7 +140,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::CalculateEnvelope()
 			std::advance(itr, 1);
 		}
 #endif
-		
+
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "Bollinger Band Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}

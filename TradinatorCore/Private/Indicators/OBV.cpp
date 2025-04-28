@@ -7,9 +7,9 @@
 
 
 
-std::vector<IndicatorPoint> OBV::Calculate()
+std::vector<std::vector<IndicatorPoint>> OBV::Calculate()
 {
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	
 	std::shared_ptr<Counter> counter = m_counter.lock();
 
@@ -28,7 +28,7 @@ std::vector<IndicatorPoint> OBV::Calculate()
 		if (count == 0) return result;
 
 		
-		result = std::vector<IndicatorPoint>(count);
+		std::vector<IndicatorPoint> obv = std::vector<IndicatorPoint>(count);
 
 		auto itr = candle_data->GetData().end();
 		itr = std::prev(itr, 1);
@@ -38,7 +38,7 @@ std::vector<IndicatorPoint> OBV::Calculate()
 		first_point.date = (*itr).first;
 		first_point.value = (*itr).second.m_volume;
 
-		result[count - 1] = first_point;
+		obv[count - 1] = first_point;
 
 		double prev_obv = (*itr).second.m_volume;
 
@@ -58,9 +58,10 @@ std::vector<IndicatorPoint> OBV::Calculate()
 
 			prev_obv = point.value;
 
-			result[i] = point;
+			obv[i] = point;
 		}
 
+		result.emplace_back(std::move(obv));
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "OBV Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;

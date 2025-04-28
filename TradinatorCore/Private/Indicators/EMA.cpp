@@ -11,9 +11,9 @@
 
 
 
-std::vector<IndicatorPoint> EMA::Calculate()
+std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 {
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Counter> counter = m_counter.lock();
@@ -32,6 +32,7 @@ std::vector<IndicatorPoint> EMA::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 		
+
 #ifdef _EMA_ISPC_
 		result.reserve(count);
 
@@ -62,7 +63,7 @@ std::vector<IndicatorPoint> EMA::Calculate()
 			result.emplace_back(std::move(point));
 		}
 #else
-		result = std::vector<IndicatorPoint>(count);
+		std::vector<IndicatorPoint> ema = std::move(std::vector<IndicatorPoint>(count));
 
 		auto itr = candle_data->GetData().end();
 
@@ -73,7 +74,7 @@ std::vector<IndicatorPoint> EMA::Calculate()
 		first_point.date = (*itr).first;
 		first_point.value = (*itr).second.m_close;
 
-		result[count - 1] = first_point;
+		ema[count - 1] = first_point;
 
 		const double factor = 2.0 / (m_length + 1.0);
 
@@ -83,12 +84,14 @@ std::vector<IndicatorPoint> EMA::Calculate()
 		{
 			IndicatorPoint point;
 			point.date = (*itr).first;
-			point.value = (*itr).second.m_close * factor + result[i + 1].value * (1.0 - factor);
+			point.value = (*itr).second.m_close * factor + ema[i + 1].value * (1.0 - factor);
 
-			result[i] = point;
+			ema[i] = point;
 
 			itr = std::prev(itr, 1);
 		}
+
+		result.emplace_back(std::move(ema));
 #endif // _EMA_ISPC_
 		
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

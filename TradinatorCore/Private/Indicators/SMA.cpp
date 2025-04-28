@@ -14,10 +14,10 @@
 
 
 
-std::vector<IndicatorPoint> SMA::Calculate()
+std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 {
 	
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Counter> counter = m_counter.lock();
@@ -36,7 +36,8 @@ std::vector<IndicatorPoint> SMA::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 
-		result.reserve(count);
+		std::vector<IndicatorPoint> sma;
+		sma.reserve(count);
 
 #ifdef _SMA_ISPC_
 		const AsyncCandleData& data = candle_data->GetData();
@@ -52,13 +53,13 @@ std::vector<IndicatorPoint> SMA::Calculate()
 		ispc::calculate_sma(ispc_input.data(), ispc_output.data(), count, m_length);
 
 		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
+		for (double sma_value : ispc_output)
 		{
 			IndicatorPoint point;
 			point.date = (*itr).first;
-			point.value = sma;
+			point.value = sma_value;
 
-			result.emplace_back(std::move(point));
+			sma.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -79,13 +80,13 @@ std::vector<IndicatorPoint> SMA::Calculate()
 			point.date = (*itr).first;
 			point.value = cumulative_closing_price / window_size;
 
-			result.emplace_back(std::move(point));
+			sma.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
 #endif // _SMA_ISPC_
 
-		
+		result.emplace_back(std::move(sma));
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "SMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;

@@ -73,7 +73,7 @@ void TradinatorApp::ShowApp()
 
     for (std::pair<std::string, std::shared_ptr<CounterWindow>> pair : m_counter_windows)
     {
-        ImGui::SetNextWindowSize(ImVec2(1280, 768), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(1280, 1368), ImGuiCond_FirstUseEver);
         if (pair.second->m_maximize)
         {
             pair.second->m_maximize = false;

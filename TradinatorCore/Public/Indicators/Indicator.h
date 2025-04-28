@@ -44,7 +44,7 @@ public:
 	Indicator(size_t length);
 	Indicator(std::weak_ptr<Counter> counter, size_t length);
 
-	virtual std::vector<IndicatorPoint> Calculate() = 0;
+	virtual std::vector<std::vector<IndicatorPoint>> Calculate() = 0;
 	virtual std::string GetName() const = 0;
 	virtual EIndicatorType IndicatorType() const = 0;
 	virtual std::unique_ptr<Indicator> Clone() = 0;

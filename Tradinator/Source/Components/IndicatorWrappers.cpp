@@ -148,8 +148,7 @@ bool GenericIndicatorWrapper::DrawAsAppliedIndicator()
         int length = std::atoi(length_str);
         m_indicator->SetLength(length);
 
-        m_points_list.clear();
-        m_points_list.push_back(std::move(m_indicator->Calculate()));
+        Calculate();
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Length");
@@ -180,7 +179,7 @@ void GenericIndicatorWrapper::Calculate()
     assert(m_counter);
 
     m_points_list.clear();
-    m_points_list.push_back(std::move(m_indicator->Calculate()));
+    m_points_list = std::move(m_indicator->Calculate());
 }
 
 void GenericIndicatorWrapper::PlotPreCandle()
@@ -431,7 +430,8 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
     {
         int length = std::atoi(length_str);
         m_indicator->SetLength(length);
-        m_points_list = std::move(bollinger_band->CalculateEnvelope());
+
+        Calculate();
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Length");
@@ -448,7 +448,8 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
     {
         double multiplier = std::atof(multiplier_str);
         bollinger_band->SetStandardDeviationMultiplier(multiplier);
-        m_points_list = std::move(bollinger_band->CalculateEnvelope());
+
+        Calculate();
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Standard Deviation Multiplier");
@@ -483,7 +484,7 @@ void BollingerBandIndicatorWrapper::Calculate()
     assert(bollinger_band);
 
     m_points_list.clear();
-    m_points_list = std::move(bollinger_band->CalculateEnvelope());
+    m_points_list = std::move(bollinger_band->Calculate());
 }
 
 void BollingerBandIndicatorWrapper::PlotPreCandle()

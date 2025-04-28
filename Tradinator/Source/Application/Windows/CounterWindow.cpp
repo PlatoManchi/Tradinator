@@ -33,6 +33,8 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , volume_axis_max(0)
     , m_is_price_chart_hovered(false)
     , m_is_volume_chart_hovered(false)
+    , m_first_time_chart_limit_x_min(0.0f)
+    , m_first_time_chart_limit_x_max(0.0f)
     , m_is_first_time_limit_set(false)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();

@@ -16,7 +16,7 @@ public:
 	ROC(size_t length) : Indicator(length) {}
 	ROC(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
 
-	virtual std::vector<IndicatorPoint> Calculate() override;
+	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 
 	virtual std::string GetName() const override { return std::format("Rate Of Change ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_ROC; }

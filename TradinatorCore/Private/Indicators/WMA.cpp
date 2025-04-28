@@ -11,9 +11,9 @@
 
 
 
-std::vector<IndicatorPoint> WMA::Calculate()
+std::vector<std::vector<IndicatorPoint>> WMA::Calculate()
 {
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Counter> counter = m_counter.lock();
@@ -32,7 +32,8 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 
-		result.reserve(count);
+		std::vector<IndicatorPoint> wma;
+		wma.reserve(count);
 
 #ifdef _WMA_ISPC_
 		const AsyncCandleData& data = candle_data->GetData();
@@ -48,13 +49,13 @@ std::vector<IndicatorPoint> WMA::Calculate()
 		ispc::calculate_wma(ispc_input.data(), ispc_output.data(), count, m_length);
 
 		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
+		for (double wma_value : ispc_output)
 		{
 			IndicatorPoint point;
 			point.date = (*itr).first;
-			point.value = sma;
+			point.value = wma_value;
 
-			result.emplace_back(std::move(point));
+			wma.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -79,13 +80,13 @@ std::vector<IndicatorPoint> WMA::Calculate()
 			point.date = (*itr).first;
 			point.value = cumulative_closing_price / weighted_count;
 
-			result.emplace_back(std::move(point));
+			wma.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
 #endif // _WMA_ISPC_
 
-		
+		result.emplace_back(std::move(wma));
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "WMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;

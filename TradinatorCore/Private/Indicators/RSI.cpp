@@ -11,9 +11,9 @@
 
 
 
-std::vector<IndicatorPoint> RSI::Calculate()
+std::vector<std::vector<IndicatorPoint>> RSI::Calculate()
 {
-	std::vector<IndicatorPoint> result;
+	std::vector<std::vector<IndicatorPoint>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Counter> counter = m_counter.lock();
@@ -32,7 +32,8 @@ std::vector<IndicatorPoint> RSI::Calculate()
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 
-		result.reserve(count);
+		std::vector<IndicatorPoint> rsi;
+		rsi.reserve(count);
 
 
 #ifdef _RSI_ISPC_
@@ -55,7 +56,7 @@ std::vector<IndicatorPoint> RSI::Calculate()
 			point.date = (*itr).first;
 			point.value = sma;
 
-			result.emplace_back(std::move(point));
+			rsi.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -92,7 +93,7 @@ std::vector<IndicatorPoint> RSI::Calculate()
 			point.date = (*itr).first;
 			point.value = relative_strength_index;
 
-			result.emplace_back(std::move(point));
+			rsi.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -101,10 +102,10 @@ std::vector<IndicatorPoint> RSI::Calculate()
 		point.date = (*itr).first;
 		point.value = 0;
 
-		result.emplace_back(std::move(point));
+		rsi.emplace_back(std::move(point));
 #endif // _RSI_ISPC_
 
-
+		result.emplace_back(std::move(rsi));
 
 		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		//std::cout << "RSI Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
