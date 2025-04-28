@@ -30,7 +30,6 @@ namespace TradinatorAppSpace
 
 		// return true if the indicator can be drawn on top of the main chart
 		static bool IsIndicatorOverlayable(EIndicatorType type);
-		static bool IsIndicatorEnvelopeType(EIndicatorType type);
 
 		static void SaveWindowsStatus(Json::Value status);
 		static Json::Value LoadWindowsStatus();

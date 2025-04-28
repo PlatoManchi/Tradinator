@@ -2,6 +2,7 @@
 
 #include "Data/Counter.h"
 #include "Indicators/BollingerBand.h"
+#include "Indicators/MACD.h"
 
 #include "Utils.h"
 
@@ -99,7 +100,7 @@ bool GenericIndicatorWrapper::DrawAsAvailableIndicator()
     char length_str[4] = "";
     std::copy(indicator_length.begin(), indicator_length.end(), length_str);
 
-    if (ImGui::InputText(std::format("##length{}", m_indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##length{}", m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
         m_indicator->SetLength(length);
@@ -112,7 +113,7 @@ bool GenericIndicatorWrapper::DrawAsAvailableIndicator()
 
     /// @begin Button
     ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" + ##{}", m_indicator->GetName()).c_str(), { 0, 0 }))
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
         new_indicator->SetCounter(m_counter);
@@ -282,6 +283,7 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
     assert(!IsIndicatorOverlayable());
     
     
+
     if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
     {
         ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, y_axis_flags);
@@ -295,7 +297,7 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
         {
             ImPlot::SetupAxisLimits(ImAxis_X1, shared_limits.X.Min, shared_limits.X.Max, ImGuiCond_Always);
         }
-        //ImPlot::SetupAxisLimits(ImAxis_Y1, volume_axis_min, volume_axis_max);
+        //ImPlot::SetupAxisLimits(ImAxis_Y1, y_max - padding, y_max + padding, ImGuiCond_Always);
 
         ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
         ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, m_x_axis_min, m_x_axis_max);
@@ -329,7 +331,7 @@ void GenericChartIndicatorWrapper::PlotItems()
         }
 
         ImPlot::SetNextLineStyle(color, color.w);
-        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str()
+        ImPlot::PlotLineG(std::format("{}##Chart{}_{}{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id, i).c_str()
             , indicator_plot_point_getter
             , (void*)&m_points_list[i]
             , m_points_list[i].size());
@@ -358,7 +360,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAvailableIndicator()
     char length_str[4] = "";
     std::copy(indicator_length.begin(), indicator_length.end(), length_str);
 
-    if (ImGui::InputText(std::format("##length{}", m_indicator->GetName()).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##length{}", m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
         m_indicator->SetLength(length);
@@ -375,7 +377,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAvailableIndicator()
     char multiplier_str[5] = "";
     std::copy(indicator_sd_multiplier.begin(), indicator_sd_multiplier.end(), multiplier_str);
 
-    if (ImGui::InputText(std::format("##standard deviation multiplier{}", m_indicator->GetName()).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
+    if (ImGui::InputText(std::format("##standard deviation multiplier{}", m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
     {
         double multiplier = std::atof(multiplier_str);
         bollinger_band->SetStandardDeviationMultiplier(multiplier);
@@ -391,7 +393,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAvailableIndicator()
 
     /// @begin Button
     ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" + ##{}", m_indicator->GetName()).c_str(), { 0, 0 }))
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
         new_indicator->SetCounter(m_counter);
@@ -556,7 +558,7 @@ bool OBVIndicatorWrapper::DrawAsAvailableIndicator()
 
     /// @begin Button
     ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" + ##{}", m_indicator->GetName()).c_str(), { 0, 0 }))
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
         new_indicator->SetCounter(m_counter);
@@ -596,4 +598,299 @@ bool OBVIndicatorWrapper::DrawAsAppliedIndicator()
     }
 
     return is_pressed;
+}
+
+
+
+
+/*********************************************************************************
+*                                     MACD
+**********************************************************************************/
+
+void MACDIndicatorWrapper::SetIndicator(std::unique_ptr<Indicator> indicator)
+{
+    GenericChartIndicatorWrapper::SetIndicator(std::move(indicator));
+
+    m_colors_list.clear();
+    m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(EIndicatorType::E_MACD, 0));
+    m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(EIndicatorType::E_MACD, 1));
+    m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(EIndicatorType::E_MACD, 2));
+}
+
+bool MACDIndicatorWrapper::DrawAsAvailableIndicator()
+{
+    bool is_pressed = false;
+
+    MACD* macd = dynamic_cast<MACD*>(m_indicator.get());
+    assert(macd);
+
+    /// @begin Text
+    ImGui::SetNextItemWidth(280);
+    ImGui::TextUnformatted(m_indicator->GetName().c_str()); ImGui::SameLine();
+    /// @end Text
+
+    /// @begin Input
+    /// @ period 1
+    ImGui::SetNextItemWidth(70);
+    std::string period_1_str = std::format("{}", macd->GetPeriod_1());
+    char period_1_input_str[4] = "";
+    std::copy(period_1_str.begin(), period_1_str.end(), period_1_input_str);
+
+    if (ImGui::InputText(std::format("##period 1{}", m_id).c_str(), period_1_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int period_1 = std::atoi(period_1_input_str);
+        macd->SetPeriod_1(period_1);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Period 1");
+    }
+    ImGui::SameLine();
+
+
+    /// @ period 2
+    ImGui::SetNextItemWidth(70);
+    std::string period_2_str = std::format("{}", macd->GetPeriod_2());
+    char period_2_input_str[4] = "";
+    std::copy(period_2_str.begin(), period_2_str.end(), period_2_input_str);
+
+    if (ImGui::InputText(std::format("##period 2{}", m_id).c_str(), period_2_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int period_2 = std::atoi(period_2_input_str);
+        macd->SetPeriod_2(period_2);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Period 2");
+    }
+    ImGui::SameLine();
+
+    
+
+    /// @ signal period
+    ImGui::SetNextItemWidth(70);
+    std::string signal_period_str = std::format("{}", macd->GetSignalPeriod());
+    char signal_period_input_str[4] = "";
+    std::copy(signal_period_str.begin(), signal_period_str.end(), signal_period_input_str);
+
+    if (ImGui::InputText(std::format("##signal period{}", m_id).c_str(), signal_period_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int signal_period = std::atoi(signal_period_input_str);
+        macd->SetSignalPeriod(signal_period);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Signal Period");
+    }
+    ImGui::SameLine();
+    /// @end Input
+
+
+
+
+    /// @begin Button
+    ImGui::SetNextItemWidth(50);
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
+    {
+        std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
+        new_indicator->SetCounter(m_counter);
+
+        is_pressed = true;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Apply {}", m_indicator->GetName()).c_str());
+    }
+
+    return is_pressed;
+}
+
+bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
+{
+    bool is_pressed = false;
+
+    MACD* macd = dynamic_cast<MACD*>(m_indicator.get());
+    assert(macd);
+
+    /// @begin Text
+    ImGui::SetNextItemWidth(250);
+    ImGui::Checkbox(std::format("##show/hide{}", m_id).c_str(), &m_show); ImGui::SameLine();
+    ImGui::TextUnformatted(m_indicator->GetName().c_str()); ImGui::SameLine();
+    /// @end Text
+
+
+
+    /// @begin Input
+    /// @ period 1
+    ImGui::SetNextItemWidth(70);
+    std::string period_1_str = std::format("{}", macd->GetPeriod_1());
+    char period_1_input_str[4] = "";
+    std::copy(period_1_str.begin(), period_1_str.end(), period_1_input_str);
+
+    if (ImGui::InputText(std::format("##period 1{}", m_id).c_str(), period_1_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int period_1 = std::atoi(period_1_input_str);
+        macd->SetPeriod_1(period_1);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Period 1");
+    }
+    ImGui::SameLine();
+
+
+    /// @ period 2
+    ImGui::SetNextItemWidth(70);
+    std::string period_2_str = std::format("{}", macd->GetPeriod_2());
+    char period_2_input_str[4] = "";
+    std::copy(period_2_str.begin(), period_2_str.end(), period_2_input_str);
+
+    if (ImGui::InputText(std::format("##period 2{}", m_id).c_str(), period_2_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int period_2 = std::atoi(period_2_input_str);
+        macd->SetPeriod_2(period_2);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Period 2");
+    }
+    ImGui::SameLine();
+
+
+
+    /// @ signal period
+    ImGui::SetNextItemWidth(70);
+    std::string signal_period_str = std::format("{}", macd->GetSignalPeriod());
+    char signal_period_input_str[4] = "";
+    std::copy(signal_period_str.begin(), signal_period_str.end(), signal_period_input_str);
+
+    if (ImGui::InputText(std::format("##signal period{}", m_id).c_str(), signal_period_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int signal_period = std::atoi(signal_period_input_str);
+        macd->SetSignalPeriod(signal_period);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Signal Period");
+    }
+    ImGui::SameLine();
+    /// @end Input
+
+
+    /// @begin Colors
+    ImGui::ColorEdit4(std::format("##macd{}", m_id).c_str(), &m_colors_list[0].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
+    ImGui::ColorEdit4(std::format("##signal{}", m_id).c_str(), &m_colors_list[1].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
+    ImGui::ColorEdit4(std::format("##histogram{}", m_id).c_str(), &m_colors_list[2].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
+    /// @end Colors
+
+
+
+    ::ImGui::SameLine();
+    /// @begin Button
+    ImGui::SetNextItemWidth(50);
+    if (ImGui::Button(std::format(" x ##remove indicator{}", m_id).c_str(), { 0, 0 }))
+    {
+        is_pressed = true;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Remove {}", m_indicator->GetName()).c_str());
+    }
+
+    return is_pressed;
+}
+
+void MACDIndicatorWrapper::PlotItems()
+{
+    if (m_points_list.size() == 3)
+    {
+        ImVec4 macd_color = m_colors_list[0];
+        ImPlot::SetNextLineStyle(macd_color, macd_color.w);
+        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str()
+            , indicator_plot_point_getter
+            , (void*)&m_points_list[0]
+            , m_points_list[0].size());
+
+        ImVec4 signal_color = m_colors_list[1];
+        ImPlot::SetNextLineStyle(signal_color, signal_color.w);
+        ImPlot::PlotLineG(std::format("Signal##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
+            , indicator_plot_point_getter
+            , (void*)&m_points_list[1]
+            , m_points_list[1].size());
+
+        ImVec4 histogram_color = m_colors_list[2];
+        ImPlot::SetNextLineStyle(histogram_color, histogram_color.w);
+        ImPlot::SetNextFillStyle(histogram_color, histogram_color.w);
+        ImPlot::PlotBarsG(std::format("Histogram##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
+            , indicator_plot_point_getter
+            , (void*)&m_points_list[2]
+            , m_points_list[2].size()
+            , 60 * 60 * 12);
+    }
+}
+
+void MACDIndicatorWrapper::FromJson(Json::Value value)
+{
+    MACD* macd = dynamic_cast<MACD*>(m_indicator.get());
+    assert(macd);
+
+    GenericChartIndicatorWrapper::FromJson(value);
+
+    ImVec4 macd_color;
+    macd_color.x = value["Colors"]["MACD"]["R"].asFloat();
+    macd_color.y = value["Colors"]["MACD"]["G"].asFloat();
+    macd_color.z = value["Colors"]["MACD"]["B"].asFloat();
+    macd_color.w = value["Colors"]["MACD"]["A"].asFloat();
+
+    ImVec4 signal_color;
+    signal_color.x = value["Colors"]["Signal"]["R"].asFloat();
+    signal_color.y = value["Colors"]["Signal"]["G"].asFloat();
+    signal_color.z = value["Colors"]["Signal"]["B"].asFloat();
+    signal_color.w = value["Colors"]["Signal"]["A"].asFloat();
+
+    ImVec4 histogram_color;
+    histogram_color.x = value["Colors"]["Histogram"]["R"].asFloat();
+    histogram_color.y = value["Colors"]["Histogram"]["G"].asFloat();
+    histogram_color.z = value["Colors"]["Histogram"]["B"].asFloat();
+    histogram_color.w = value["Colors"]["Histogram"]["A"].asFloat();
+
+    m_colors_list.clear();
+    m_colors_list.push_back(macd_color);
+    m_colors_list.push_back(signal_color);
+    m_colors_list.push_back(histogram_color);
+}
+
+Json::Value MACDIndicatorWrapper::ToJson() const
+{
+    MACD* macd = dynamic_cast<MACD*>(m_indicator.get());
+    assert(macd);
+
+    Json::Value json_indicator = GenericChartIndicatorWrapper::ToJson();
+    json_indicator.removeMember("Color");
+
+    
+    Json::Value json_macd_color;
+    json_macd_color["R"] = m_colors_list[0].x;
+    json_macd_color["G"] = m_colors_list[0].y;
+    json_macd_color["B"] = m_colors_list[0].z;
+    json_macd_color["A"] = m_colors_list[0].w;
+
+    Json::Value json_signal_color;
+    json_signal_color["R"] = m_colors_list[1].x;
+    json_signal_color["G"] = m_colors_list[1].y;
+    json_signal_color["B"] = m_colors_list[1].z;
+    json_signal_color["A"] = m_colors_list[1].w;
+
+    Json::Value json_histogram_color;
+    json_histogram_color["R"] = m_colors_list[2].x;
+    json_histogram_color["G"] = m_colors_list[2].y;
+    json_histogram_color["B"] = m_colors_list[2].z;
+    json_histogram_color["A"] = m_colors_list[2].w;
+
+    Json::Value json_colors;
+    json_colors["MACD"] = json_macd_color;
+    json_colors["Signal"] = json_signal_color;
+    json_colors["Histogram"] = json_histogram_color;
+
+    json_indicator["Colors"] = json_colors;
+
+    return json_indicator;
 }

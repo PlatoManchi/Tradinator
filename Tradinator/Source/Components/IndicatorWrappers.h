@@ -22,8 +22,8 @@ public:
 	IIndicatorWrapper(IIndicatorWrapper&& other) noexcept = default;
 	IIndicatorWrapper& operator=(IIndicatorWrapper&& other) noexcept = default;
 
-	void SetIndicator(std::unique_ptr<Indicator> indicator);
-	void SetCounter(std::shared_ptr<Counter> counter);
+	virtual void SetIndicator(std::unique_ptr<Indicator> indicator);
+	virtual void SetCounter(std::shared_ptr<Counter> counter);
 	
 
 	virtual bool DrawAsAvailableIndicator() = 0;
@@ -60,7 +60,7 @@ protected:
 	bool m_is_hovered = false;
 	size_t m_id = 0;
 
-	static size_t _INCREMENTAL_WRAPPER_ID_;
+	static size_t _INCREMENTAL_WRAPPER_ID_;;
 };
 
 /*********************************************************************************
@@ -265,4 +265,42 @@ public:
 	{
 		return std::make_unique<OBVIndicatorWrapper>(*this);
 	}
+};
+
+
+
+/*********************************************************************************
+*                                     MACD
+**********************************************************************************/
+
+class MACDIndicatorWrapper : public GenericChartIndicatorWrapper
+{
+public:
+	MACDIndicatorWrapper() : GenericChartIndicatorWrapper() {}
+	MACDIndicatorWrapper(std::unique_ptr<Indicator> indicator)
+		: GenericChartIndicatorWrapper(std::move(indicator)) { }
+
+	MACDIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+		: GenericChartIndicatorWrapper(std::move(indicator), counter) {	}
+
+	MACDIndicatorWrapper(const MACDIndicatorWrapper& other) = default;
+	MACDIndicatorWrapper& operator=(const MACDIndicatorWrapper& other) = default;
+	MACDIndicatorWrapper(MACDIndicatorWrapper&& other) noexcept = default;
+	MACDIndicatorWrapper& operator=(MACDIndicatorWrapper&& other) noexcept = default;
+
+	virtual void SetIndicator(std::unique_ptr<Indicator> indicator) override;
+	virtual bool DrawAsAvailableIndicator() override;
+	virtual bool DrawAsAppliedIndicator() override;
+	virtual bool IsIndicatorOverlayable() override { return false; }
+	
+	virtual void FromJson(Json::Value value) override;
+	virtual Json::Value ToJson() const override;
+
+	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
+	{
+		return std::make_unique<MACDIndicatorWrapper>(*this);
+	}
+
+protected:
+	virtual void PlotItems() override;
 };

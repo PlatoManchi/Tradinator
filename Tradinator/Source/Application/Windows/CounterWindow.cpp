@@ -734,8 +734,7 @@ void CounterWindow::SetCounterStatus(Json::Value status)
         std::unique_ptr<IIndicatorWrapper> wrapper = TradinatorAppSpace::Utils::GetIndicatorWrapper(type);
         wrapper->FromJson(applied_indicators[i]);
         wrapper->SetCounter(m_counter);
-        wrapper->Calculate();
-
+        
         m_applied_indicator_wrappers.push_back(std::move(wrapper));
     }
 }

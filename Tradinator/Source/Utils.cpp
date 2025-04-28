@@ -9,6 +9,7 @@
 #include "Indicators/ROC.h"
 #include "Indicators/RSI.h"
 #include "Indicators/OBV.h"
+#include "Indicators/MACD.h"
 
 #include "Components/IndicatorWrappers.h"
 
@@ -68,7 +69,7 @@ namespace TradinatorAppSpace
 			{
 				return ImVec4(0.0f, 0.607f, 0.0f, 1.0f);
 			}
-			if (index == 3)
+			if (index == 2)
 			{
 				return ImVec4(1.0f, 0.349f, 0.349f, 1.0f);
 			}
@@ -144,7 +145,7 @@ namespace TradinatorAppSpace
 		case E_OBV:
 			return std::make_unique<OBV>();
 		case E_MACD:
-			break;
+			return std::make_unique<MACD>();
 		}
 
 		return nullptr;
@@ -158,7 +159,6 @@ namespace TradinatorAppSpace
 		case E_SMA:
 		case E_WMA:
 		case E_EMA:
-		case E_MACD:
 			wrapper = std::move(std::make_unique<GenericIndicatorWrapper>());
 			break;
 		case E_ROC:
@@ -172,6 +172,9 @@ namespace TradinatorAppSpace
 			break;
 		case E_OBV:
 			wrapper = std::move(std::make_unique<OBVIndicatorWrapper>());
+			break;
+		case E_MACD:
+			wrapper = std::move(std::make_unique<MACDIndicatorWrapper>());
 			break;
 		}
 
@@ -205,11 +208,6 @@ namespace TradinatorAppSpace
 			type == EIndicatorType::E_WMA ||
 			type == EIndicatorType::E_EMA ||
 			type == EIndicatorType::E_BOLLINGER_BAND;
-	}
-
-	bool Utils::IsIndicatorEnvelopeType(EIndicatorType type)
-	{
-		return type == EIndicatorType::E_BOLLINGER_BAND;
 	}
 
 	void Utils::SaveWindowsStatus(Json::Value status)
