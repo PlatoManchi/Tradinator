@@ -153,8 +153,8 @@ std::vector<std::vector<IndicatorPoint>> MACD::Calculate()
 		result.emplace_back(std::move(signal));
 		result.emplace_back(std::move(histogram));
 
-		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		std::cout << "MACD Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		//std::cout << "MACD Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

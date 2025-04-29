@@ -1,6 +1,6 @@
 #pragma once
 
-#if 1
+#if 0
 #define _MACD_ISPC_
 #else
 #endif
