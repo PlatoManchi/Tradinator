@@ -21,15 +21,11 @@ void Market::Init()
 {
 	CreateFolderStructure();
 
+    std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+    assert(owning_tradinator_core_thread);
+
 	std::function<void()> parse_counter_data = std::bind(&Market::ParseCounterListData, this);
-	std::function<void()> on_parse_counter_data_completed = std::bind(&Market::OnParseCounterListCompleted, this);
-
-	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-	assert(owning_tradinator_core_thread);
-
-	m_securities_async_data.SetDataReady(false);
-    
-    std::unique_ptr<AsyncTask> parse_counter_data_task = std::make_unique<AsyncTask>(
+	std::unique_ptr<AsyncTask> parse_counter_data_task = std::make_unique<AsyncTask>(
         std::string(""),
         parse_counter_data,
         [&]() 
@@ -44,17 +40,17 @@ void Market::Init()
         []() {}
     );
 
-    std::vector<std::unique_ptr<AsyncTask>> tasks;
-    tasks.push_back(std::move(parse_counter_data_task));
-    tasks.push_back(std::move(find_ten_newest_iops_task));
 
-    
-
+    m_securities_async_data.SetDataReady(false);
 	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<SerialAsyncTask>(
 		std::format("Gathering counter list for {}({}) market", GetMarketCode(), GetMarketName()),
         owning_tradinator_core_thread->GetAsyncTaskManager(),
-		std::move(tasks),
-        on_parse_counter_data_completed
+        std::move(parse_counter_data_task),
+        std::move(find_ten_newest_iops_task),
+        [&]() 
+        {
+            OnParseCounterListCompleted();
+        }
 	));
 }
 

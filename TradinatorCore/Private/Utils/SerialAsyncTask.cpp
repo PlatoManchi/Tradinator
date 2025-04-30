@@ -15,7 +15,7 @@ SerialAsyncTask::SerialAsyncTask(std::string description, std::shared_ptr<AsyncT
 SerialAsyncTask::SerialAsyncTask(std::string description, std::shared_ptr<AsyncTaskManager> async_task_manager, std::vector<std::unique_ptr<AsyncTask>>&& tasks, std::function<void()> callback)
 	: SerialAsyncTask(description, async_task_manager, callback)
 {
-	AddTask(std::move(tasks));
+	AddTasks(std::move(tasks));
 }
 
 void SerialAsyncTask::AddTask(std::unique_ptr<AsyncTask>&& task)
@@ -27,7 +27,7 @@ void SerialAsyncTask::AddTask(std::unique_ptr<AsyncTask>&& task)
 	m_tasks.push_back(std::move(task));
 }
 
-void SerialAsyncTask::AddTask(std::vector<std::unique_ptr<AsyncTask>>&& tasks)
+void SerialAsyncTask::AddTasks(std::vector<std::unique_ptr<AsyncTask>>&& tasks)
 {
 	for (std::unique_ptr<AsyncTask>& task : tasks)
 	{

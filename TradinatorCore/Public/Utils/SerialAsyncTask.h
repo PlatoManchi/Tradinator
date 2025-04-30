@@ -19,20 +19,27 @@ public:
 
 
 	void AddTask(std::unique_ptr<AsyncTask>&& task);
-	void AddTask(std::vector<std::unique_ptr<AsyncTask>>&& tasks);
+	void AddTasks(std::vector<std::unique_ptr<AsyncTask>>&& tasks);
 
-	/*template<typename Task, typename ... Tasks>
-	SerialAsyncTask(std::string description, std::shared_ptr<AsyncTaskManager> async_task_manager, std::unique_ptr<Task>&& task, std::unique_ptr<Tasks> ... tasks, std::function<void()> callback) requires std::convertible_to<Task, AsyncTask>
-		: SerialAsyncTask(std::move(tasks) ...)
+	template<typename Task, typename ... Tasks>
+	SerialAsyncTask(std::string description
+		, std::shared_ptr<AsyncTaskManager> async_task_manager
+		, std::unique_ptr<Task>&& task
+		, Tasks ... tasks_and_callback) requires std::convertible_to<Task, AsyncTask>
+		: SerialAsyncTask(std::move(tasks_and_callback) ...)
 	{
-		m_callback = callback;
+		assert(task);
+
 		m_human_readable_description = description;
 		m_tasks_completed_count = 0;
 		m_first_task_started = false;
 		m_async_task_manager = async_task_manager;
 
 		AddTask(std::move(task));
-	}*/
+
+		std::reverse(m_tasks.begin(), m_tasks.end());
+		std::reverse(m_tasks_callback_cache.begin(), m_tasks_callback_cache.end());
+	}
 
 	// copy and move sementics
 	SerialAsyncTask(const SerialAsyncTask& other) = default;
@@ -42,21 +49,20 @@ public:
 
 
 protected:
-	/*template<typename Task, typename ... Tasks>
-	SerialAsyncTask(std::unique_ptr<Task>&& task, std::unique_ptr<Tasks> ... tasks) requires std::convertible_to<Task, AsyncTask>
+	template<typename Task, typename ... Tasks>
+	SerialAsyncTask(std::unique_ptr<Task>&& task, Tasks ... tasks) requires std::convertible_to<Task, AsyncTask>
 		: SerialAsyncTask(std::move(tasks) ...)
 	{
+		assert(task);
+
 		AddTask(std::move(task));
 	}
 
-	template<typename Task>
-	SerialAsyncTask(std::unique_ptr<Task>&& task) requires std::convertible_to<Task, AsyncTask>
+	template<typename Callback>
+	SerialAsyncTask(Callback callback) requires std::convertible_to<Callback, std::function<void()>>
 	{
-		AddTask(std::move(task));
-
-		std::reverse(m_tasks.begin(), m_tasks.end());
-		std::reverse(m_tasks_callback_cache.begin(), m_tasks_callback_cache.end());
-	}*/
+		m_callback = callback;
+	}
 
 
 	virtual void StartTask() override;

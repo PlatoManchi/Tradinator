@@ -4,6 +4,7 @@
 #include <chrono>
 
 class Indicator;
+class Pattern;
 
 namespace TradinatorCoreSpace
 {
@@ -20,6 +21,7 @@ namespace TradinatorCoreSpace
 		static bool DoesFileExist(const std::string& file_path);
 
 		static std::vector<std::unique_ptr<Indicator>> GetAvailableIndicators();
+		static std::vector<std::unique_ptr<Pattern>> GetAvailablePatterns();
 
 	private:
 		static std::string _DATA_FOLDER_PATH_;

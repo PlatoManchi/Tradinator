@@ -17,6 +17,8 @@ public:
 	Candle& operator=(const Candle& other) = default;
 	Candle& operator=(Candle&& other) noexcept = default;
 
+	bool IsDoji() const;
+	bool IsMarubozu() const;
 
 	/**
 	* Volume should be a unsigned int. But for one stock one one particular day, the volume from upstox website

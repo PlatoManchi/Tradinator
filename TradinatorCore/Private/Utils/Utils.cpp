@@ -11,6 +11,8 @@
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
 
+#include "Patterns/Pattern.h"
+
 std::string TradinatorCoreSpace::Utils::_DATA_FOLDER_PATH_;
 
 
@@ -18,18 +20,28 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
 {
     std::vector<std::unique_ptr<Indicator>> result;
 
-    result.push_back(std::make_unique<SMA>(20));
-    result.push_back(std::make_unique<WMA>(20));
-    result.push_back(std::make_unique<EMA>(20));
-    result.push_back(std::make_unique<BollingerBand>(20, 2));
-    result.push_back(std::make_unique<ROC>(12));
-    result.push_back(std::make_unique<RSI>(14));
-    result.push_back(std::make_unique<OBV>());
-    result.push_back(std::make_unique<MACD>(12, 26, 9));
+    result.emplace_back(std::make_unique<SMA>(20));
+    result.emplace_back(std::make_unique<WMA>(20));
+    result.emplace_back(std::make_unique<EMA>(20));
+    result.emplace_back(std::make_unique<BollingerBand>(20, 2));
+    result.emplace_back(std::make_unique<ROC>(12));
+    result.emplace_back(std::make_unique<RSI>(14));
+    result.emplace_back(std::make_unique<OBV>());
+    result.emplace_back(std::make_unique<MACD>(12, 26, 9));
 
     return result;
 }
 
+
+std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePatterns()
+{
+    std::vector<std::unique_ptr<Pattern>> result;
+
+    result.emplace_back(std::make_unique<BullishHaramiPattern>());
+    result.emplace_back(std::make_unique<BullishHaramiCrossPattern>());
+
+    return result;
+}
 
 
 void TradinatorCoreSpace::Utils::SetTradinatorWorkingFolderPath(std::string path)
