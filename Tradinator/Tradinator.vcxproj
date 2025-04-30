@@ -20,11 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Source\Application\AutoAnalysisUpdateWindow.h" />
-    <ClInclude Include="Source\Application\DashboardWindow.h" />
     <ClInclude Include="Source\Application\TradinatorApp.h" />
+    <ClInclude Include="Source\Application\TradinatorSettings.h" />
+    <ClInclude Include="Source\Application\Windows\AutoAnalysisUpdateWindow.h" />
+    <ClInclude Include="Source\Application\Windows\DashboardWindow.h" />
     <ClInclude Include="Source\Application\Windows\MainWindow.h" />
     <ClInclude Include="Source\Application\Windows\CounterWindow.h" />
+    <ClInclude Include="Source\Application\Windows\SettingsWindow.h" />
+    <ClInclude Include="Source\Application\Windows\StartupWindow.h" />
     <ClInclude Include="Source\Components\AutoCompleteInputText.h" />
     <ClInclude Include="Source\Components\IndicatorWrappers.h" />
     <ClInclude Include="Source\Components\SecuritiesSearchBar.h" />
@@ -35,11 +38,14 @@
     <ClInclude Include="Source\Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Application\AutoAnalysisUpdateWindow.cpp" />
-    <ClCompile Include="Source\Application\DashboardWindow.cpp" />
     <ClCompile Include="Source\Application\TradinatorApp.cpp" />
+    <ClCompile Include="Source\Application\TradinatorSettings.cpp" />
+    <ClCompile Include="Source\Application\Windows\AutoAnalysisUpdateWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\DashboardWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\CounterWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\SettingsWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\StartupWindow.cpp" />
     <ClCompile Include="Source\Components\AutoCompleteInputText.cpp" />
     <ClCompile Include="Source\Components\IndicatorWrappers.cpp" />
     <ClCompile Include="Source\Components\SecuritiesSearchBar.cpp" />

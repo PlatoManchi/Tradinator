@@ -34,6 +34,11 @@ namespace TradinatorAppSpace
 		static void SaveWindowsStatus(Json::Value status);
 		static Json::Value LoadWindowsStatus();
 		
+
+		static void OpenURL(const std::string& url);
+
+		static bool DoesDirectoryExist(const std::string& path_string);
+
 		static ImFont* _BODY_FONT_;
 		static ImFont* _HEADING_FONT_;
 		static std::string _SETTINGS_FILE_;

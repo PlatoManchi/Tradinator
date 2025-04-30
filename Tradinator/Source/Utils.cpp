@@ -1,6 +1,15 @@
 #include "Utils.h"
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <shellapi.h>
+#pragma comment(lib, "Shell32.lib")
+#endif
+
 #include <fstream>
+#include <cstdlib>
+#include <filesystem>
+
 
 #include "Indicators/SMA.h"
 #include "Indicators/WMA.h"
@@ -231,4 +240,26 @@ namespace TradinatorAppSpace
 		
 		return result;
 	}
+
+
+	void Utils::OpenURL(const std::string& url)
+	{
+#if defined(_WIN32)
+		ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+		std::string command = "open ";
+		command += url;
+		system(command.c_str());
+#elif defined(__linux__)
+		std::string command = "xdg-open ";
+		command += url;
+		system(command.c_str());
+#endif
+	}
+
+	bool Utils::DoesDirectoryExist(const std::string& path_string) {
+		std::filesystem::path path_to_check(path_string);
+		return std::filesystem::is_directory(path_to_check);
+	}
 }
+

@@ -28,12 +28,6 @@
       <Filter>Source\Application</Filter>
     </ClInclude>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Source\Application\AutoAnalysisUpdateWindow.h">
-      <Filter>Source\Application</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Application\DashboardWindow.h">
-      <Filter>Source\Application</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Application\Windows\MainWindow.h">
       <Filter>Source\Application\Windows</Filter>
     </ClInclude>
@@ -64,18 +58,27 @@
     <ClInclude Include="Source\Components\IndicatorWrappers.h">
       <Filter>Source\Components</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Application\TradinatorSettings.h">
+      <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\StartupWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\AutoAnalysisUpdateWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\DashboardWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\Windows\SettingsWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Tradinator.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="Source\Application\TradinatorApp.cpp">
-      <Filter>Source\Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Application\AutoAnalysisUpdateWindow.cpp">
-      <Filter>Source\Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Application\DashboardWindow.cpp">
       <Filter>Source\Application</Filter>
     </ClCompile>
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp">
@@ -98,6 +101,21 @@
     </ClCompile>
     <ClCompile Include="Source\Components\IndicatorWrappers.cpp">
       <Filter>Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\TradinatorSettings.cpp">
+      <Filter>Source\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\StartupWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\AutoAnalysisUpdateWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\DashboardWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\SettingsWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

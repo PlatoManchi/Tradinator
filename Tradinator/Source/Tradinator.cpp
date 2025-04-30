@@ -7,6 +7,7 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include "imgui.h"
+#include "implot.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx12.h"
 #include <d3d12.h>
@@ -277,7 +278,7 @@ int main(int, char**)
         }
         else 
         {
-            tradinator_app.ShowApp();
+            done = !tradinator_app.ShowApp();
         }
         
         

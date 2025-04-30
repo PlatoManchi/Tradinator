@@ -66,11 +66,15 @@ bool TradinatorCoreSpace::Utils::DoesFileExist(const std::string& file_path)
     std::size_t index = file_path.find_last_of('/');
     std::string folder_path = file_path.substr(0, index);
 
-    for (const auto& entry : std::filesystem::directory_iterator(folder_path))
+    std::filesystem::path path_to_check(folder_path);
+    if (std::filesystem::is_directory(path_to_check))
     {
-        if (entry.path() == file_path)
+        for (const auto& entry : std::filesystem::directory_iterator(folder_path))
         {
-            return true;
+            if (entry.path() == file_path)
+            {
+                return true;
+            }
         }
     }
 

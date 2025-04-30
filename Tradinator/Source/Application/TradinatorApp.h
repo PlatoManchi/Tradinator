@@ -6,12 +6,12 @@
 
 #include "TradinatorCore.h"
 
-#include "AutoAnalysisUpdateWindow.h"
-#include "DashboardWindow.h"
 #include "Windows/MainWindow.h"
-#include "Windows/CounterWindow.h"
-#include "Components/SecuritiesSearchBar.h"
-#include "Components/StatusBar.h"
+#include "Windows/StartupWindow.h"
+
+
+class Counter;
+class CounterWindow;
 
 class TradinatorApp final
 {
@@ -20,33 +20,20 @@ public:
 
 	void Init();
 	void Begin();
-	void ShowApp();
+	bool ShowApp();
 	void Shutdown();
 
 	void ShowCounterWindow(std::shared_ptr<Counter> counter);
 
 private:
-	void ShowMainMenu();
-	void ShowMainMenu_File();
+	bool ShowMainWindow();
 
 	void LoadWindowsState();
 	void SaveWindowsState();
 
-	AutoAnalysisUpdateWindow m_audo_analysis_update_window;
-	DashboardWindow m_dashboard_window;
-
-	SecuritiesSearchBar m_securities_search_bar;
 	MainWindow m_main_windows;
-	StatusBar m_status_bar;
+	StartupWindow m_startup_window;
 
-	ImGuiID m_root_docksapce_id;
-	ImGuiID m_dashboard_dockspace_id;
-	ImGuiID m_notification_dockspace_id;
-
-	ImGuiID m_main_window_dockspace_id;
-	ImGuiID m_search_bar_dockspace_id;
-	ImGuiID m_status_bar_dockspace_id;
-	
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
 	std::map<std::string, std::shared_ptr<CounterWindow>> m_counter_windows;
 };
