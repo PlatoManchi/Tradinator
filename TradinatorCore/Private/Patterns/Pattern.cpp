@@ -1,12 +1,12 @@
 #include "Patterns/Pattern.h"
 
 
-std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(AsyncCandleData::const_iterator current_candle_itr, AsyncCandleData::const_iterator begin, AsyncCandleData::const_iterator end)
+std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end)
 {
     std::vector<std::chrono::system_clock::time_point> result;
 
     const Candle& curr = (*current_candle_itr).second;
-    AsyncCandleData::const_iterator next_itr = std::next(current_candle_itr, 1);
+    CandleDataMapType::const_iterator next_itr = std::next(current_candle_itr, 1);
 
     if (next_itr != end)
     {
@@ -41,12 +41,12 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(A
 }
 
 
-std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Check(AsyncCandleData::const_iterator current_candle_itr, AsyncCandleData::const_iterator begin, AsyncCandleData::const_iterator end)
+std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end)
 {
     std::vector<std::chrono::system_clock::time_point> result;
 
     const Candle& curr = (*current_candle_itr).second;
-    AsyncCandleData::const_iterator next_itr = std::next(current_candle_itr, 1);
+    CandleDataMapType::const_iterator next_itr = std::next(current_candle_itr, 1);
 
     if (next_itr != end)
     {

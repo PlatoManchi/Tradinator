@@ -13,7 +13,7 @@
 #include "Data/AsyncData.h"
 #include "Data/Candle.h"
 
-typedef std::map<std::chrono::system_clock::time_point, Candle, std::greater<std::chrono::system_clock::time_point>> AsyncCandleData;
+
 
 class Market;
 class TradinatorCoreThread;
@@ -59,7 +59,7 @@ public:
 	inline uint32_t MarketLot() const { return m_market_lot; }
 	inline uint32_t FaceValue() const { return m_face_value; }
 
-	inline std::shared_ptr<const AsyncData<AsyncCandleData>> GetCandleData() const { return m_candle_data; }
+	inline std::shared_ptr<const AsyncData<CandleDataMapType>> GetCandleData() const { return m_candle_data; }
 
 	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
@@ -113,7 +113,7 @@ protected:
 	SQLite::Database m_database_connection;
 
 	// Candle data sorted from latest to oldest
-	std::shared_ptr<AsyncData<AsyncCandleData>> m_candle_data;
+	std::shared_ptr<AsyncData<CandleDataMapType>> m_candle_data;
 
 	// Cached latest local candle date
 	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;

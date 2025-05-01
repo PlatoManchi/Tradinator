@@ -1,17 +1,22 @@
 #include "TradinatorCoreThread.h"
 
+#include <memory>
 #include <thread>
 
 #include "SQLiteCpp/SQLiteCpp.h"
 
 #include "Market/Market.h"
 #include "Utils/AsyncTaskManager.h"
+#include "Utils/AsyncTask.h"
+#include "Utils/SerialAsyncTask.h"
+#include "Utils/ParallelAsyncTask.h"
 #include "Utils/Utils.h"
 #include "Utils/Log.h"
 
 TradinatorCoreThread::TradinatorCoreThread(std::string data_folder_path)
 	: m_data_folder_path(data_folder_path)
 	, m_async_task_manager(std::make_shared<AsyncTaskManager>())
+	, m_is_initialized(false)
 	, m_is_shut_down(false)
 {
 	Log::GetInstance().SetFolderPath(m_data_folder_path);
@@ -21,11 +26,86 @@ TradinatorCoreThread::TradinatorCoreThread(std::string data_folder_path)
 	InitializeDB();
 }
 
+void TradinatorCoreThread::Init()
+{
+	std::vector<std::unique_ptr<AsyncTask>> init_markets_tasks_list;
+	size_t count = m_market_list.size();
+
+	// Gathering the security list
+	if (count == 1)
+	{
+		init_markets_tasks_list.emplace_back(std::move(m_market_list[0]->GetGatherSecuritiesTask()));
+	}
+	else if(count > 1)
+	{
+		std::vector<std::unique_ptr<AsyncTask>> gather_securities_tasks_list;
+		for (std::shared_ptr<Market> market : m_market_list)
+		{
+			gather_securities_tasks_list.emplace_back(std::move(market->GetGatherSecuritiesTask()));
+		}
+
+		init_markets_tasks_list.emplace_back(std::move(std::make_unique<SerialAsyncTask>(
+			std::string(""),
+			m_async_task_manager,
+			std::move(gather_securities_tasks_list),
+			[]() {}
+		)));
+	}
+
+
+	m_is_initialized = true;
+	std::unique_ptr<AsyncTask> init_task = std::move(std::make_unique<SerialAsyncTask>(
+		std::string(""),
+		m_async_task_manager,
+		std::move(init_markets_tasks_list),
+		[&]() 
+		{
+			OnSecurityDataLoaded();
+		}
+	));
+	m_async_task_manager->AddTask(std::move(init_task));
+}
+
+void TradinatorCoreThread::OnSecurityDataLoaded()
+{
+	std::vector<std::unique_ptr<AsyncTask>> download_and_write_tasks;
+	size_t count = m_market_list.size();
+
+	// Download latest security data from internet and write the data into local database
+	if (count > 0)
+	{
+		download_and_write_tasks.emplace_back(std::move(m_market_list[0]->GetParallelDownloadTask()));
+
+		for (int i = 1; i < count; ++i)
+		{
+			download_and_write_tasks.emplace_back(std::move(std::make_unique<ParallelAsyncTask>(
+				std::string(""),
+				m_async_task_manager,
+				std::move(m_market_list[i - 1]->GetSerialWriteTask()),
+				std::move(m_market_list[i]->GetParallelDownloadTask()),
+				[]() {}
+			)));
+		}
+
+		download_and_write_tasks.emplace_back(std::move(m_market_list[count - 1]->GetSerialWriteTask()));
+	}
+
+	std::unique_ptr<AsyncTask> download_and_write_task = std::move(std::make_unique<SerialAsyncTask>(
+		std::string(""),
+		m_async_task_manager,
+		std::move(download_and_write_tasks),
+		[]() {}
+	));
+
+	m_async_task_manager->AddTask(std::move(download_and_write_task));
+}
+
 void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 {
+	assert(!m_is_initialized && "Add markets before TradinatorCoreThread::Init is called.");
 	std::shared_ptr<Market>& stored_market = m_market_list.emplace_back(market);
 	stored_market->SetOwningTradinatorCoreThread(this->weak_from_this());
-	stored_market->Init();
+	//stored_market->Init();
 }
 
 

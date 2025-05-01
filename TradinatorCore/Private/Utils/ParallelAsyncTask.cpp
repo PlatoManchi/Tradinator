@@ -42,7 +42,8 @@ void ParallelAsyncTask::AddTasks(std::vector<std::unique_ptr<AsyncTask>>&& tasks
 
 void ParallelAsyncTask::StartTask()
 {
-	Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
+	if(!GetHumanReadableDescription().empty())
+		Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
 
 	m_start = std::chrono::steady_clock::now();
 
@@ -93,18 +94,21 @@ void ParallelAsyncTask::StartFirstBatch()
 
 void ParallelAsyncTask::OnChildAsyncTaskComplete(size_t index)
 {
-	m_tasks_callback_cache[index]();
-
-	m_tasks_completed_count++;
-
-	if (m_tasks_completed_count >= m_tasks.size())
+	if (!m_is_shut_down)
 	{
-		TaskCompleted();
-	}
-	else if(m_tasks_started_count < m_tasks.size())
-	{
-		m_async_task_manager->AddTask(std::move(m_tasks[m_tasks_started_count]));
-		m_tasks_started_count++;
+		m_tasks_callback_cache[index]();
+
+		m_tasks_completed_count++;
+
+		if (m_tasks_completed_count >= m_tasks.size())
+		{
+			TaskCompleted();
+		}
+		else if (m_tasks_started_count < m_tasks.size())
+		{
+			m_async_task_manager->AddTask(std::move(m_tasks[m_tasks_started_count]));
+			m_tasks_started_count++;
+		}
 	}
 }
 
@@ -112,7 +116,7 @@ void ParallelAsyncTask::Shutdown()
 {
 	AsyncTask::Shutdown();
 
-	m_tasks.clear();
+	//m_tasks.clear();
 
 	// Parallel task doesn't have anything to do in itself. So it can finish off immediately when shutting down
 	TaskCompleted();

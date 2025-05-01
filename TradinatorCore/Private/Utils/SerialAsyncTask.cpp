@@ -37,7 +37,8 @@ void SerialAsyncTask::AddTasks(std::vector<std::unique_ptr<AsyncTask>>&& tasks)
 
 void SerialAsyncTask::StartTask()
 {
-	Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
+	if (!GetHumanReadableDescription().empty())
+		Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
 
 	m_start = std::chrono::steady_clock::now();
 
@@ -51,17 +52,20 @@ void SerialAsyncTask::StartTaskAt(size_t index)
 
 void SerialAsyncTask::OnChildAsyncTaskComplete()
 {
-	m_tasks_callback_cache[m_tasks_completed_count]();
-	
-	m_tasks_completed_count++;
+	if (!m_is_shut_down)
+	{
+		m_tasks_callback_cache[m_tasks_completed_count]();
 
-	if (m_tasks_completed_count < m_tasks.size())
-	{
-		StartTaskAt(m_tasks_completed_count);
-	}
-	else
-	{
-		TaskCompleted();
+		m_tasks_completed_count++;
+
+		if (m_tasks_completed_count < m_tasks.size())
+		{
+			StartTaskAt(m_tasks_completed_count);
+		}
+		else
+		{
+			TaskCompleted();
+		}
 	}
 }
 
@@ -87,7 +91,7 @@ void SerialAsyncTask::Shutdown()
 {
 	AsyncTask::Shutdown();
 
-	m_tasks.clear();
+	//m_tasks.clear();
 
 	// Serial task doesn't have anything to do in itself. So it can finish off immediately when shutting down
 	TaskCompleted();

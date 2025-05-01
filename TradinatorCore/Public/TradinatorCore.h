@@ -14,6 +14,8 @@ class TradinatorCore final
 public:
 	TradinatorCore(std::string data_folder_path);
 	~TradinatorCore();
+
+	void Init();
 	void Shutdown();
 
 

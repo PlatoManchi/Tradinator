@@ -59,7 +59,7 @@ void CounterWindow::Show()
     {
         ShowTitle();
 
-        const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = m_counter->GetCandleData();
+        const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_counter->GetCandleData();
 
 
         if (candle_data->IsDataReady())
@@ -529,7 +529,7 @@ void CounterWindow::ShowTitle()
 
 void CounterWindow::RebuildCachedPlotPoints()
 {
-    const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = m_counter->GetCandleData();
+    const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_counter->GetCandleData();
     size_t count = candle_data->GetData().size();
 
     // don't care about previous data stored in cache

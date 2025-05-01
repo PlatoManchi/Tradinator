@@ -20,7 +20,7 @@ std::vector<std::vector<IndicatorPoint>> ROC::Calculate()
 
 	if (counter)
 	{
-		const std::shared_ptr<const AsyncData<AsyncCandleData>>& candle_data = counter->GetCandleData();
+		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
 		bool is_ready = candle_data->IsDataReady();
 		while (!is_ready)
 		{
@@ -36,7 +36,7 @@ std::vector<std::vector<IndicatorPoint>> ROC::Calculate()
 		roc.reserve(count);
 
 #ifdef _ROC_ISPC_
-		const AsyncCandleData& data = candle_data->GetData();
+		const CandleDataMapType& data = candle_data->GetData();
 		std::vector<double> ispc_input;
 		std::vector<double> ispc_output(count);
 		ispc_input.reserve(count);

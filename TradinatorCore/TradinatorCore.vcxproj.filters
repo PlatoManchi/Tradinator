@@ -43,6 +43,12 @@
     <Filter Include="Public\Patterns">
       <UniqueIdentifier>{70c39378-f73a-4472-9ce2-c821072ec1ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Public\News">
+      <UniqueIdentifier>{818a29d9-1efb-42da-b4e3-a740d291f395}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\News">
+      <UniqueIdentifier>{1c7905e8-0fd6-4c93-a2f4-04aeeacd38bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\TradinatorCore.h">
@@ -123,6 +129,9 @@
     <ClInclude Include="Public\Patterns\Pattern.h">
       <Filter>Public\Patterns</Filter>
     </ClInclude>
+    <ClInclude Include="Public\News\News.h">
+      <Filter>Public\News</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -196,6 +205,9 @@
     </ClCompile>
     <ClCompile Include="Private\Patterns\Pattern.cpp">
       <Filter>Private\Patterns</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\News\News.cpp">
+      <Filter>Private\News</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

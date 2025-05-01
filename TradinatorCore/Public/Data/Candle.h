@@ -1,11 +1,9 @@
 #pragma once
 
+#include <map>
 #include <chrono>
 #include <cstdint>
 #include <fstream>
-
-
-static constexpr size_t _CANDLE_SIZE_ = sizeof(std::chrono::system_clock::rep) + (sizeof(double) * 4) + (sizeof(uint64_t) * 2);
 
 struct Candle
 {
@@ -56,3 +54,7 @@ std::ostream& operator << (std::ostream& stream, Candle& counter);
 
 // Read from file
 std::istream& operator >> (std::istream& stream, Candle& counter);
+
+
+
+typedef std::map<std::chrono::system_clock::time_point, Candle, std::greater<std::chrono::system_clock::time_point>> CandleDataMapType;

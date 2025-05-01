@@ -13,10 +13,13 @@ AsyncTaskManager::AsyncTaskManager()
 
 void AsyncTaskManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
-	std::lock_guard<std::mutex> lock(m_async_task_manager_lock);
-	
-	task->StartTask();
-	m_add_tasks_buffer.push_back(std::move(task));
+	if (!m_is_shutting_down)
+	{
+		std::lock_guard<std::mutex> lock(m_async_task_manager_lock);
+
+		task->StartTask();
+		m_add_tasks_buffer.push_back(std::move(task));
+	}
 }
 
 void AsyncTaskManager::Update()
@@ -65,11 +68,17 @@ void AsyncTaskManager::Shutdown()
 
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
-		task->Shutdown();
+		if (task)
+		{
+			task->Shutdown();
+		}
 	}
 	for (std::unique_ptr<AsyncTask>& task : m_add_tasks_buffer)
 	{
-		task->Shutdown();
+		if (task)
+		{
+			task->Shutdown();
+		}
 	}
 	
 	m_shutting_down_remaining_tasks = m_tasks.size();

@@ -45,7 +45,7 @@ public:
 protected:
 	template<typename Task, typename ... Tasks>
 	ParallelAsyncTask(std::unique_ptr<Task>&& task, Tasks ... tasks) requires std::convertible_to<Task, AsyncTask>
-		: SerialAsyncTask(std::move(tasks) ...)
+		: ParallelAsyncTask(std::move(tasks) ...)
 	{
 		assert(task);
 

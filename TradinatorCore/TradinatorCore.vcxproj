@@ -179,6 +179,7 @@
     <ClInclude Include="Public\Indicators\WMA.h" />
     <ClInclude Include="Public\Market\Market.h" />
     <ClInclude Include="Public\Market\NSE_Market.h" />
+    <ClInclude Include="Public\News\News.h" />
     <ClInclude Include="Public\Patterns\Pattern.h" />
     <ClInclude Include="Public\TradinatorCore.h" />
     <ClInclude Include="Public\TradinatorCoreThread.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="Private\Indicators\WMA.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
     <ClCompile Include="Private\Market\NSE_Market.cpp" />
+    <ClCompile Include="Private\News\News.cpp" />
     <ClCompile Include="Private\Patterns\Pattern.cpp" />
     <ClCompile Include="Private\TradinatorCore.cpp" />
     <ClCompile Include="Private\TradinatorCoreThread.cpp" />

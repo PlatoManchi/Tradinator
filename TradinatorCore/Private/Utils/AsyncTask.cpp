@@ -7,7 +7,8 @@
 
 void AsyncTask::StartTask()
 {
-	Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
+	if (!GetHumanReadableDescription().empty())
+		Log::GetInstance().Write(std::format("{} ...", GetHumanReadableDescription()));
 	
 	m_start = std::chrono::steady_clock::now();
 
@@ -44,7 +45,8 @@ void AsyncTask::TaskCompleted()
 	m_is_complete = true;
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	Log::GetInstance().Write(std::format("{} completed in {} sec.\n", GetHumanReadableDescription(), std::to_string(std::chrono::duration<double>(end - m_start).count())));
+	if (!GetHumanReadableDescription().empty())
+		Log::GetInstance().Write(std::format("{} completed in {} sec.\n", GetHumanReadableDescription(), std::to_string(std::chrono::duration<double>(end - m_start).count())));
 	
 	if (!m_is_shut_down) 
 	{

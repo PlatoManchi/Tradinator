@@ -17,7 +17,6 @@ class Market : public std::enable_shared_from_this<Market>
 public:
 	Market();
 
-	virtual void Init();
 	virtual std::string GetMarketName() const = 0;
 	virtual std::string GetMarketCode() const = 0;
 
@@ -32,6 +31,9 @@ public:
 	std::string GetCounterListRawDataFilePath() const;
 	std::string GetCounterListProcessedDataFilePath() const;
 
+	std::unique_ptr<AsyncTask> GetGatherSecuritiesTask();
+	std::unique_ptr<AsyncTask> GetParallelDownloadTask();
+	std::unique_ptr<AsyncTask> GetSerialWriteTask();
 	
 
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
@@ -44,7 +46,6 @@ protected:
 	// Each market will have different ways of organizing and acquiring data.
 	virtual void ParseCounterListData() = 0;
 	void FindTenNewestIPOs();
-	void OnParseCounterListCompleted();
 	void CreateFolderStructure() const;
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;

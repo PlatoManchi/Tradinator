@@ -41,6 +41,8 @@ void TradinatorApp::Begin()
         // Creating markets that we want to follow
         m_tradinator_core->AddMarket(std::make_shared<NSE_Market>());
 
+        m_tradinator_core->Init();
+
         m_main_windows.Begin();
 
         LoadWindowsState();

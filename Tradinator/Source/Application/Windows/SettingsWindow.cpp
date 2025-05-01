@@ -46,6 +46,10 @@ bool SettingsWindow::Show()
             ImGui::Button("Delete Temporary Files", { 0, 0 });
             /// @end Button
 
+            /// @begin Button
+            ImGui::Button("Delete Log Files", { 0, 0 });
+            /// @end Button
+
             /// @begin Input
             ImGui::SetNextItemWidth(200);
             std::string max_parallel_downloads_str = std::format("{}", m_max_parallel_downloads);

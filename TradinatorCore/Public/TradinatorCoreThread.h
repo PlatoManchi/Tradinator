@@ -7,6 +7,8 @@
 #include "Utils/AsyncTaskManager.h"
 #include "Data/AsyncData.h"
 
+#include "News/News.h"
+
 class AsyncTaskManager;
 class Market;
 class Counter;
@@ -15,6 +17,9 @@ class TradinatorCoreThread : public std::enable_shared_from_this<TradinatorCoreT
 {
 public:
 	TradinatorCoreThread(std::string data_folder_path);
+
+	// Call Init after adding all the markets. Not before.
+	void Init();
 	void Update();
 	void Shutdown();
 
@@ -25,7 +30,7 @@ public:
 	bool CanSafelyShutdown() const;
 	
 	const AsyncData<std::vector<std::weak_ptr<Counter>>>& GetTenNewestIPOs() const;
-
+	const AsyncData<NewsPointMapType>& GetGlobalNews() const { return m_global_news; }
 
 
 	inline bool IsProcessing() const { return m_async_task_manager->IsProcessing(); }
@@ -37,15 +42,21 @@ public:
 
 private:
 	void InitializeDB();
+	void OnSecurityDataLoaded();
 
 	// Working directory for all data
 	std::string m_data_folder_path;
 
+	// Task manager
 	std::shared_ptr<AsyncTaskManager> m_async_task_manager;
 	
 	// List of markets that this core will process
 	std::vector<std::shared_ptr<Market>> m_market_list;
 
+	// Will contain cummulation of news points from all counters in all markets.
+	AsyncData<NewsPointMapType> m_global_news;
+
+	bool m_is_initialized;
 	bool m_is_shut_down;
 };
 
