@@ -4,7 +4,7 @@
 
 #include "Utils.h"
 
-std::string TradinatorSettings::_SETTINGS_FILE_ = "Settings2.json";
+std::string TradinatorSettings::_SETTINGS_FILE_ = "Settings.json";
 TradinatorSettings TradinatorSettings::_TRADINATOR_SETTINGS_ = TradinatorSettings();
 
 

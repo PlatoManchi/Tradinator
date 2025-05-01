@@ -28,12 +28,6 @@ namespace TradinatorAppSpace
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(EIndicatorType type);
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter = nullptr);
 
-		// return true if the indicator can be drawn on top of the main chart
-		static bool IsIndicatorOverlayable(EIndicatorType type);
-
-		static void SaveWindowsStatus(Json::Value status);
-		static Json::Value LoadWindowsStatus();
-		
 
 		static void OpenURL(const std::string& url);
 
@@ -41,7 +35,6 @@ namespace TradinatorAppSpace
 
 		static ImFont* _BODY_FONT_;
 		static ImFont* _HEADING_FONT_;
-		static std::string _SETTINGS_FILE_;
 
 	};
 }

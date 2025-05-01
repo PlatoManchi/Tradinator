@@ -26,8 +26,7 @@ namespace TradinatorAppSpace
 {
 	ImFont* Utils::_BODY_FONT_ = nullptr;
 	ImFont* Utils::_HEADING_FONT_ = nullptr;
-	std::string Utils::_SETTINGS_FILE_ = "Settings.json";
-
+	
 	void Utils::PushBodyFont()
 	{
 		if (_BODY_FONT_)
@@ -211,35 +210,6 @@ namespace TradinatorAppSpace
 	}
 
 
-	bool Utils::IsIndicatorOverlayable(EIndicatorType type)
-	{
-		return type == EIndicatorType::E_SMA ||
-			type == EIndicatorType::E_WMA ||
-			type == EIndicatorType::E_EMA ||
-			type == EIndicatorType::E_BOLLINGER_BAND;
-	}
-
-	void Utils::SaveWindowsStatus(Json::Value status)
-	{
-		std::ofstream output_file(_SETTINGS_FILE_);
-
-		output_file << status;
-		output_file.close();
-	}
-
-	Json::Value Utils::LoadWindowsStatus()
-	{
-		Json::Value result;
-
-		std::ifstream input_file(_SETTINGS_FILE_, std::ifstream::binary);
-		if (input_file.good())
-		{
-			input_file >> result;
-			input_file.close();
-		}
-		
-		return result;
-	}
 
 
 	void Utils::OpenURL(const std::string& url)

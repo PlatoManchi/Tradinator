@@ -166,8 +166,7 @@ void CounterWindow::Show()
             ShowIndicatorsList();
 
             //ImGui::BulletText("You can create custom plotters or extend ImPlot using implot_internal.h.");
-            static bool tooltip = true;
-            ImGui::Checkbox("Show Tooltip", &tooltip);
+            ImGui::Checkbox("Show Tooltip", &m_show_tool_tip);
             ImGui::SameLine();
             static ImVec4 bullCol = ImVec4(0.031f, 0.600f, 0.505f, 1.000f);
             static ImVec4 bearCol = ImVec4(0.949f, 0.211f, 0.270f, 1.000f);
@@ -231,7 +230,17 @@ void CounterWindow::Show()
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
                 
-                PlotCandlestick(m_counter->Name().c_str(), m_dates.data(), m_opens.data(), m_closes.data(), m_lows.data(), m_highes.data(), m_dates.size(), tooltip, 0.25f, bullCol, bearCol);
+                PlotCandlestick(m_counter->Name().c_str(), 
+                    m_dates.data(), 
+                    m_opens.data(), 
+                    m_closes.data(), 
+                    m_lows.data(), 
+                    m_highes.data(), 
+                    m_dates.size(), 
+                    m_show_tool_tip, 
+                    0.25f, 
+                    bullCol, 
+                    bearCol);
 
                 m_price_chart_limits = ImPlot::GetPlotLimits();
 
@@ -707,6 +716,7 @@ Json::Value CounterWindow::GetCounterStatus()
     result["ISIN"] = m_counter->ISIN_Number();
     result["Range"]["Min"] = m_price_chart_limits.X.Min;
     result["Range"]["Max"] = m_price_chart_limits.X.Max;
+    result["ShowToolTip"] = m_show_tool_tip;
 
     Json::Value applied_indicators(Json::arrayValue);
 
@@ -724,6 +734,7 @@ void CounterWindow::SetCounterStatus(Json::Value status)
 {
     m_first_time_chart_limit_x_min = status["Range"]["Min"].asFloat();
     m_first_time_chart_limit_x_max = status["Range"]["Max"].asFloat();
+    m_show_tool_tip = status["ShowToolTip"].asBool();
 
     Json::Value applied_indicators = status["Applied_Indicators"];
     Json::Value::ArrayIndex count = applied_indicators.size();

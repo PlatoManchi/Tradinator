@@ -148,7 +148,7 @@ void TradinatorApp::LoadWindowsState()
     }
 
     // read from file
-    Json::Value status = TradinatorAppSpace::Utils::LoadWindowsStatus();
+    Json::Value status = TradinatorSettings::Get().GetAllOpenedWindowsStatus();
 
     Json::Value::ArrayIndex count = status.size();
     for (Json::Value::ArrayIndex i = 0; i < count; ++i)
@@ -188,6 +188,5 @@ void TradinatorApp::SaveWindowsState()
         result.append(pair.second->GetCounterStatus());
     }
     
-    // write to file
-    TradinatorAppSpace::Utils::SaveWindowsStatus(result);
+    TradinatorSettings::Get().SetAllOpenedWindowsStatus(result);
 }

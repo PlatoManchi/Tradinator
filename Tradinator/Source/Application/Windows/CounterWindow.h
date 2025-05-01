@@ -93,8 +93,11 @@ private:
 	ImPlotRect m_price_chart_limits;
 	ImPlotRect m_volume_chart_limits;
 
+	bool m_show_tool_tip;
+
 	float m_first_time_chart_limit_x_min;
 	float m_first_time_chart_limit_x_max;
 	bool m_is_first_time_limit_set;
+
 };
 
