@@ -33,27 +33,9 @@ public:
 	double m_close;
 	size_t m_volume;
 	size_t m_open_interest;
-	std::string ToString() const;
-private:
-	void WriteToFile(std::ofstream& stream) const;
 	
-	void ReadFromStream(std::istream& stream);
 	
-
-
-	friend std::ofstream& operator << (std::ofstream& stream, Candle& counter);
-	friend std::ostream& operator << (std::ostream& stream, Candle& counter);
-	friend std::istream& operator >> (std::istream& stream, Candle& counter);
 };
-
-// Write to file
-std::ofstream& operator << (std::ofstream& stream, Candle& counter);
-
-// Write to console
-std::ostream& operator << (std::ostream& stream, Candle& counter);
-
-// Read from file
-std::istream& operator >> (std::istream& stream, Candle& counter);
 
 
 

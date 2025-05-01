@@ -35,6 +35,7 @@ Counter::Counter()
 	, m_face_value(0)
 	, m_database_connection(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath())
 	, m_candle_data(std::make_shared<AsyncData<CandleDataMapType>>())
+	, m_news_points_data(std::make_shared<AsyncData<NewsPointMapType>>())
 	, m_is_downloading(false)
 	, m_is_inserting(false)
 	, m_is_latest_date_dirty(true)
@@ -470,92 +471,4 @@ void Counter::FromString(std::string str)
 	m_market_lot = std::stoi(split_strings[5]);
 	m_isin_number = split_strings[6];
 	m_face_value = std::stoi(split_strings[7]);
-}
-
-#define READ_STRING_FROM_STREAM(stream, string_name, string_size, buffer)			\
-stream.read(reinterpret_cast<char*>(&string_size), sizeof(string_size));			\
-buffer = new char[string_size + 1];													\
-stream.read(reinterpret_cast<char*>(buffer), string_size);							\
-buffer[string_size] = '\0';															\
-string_name = buffer;																\
-delete[] buffer;																	\
-buffer = nullptr;																	\
-
-void Counter::ReadFromStream(std::istream& stream)									
-{
-	std::size_t string_size;
-	char* buffer = nullptr;
-	
-	READ_STRING_FROM_STREAM(stream, m_symbol, string_size, buffer);
-	READ_STRING_FROM_STREAM(stream, m_name, string_size, buffer);
-	READ_STRING_FROM_STREAM(stream, m_series, string_size, buffer);
-
-	std::chrono::system_clock::rep count;
-	stream.read(reinterpret_cast<char*>(&count), sizeof(count));
-	std::chrono::system_clock::duration duration_since_epoch(count);
-	std::chrono::system_clock::time_point date_of_listing(duration_since_epoch);
-	m_date_of_listing = date_of_listing;
-
-	stream.read(reinterpret_cast<char*>(&m_paid_up_value), sizeof(m_paid_up_value));
-	stream.read(reinterpret_cast<char*>(&m_market_lot), sizeof(m_market_lot));
-	READ_STRING_FROM_STREAM(stream, m_isin_number, string_size, buffer);
-	stream.read(reinterpret_cast<char*>(&m_face_value), sizeof(m_face_value));
-}
-
-#define WRITE_STRING_TO_STREAM(stream, string_name, string_size)						\
-string_size = string_name.size();														\
-/* write the size of string first */													\
-stream.write(reinterpret_cast<const char*>(&string_size), sizeof(string_size));			\
-/* write the string contents */															\
-stream.write(reinterpret_cast<const char*>(string_name.c_str()), string_size);			\
-
-void Counter::WriteToFile(std::ofstream& stream)
-{
-	std::size_t string_size;
-	// Writting in binary format
-	WRITE_STRING_TO_STREAM(stream, m_symbol, string_size);
-	WRITE_STRING_TO_STREAM(stream, m_name, string_size);
-	WRITE_STRING_TO_STREAM(stream, m_series, string_size);
-
-	std::chrono::system_clock::rep count = m_date_of_listing.time_since_epoch().count();
-	stream.write(reinterpret_cast<const char*>(&count), sizeof(count));
-
-	stream.write(reinterpret_cast<const char*>(&m_paid_up_value), sizeof(m_paid_up_value));
-	stream.write(reinterpret_cast<const char*>(&m_market_lot), sizeof(m_market_lot));
-	WRITE_STRING_TO_STREAM(stream, m_isin_number, string_size);
-	stream.write(reinterpret_cast<const char*>(&m_face_value), sizeof(m_face_value));
-}
-
-std::string Counter::ToString() const
-{
-	return std::format("{},{},{},{},{},{},{},{}"
-		, m_symbol
-		, m_name
-		, m_series
-		, std::format("{:%d-%b-%y}", m_date_of_listing)
-		, m_paid_up_value
-		, m_market_lot
-		, m_isin_number
-		, m_face_value);
-}
-
-
-std::ofstream& operator << (std::ofstream& stream, Counter& counter)
-{
-	counter.WriteToFile(stream);
-
-	return stream;
-}
-
-std::ostream& operator << (std::ostream& stream, Counter& counter)
-{
-	stream << counter.ToString();
-
-	return stream;
-}
-
-std::istream& operator >> (std::istream& stream, Counter& counter)
-{
-	counter.ReadFromStream(stream);
-	return stream;
 }

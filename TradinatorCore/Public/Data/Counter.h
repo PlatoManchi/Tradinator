@@ -93,10 +93,6 @@ protected:
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
 	// -----------------------------------------------
 	
-
-	void ReadFromStream(std::istream& stream);
-	void WriteToFile(std::ofstream& stream);
-
 	
 	std::string m_series;
 	uint32_t m_paid_up_value;
@@ -129,15 +125,4 @@ protected:
 	std::mutex m_counter_mutex;
 	bool m_is_downloading = false;
 	bool m_is_inserting = false;
-
-	
-
-	// overloaded stream operator
-	friend std::ofstream& operator << (std::ofstream& stream, Counter& counter);
-	friend std::ostream& operator << (std::ostream& stream, Counter& counter);
-	friend std::istream& operator >> (std::istream& stream, Counter& counter);
 };
-
-std::ofstream& operator << (std::ofstream& stream, Counter& counter);
-std::ostream& operator << (std::ostream& stream, Counter& counter);
-std::istream& operator >> (std::istream& stream, Counter& counter);
