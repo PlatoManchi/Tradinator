@@ -12,7 +12,7 @@
 
 #include "Data/AsyncData.h"
 #include "Data/Candle.h"
-
+#include "News/News.h"
 
 
 class Market;
@@ -34,7 +34,7 @@ size_t - number of candles
 
 */
 
-class Counter : public Company
+class Counter : public Company, public std::enable_shared_from_this<Counter>
 {
 public:
 	Counter();
@@ -46,10 +46,12 @@ public:
 	Counter& operator = (Counter&& other) noexcept = default;
 
 	bool IsHistoricalCandleDataOutDated() const;
-	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask(std::function<void()> callback);
+	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask();
+	std::unique_ptr<AsyncTask> GetGenerateNewsPointsTask();
+	void ReadFromRawFileToMemory();
 	void InsertRawDataToDatabase();
 
-	void LoadCandleDataToMemory();
+	void LoadCandleDataToMemoryAsync();
 	void UnloadCandleDataFromMemory();
 
 	void FromString(std::string str);
@@ -60,6 +62,7 @@ public:
 	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncData<CandleDataMapType>> GetCandleData() const { return m_candle_data; }
+	inline std::shared_ptr<const AsyncData<NewsPointMapType>> GetNewsPointsData() const { return m_news_points_data; }
 
 	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
@@ -68,6 +71,11 @@ public:
 	// true if candle data in memory is out of date with what is in local database.
 	// this can happen if new data is downloaded while candle data is being used.
 	inline bool IsMemoryInSync() const { return m_is_memory_in_sync; }
+
+	// If true, will keep the candle data in memory even if requested to unload it.
+	// Many tasks like pattern analysis will load the data and unload the data when they are done.
+	// This will prevent the data from unloading if set to true;
+	void SetLockInMemory(bool should_lock_in_memory) { m_lock_in_memory = should_lock_in_memory; }
 
 	std::string ToString() const;
 
@@ -84,12 +92,10 @@ protected:
 	bool DoesProcessedHistoricalDataExist() const;
 	
 	std::chrono::system_clock::time_point GetLastCandleDataDate() const;
-	
-	void WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle);
-	void WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const Json::Value& candle);
 
 	void UpdateLatestCandleDataDate();
-
+	void LoadCandleDataToMemory();
+	std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
 	// -----------------------------------------------
 	
@@ -99,6 +105,9 @@ protected:
 	uint32_t m_market_lot;
 	uint32_t m_face_value;
 	
+	// Raw json from reading the downloaded data
+	Json::Value m_raw_downloaded_data;
+
 	// market this counter belongs to
 	std::weak_ptr<Market> m_owning_market;
 
@@ -111,6 +120,9 @@ protected:
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncData<CandleDataMapType>> m_candle_data;
 
+	// News points sorted from latest to oldest
+	std::shared_ptr<AsyncData<NewsPointMapType>> m_news_points_data;
+
 	// Cached latest local candle date
 	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;
 	mutable bool m_is_latest_date_dirty;
@@ -118,6 +130,9 @@ protected:
 	// true if candle data in memory is out of date with what is in local database.
 	// this can happen if new data is downloaded while candle data is being used.
 	bool m_is_memory_in_sync;
+
+	// If this is true, will keep candle data in memory
+	bool m_lock_in_memory;
 
 	// Check to make sure there are no double update tasks.
 	// we want to be able to acecss previous historical data that is stored locally while

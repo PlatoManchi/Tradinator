@@ -2,6 +2,8 @@
 
 #include <float.h>
 #include <iostream>
+#include <algorithm>
+#include <initializer_list>
 
 #include  "json/json.h"
 
@@ -11,6 +13,7 @@
 #include "Utils.h"
 #include "Utils/Utils.h"
 #include "Components/IndicatorWrappers.h"
+#include "Application/TradinatorSettings.h"
 
 // Getter for IndicatorPoint to draw the plot
 ImPlotPoint indicator_plot_point_getter2(int idx, void* data) {
@@ -36,6 +39,9 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , m_first_time_chart_limit_x_min(0.0f)
     , m_first_time_chart_limit_x_max(0.0f)
     , m_is_first_time_limit_set(false)
+    , m_tooltip_override(false)
+    , m_bull_color(0.031f, 0.600f, 0.505f, 1.000f)
+    , m_bear_color(0.949f, 0.211f, 0.270f, 1.000f)
 {
 	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
 
@@ -45,11 +51,13 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
         m_available_indicator_wrappers.push_back(TradinatorAppSpace::Utils::GetIndicatorWrapper(std::move(indicator)));
     }
 
-    m_counter->LoadCandleDataToMemory();
+    m_counter->SetLockInMemory(true);
+    m_counter->LoadCandleDataToMemoryAsync();
 }
 
 CounterWindow::~CounterWindow()
 {
+    m_counter->SetLockInMemory(false);
     m_counter->UnloadCandleDataFromMemory();
 }
 
@@ -66,7 +74,7 @@ void CounterWindow::Show()
         {
             if (!m_counter->IsMemoryInSync())
             {
-                m_counter->LoadCandleDataToMemory();
+                m_counter->LoadCandleDataToMemoryAsync();
             }
 
             if (m_is_dirty)
@@ -168,10 +176,11 @@ void CounterWindow::Show()
             //ImGui::BulletText("You can create custom plotters or extend ImPlot using implot_internal.h.");
             ImGui::Checkbox("Show Tooltip", &m_show_tool_tip);
             ImGui::SameLine();
-            static ImVec4 bullCol = ImVec4(0.031f, 0.600f, 0.505f, 1.000f);
-            static ImVec4 bearCol = ImVec4(0.949f, 0.211f, 0.270f, 1.000f);
-            ImGui::SameLine(); ImGui::ColorEdit4("##Bull", &bullCol.x, ImGuiColorEditFlags_NoInputs);
-            ImGui::SameLine(); ImGui::ColorEdit4("##Bear", &bearCol.x, ImGuiColorEditFlags_NoInputs);
+            ImGui::Checkbox("Show Patterns", &m_show_patterns);
+            ImGui::SameLine();
+
+            ImGui::SameLine(); ImGui::ColorEdit4("##Bull", &m_bull_color.x, ImGuiColorEditFlags_NoInputs);
+            ImGui::SameLine(); ImGui::ColorEdit4("##Bear", &m_bear_color.x, ImGuiColorEditFlags_NoInputs);
             ImPlot::GetStyle().UseLocalTime = false;
 
             m_price_chart_height -= 50; // for checkbox and color selector
@@ -192,7 +201,7 @@ void CounterWindow::Show()
             }
             
             if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
-                ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
+                ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
                 if (!m_is_first_time_limit_set)
                 {
                     if (m_first_time_chart_limit_x_min < 1.0f || m_first_time_chart_limit_x_max < 1.0f)
@@ -230,6 +239,11 @@ void CounterWindow::Show()
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
                 
+                if (m_show_patterns)
+                {
+                    ShowPatterns(ImGui::GetWindowWidth() - largest_label_width, m_price_chart_height, m_price_chart_limits);
+                }
+
                 PlotCandlestick(m_counter->Name().c_str(), 
                     m_dates.data(), 
                     m_opens.data(), 
@@ -239,8 +253,8 @@ void CounterWindow::Show()
                     m_dates.size(), 
                     m_show_tool_tip, 
                     0.25f, 
-                    bullCol, 
-                    bearCol);
+                    m_bull_color,
+                    m_bear_color);
 
                 m_price_chart_limits = ImPlot::GetPlotLimits();
 
@@ -254,7 +268,7 @@ void CounterWindow::Show()
                 {
                     m_is_price_chart_hovered = false;
                 }
-
+                
                 ImPlot::EndPlot();
             }
             if (largest_label_width > (price_label_width + 5.0f))
@@ -272,7 +286,7 @@ void CounterWindow::Show()
             if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
                 //seperate_charts_count
-                ImPlotAxisFlags x_axis_flags = 0;
+                ImPlotAxisFlags x_axis_flags = ImPlotAxisFlags_NoGridLines;
                 if (seperate_charts_count > 0)
                 {
                     x_axis_flags |= ImPlotAxisFlags_NoTickLabels;
@@ -527,6 +541,8 @@ void CounterWindow::ShowTitle()
     m_price_chart_height -= (button_size.x + 20); // title height and sepertor
 }
 
+
+
 void CounterWindow::RebuildCachedPlotPoints()
 {
     const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_counter->GetCandleData();
@@ -607,7 +623,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
     double half_width = count > 1 ? x_axis_interval * width_percent : width_percent;
 
     // custom tool
-    if (ImPlot::IsPlotHovered() && tooltip) 
+    if (ImPlot::IsPlotHovered() && tooltip && !m_tooltip_override)
     {
         ImPlotPoint mouse = ImPlot::GetPlotMousePos();
         mouse.x = ImPlot::RoundTime(ImPlotTime::FromDouble(mouse.x), ImPlotTimeUnit_Day).ToDouble();
@@ -686,8 +702,133 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
                 wrapper->PlotPostCandle();
             }
         }
+
         // end plot item
         ImPlot::EndItem();
+    }
+
+    
+}
+
+void CounterWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
+{
+    m_tooltip_override = false;
+
+    if (m_counter->GetNewsPointsData()->IsDataReady() && m_counter->GetCandleData()->IsDataReady())
+    {
+        if (ImPlot::BeginItem("Patterns")) {
+            const CandleDataMapType& candle_data = m_counter->GetCandleData()->GetData();
+            const NewsPointMapType& news_points = m_counter->GetNewsPointsData()->GetData();
+
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+            for (auto& pair : news_points)
+            {
+                if (!TradinatorSettings::Get().GetPatternVisibility(pair.second.m_pattern))
+                {
+                    continue;
+                }
+
+                if (pair.second.m_date_range.size() > 0)
+                {
+                    auto itr = candle_data.find(pair.first);
+                    if (itr != candle_data.end())
+                    {
+                        std::chrono::system_clock::rep cummulative_x_date = 0;
+                        std::chrono::system_clock::rep date = std::chrono::duration_cast<std::chrono::seconds>(pair.first.time_since_epoch()).count();
+
+
+                        double top = -DBL_MAX, bottom = DBL_MAX;
+                        for (std::chrono::system_clock::time_point x_value : pair.second.m_date_range)
+                        {
+                            cummulative_x_date += std::chrono::duration_cast<std::chrono::seconds>(x_value.time_since_epoch()).count();
+
+                            auto tmp_itr = candle_data.find(x_value);
+                            if (tmp_itr != candle_data.end())
+                            {
+                                top = std::max({ top, (*tmp_itr).second.m_high, (*tmp_itr).second.m_open, (*tmp_itr).second.m_close, (*tmp_itr).second.m_low });
+                                bottom = std::min({ bottom, (*tmp_itr).second.m_high, (*tmp_itr).second.m_open, (*tmp_itr).second.m_close, (*tmp_itr).second.m_low });
+                            }
+                        }
+
+                        std::chrono::system_clock::rep left = std::chrono::duration_cast<std::chrono::seconds>(pair.second.m_date_range[pair.second.m_date_range.size() - 1].time_since_epoch()).count() - 60 * 60 * 12;
+                        std::chrono::system_clock::rep right = std::chrono::duration_cast<std::chrono::seconds>(pair.second.m_date_range[0].time_since_epoch()).count() + 60 * 60 * 12;
+                        ImVec2 upper_left = ImPlot::PlotToPixels(left, top);
+                        ImVec2 lower_right = ImPlot::PlotToPixels(right, bottom);
+                        ImVec2 upper_right = ImPlot::PlotToPixels(right, top);
+                        ImVec2 lower_left = ImVec2(left, bottom);
+
+                        upper_left.y -= 15.0f;
+                        lower_right.y += 15.0f;
+                        
+                        float offset = ((chart_limits.Y.Max - chart_limits.Y.Min) / chart_height) * 50.0f;
+
+                        double top_tmp = top + offset;
+                        double bottom_tmp = bottom - offset;
+
+                        if (ImPlot::FitThisFrame()) 
+                        {
+                            ImVec2 upper_left_tmp(left, top_tmp);
+                            ImVec2 bottom_right_tmp(right, bottom_tmp);
+
+                            ImPlot::FitPoint(upper_left_tmp);
+                            ImPlot::FitPoint(bottom_right_tmp);
+                        }
+
+                        TradinatorAppSpace::EPatternNatureType type = TradinatorAppSpace::Utils::GetPatternNatureType(pair.second.m_pattern);
+                        ImVec4 color = ImVec4(76.0 / 255.0, 144.0 / 255.0, 176.0 / 255.0, 1.0f); //  neutral color
+                        if (type == TradinatorAppSpace::EPatternNatureType::BULL)
+                        {
+                            color = m_bull_color;
+                        }
+                        else if (type == TradinatorAppSpace::EPatternNatureType::BEAR)
+                        {
+                            color = m_bear_color;
+                        }
+
+                        bool is_annotation_hovered = false;
+
+                        float annotation_x = cummulative_x_date / pair.second.m_date_range.size();
+                        float annotation_y = bottom - offset / 2.0f;
+                        if (!m_tooltip_override)
+                        {
+                            ImPlotPoint mouse = ImPlot::GetPlotMousePos();
+
+                            float ratio_x = (chart_limits.X.Max - chart_limits.X.Min) / chart_width;
+                            float ratio_y = (chart_limits.Y.Max - chart_limits.Y.Min) / chart_height;
+
+                            if (std::abs(mouse.x - annotation_x) < ratio_x * 30 &&
+                                std::abs(mouse.y - annotation_y) < ratio_y * 20)
+                            {
+                                m_tooltip_override = true;
+                                is_annotation_hovered = true;
+                                ImGui::BeginTooltip();
+                                ImGui::Text(TradinatorCoreSpace::Utils::GetPatternDescription(pair.second.m_pattern).c_str());
+                                ImGui::EndTooltip();
+                            }
+                            else
+                            {
+                                m_tooltip_override = false;
+                            }
+                        }
+
+                        color.w = 0.5f; // alpha for border
+                        draw_list->AddRect(upper_left, lower_right, ImGui::GetColorU32(color), 0.0f, ImDrawFlags_RoundCornersNone, 5.0f);
+                        if (is_annotation_hovered)
+                        {
+                            color.w = 0.1f; // alpha for fill
+                            draw_list->AddRectFilled(upper_left, lower_right, ImGui::GetColorU32(color), 0.0f, ImDrawFlags_RoundCornersNone);
+                        }
+
+                        
+                        color.w = 1.0f; // alpha for annotation
+                        ImPlot::Annotation(annotation_x, annotation_y, color, ImVec2(0, 0), false, " PT ");
+                    }
+                }
+            }
+
+            ImPlot::EndItem();
+        }
     }
 }
 
@@ -717,6 +858,17 @@ Json::Value CounterWindow::GetCounterStatus()
     result["Range"]["Min"] = m_price_chart_limits.X.Min;
     result["Range"]["Max"] = m_price_chart_limits.X.Max;
     result["ShowToolTip"] = m_show_tool_tip;
+    result["ShowPatterns"] = m_show_patterns;
+
+    result["BullColor"]["R"] = m_bull_color.x;
+    result["BullColor"]["G"] = m_bull_color.y;
+    result["BullColor"]["B"] = m_bull_color.z;
+    result["BullColor"]["A"] = m_bull_color.w;
+
+    result["BearColor"]["R"] = m_bear_color.x;
+    result["BearColor"]["G"] = m_bear_color.y;
+    result["BearColor"]["B"] = m_bear_color.z;
+    result["BearColor"]["A"] = m_bear_color.w;
 
     Json::Value applied_indicators(Json::arrayValue);
 
@@ -735,6 +887,18 @@ void CounterWindow::SetCounterStatus(Json::Value status)
     m_first_time_chart_limit_x_min = status["Range"]["Min"].asFloat();
     m_first_time_chart_limit_x_max = status["Range"]["Max"].asFloat();
     m_show_tool_tip = status["ShowToolTip"].asBool();
+    m_show_patterns = status.find("ShowPatterns") ? status["ShowPatterns"].asBool() : true;
+    
+    m_bull_color.x = status["BullColor"]["R"].asFloat();
+    m_bull_color.y = status["BullColor"]["G"].asFloat();
+    m_bull_color.z = status["BullColor"]["B"].asFloat();
+    m_bull_color.w = status["BullColor"]["A"].asFloat();
+
+    m_bear_color.x = status["BearColor"]["R"].asFloat();
+    m_bear_color.y = status["BearColor"]["G"].asFloat();
+    m_bear_color.z = status["BearColor"]["B"].asFloat();
+    m_bear_color.w = status["BearColor"]["A"].asFloat();
+
 
     Json::Value applied_indicators = status["Applied_Indicators"];
     Json::Value::ArrayIndex count = applied_indicators.size();

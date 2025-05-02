@@ -210,6 +210,19 @@ namespace TradinatorAppSpace
 	}
 
 
+	EPatternNatureType Utils::GetPatternNatureType(EPatternType pattern)
+	{
+		if ((pattern & Bullish_Pattern_Type).any())
+		{
+			return EPatternNatureType::BULL;
+		}
+		else if ((pattern & Bearish_Pattern_Type).any())
+		{
+			return EPatternNatureType::BEAR;
+		}
+
+		return EPatternNatureType::NONE;
+	}
 
 
 	void Utils::OpenURL(const std::string& url)

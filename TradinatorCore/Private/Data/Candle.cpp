@@ -6,8 +6,17 @@
 
 bool Candle::IsDoji() const
 {
-	// 5.0 is Magic number. Adjust for better results;
-	return fabs(m_open - m_close) < 5.0;
+	double body_size = fabs(m_close - m_open);
+	double total_range = m_high - m_low;
+
+	if (total_range < DBL_EPSILON)
+	{
+		return false;
+	}
+	
+	double body_ratio = body_size / total_range;
+
+	return body_ratio < 0.05;
 }
 
 bool Candle::IsMarubozu() const

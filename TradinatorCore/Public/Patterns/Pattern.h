@@ -4,7 +4,9 @@
 #include <type_traits>
 #include <bitset>
 
-#include "Data/Counter.h"
+#include "Data/Candle.h"
+
+
 
 /*enum class EPatternType : uint64_t {
     None = 0,
@@ -29,14 +31,31 @@ inline EPatternType operator&(EPatternType a, EPatternType b) {
 constexpr size_t _NUM_OF_PATTERNS_ = 64;
 typedef std::bitset<_NUM_OF_PATTERNS_> EPatternType;
 
+struct EPatternTypeComparator {
+    constexpr bool operator() (const EPatternType& b1, const EPatternType& b2) const {
+        return b1.to_string() < b2.to_string();
+    }
+};
+
 constexpr EPatternType Bullish_Harami(1ULL << 0);
 constexpr EPatternType Bullish_Harami_Cross(1ULL << 1);
+
+
+
+const EPatternType Bullish_Pattern_Type = Bullish_Harami | Bullish_Harami_Cross;
+const EPatternType Bearish_Pattern_Type;
 
 class Pattern
 {
 public:
         virtual std::string Name() const = 0;
         virtual EPatternType PatternType() const = 0;
+
+        /*
+        * Returns the date range that satisfies the pattern.
+        * Arranged in descending order. 
+        * Latest date to oldest date
+        */
         virtual std::vector<std::chrono::system_clock::time_point> Check(CandleDataMapType::const_iterator current_candle, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end) = 0;
 };
 

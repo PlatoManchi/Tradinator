@@ -40,6 +40,7 @@ Counter::Counter()
 	, m_is_inserting(false)
 	, m_is_latest_date_dirty(true)
 	, m_is_memory_in_sync(false)
+	, m_lock_in_memory(false)
 {
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::chrono::days delta_time(50 * 365); // 50 years
@@ -111,7 +112,7 @@ bool Counter::IsHistoricalCandleDataOutDated() const
 	return true;
 }
 
-std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::function<void()> callback)
+std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask()
 {
 	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
 	std::chrono::system_clock::time_point from_tp = GetLastCandleDataDate() + std::chrono::days(1);
@@ -149,7 +150,7 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::functio
 	);
 
 	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
-	std::unique_ptr<AsyncTask> download_task = std::make_unique<DownloadTask>(callback, url, tmp_file_path);
+	std::unique_ptr<AsyncTask> download_task = std::make_unique<DownloadTask>([](){}, url, tmp_file_path);
 
 	std::vector<std::unique_ptr<AsyncTask>> tasks;
 	if (!m_is_downloading)
@@ -168,28 +169,41 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask(std::functio
 		});
 }
 
+void Counter::ReadFromRawFileToMemory()
+{
+	//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
+
+	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
+
+	std::ifstream downloaded_tmp_file(tmp_file_path);
+	downloaded_tmp_file >> m_raw_downloaded_data;
+
+	//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	//std::cout << "Reading from file and creating json took : " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec." << std::endl;
+}
+
 void Counter::InsertRawDataToDatabase()
 {
+	//std::cout << "Inserting: " << Name() << std::endl;
+
+	//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
 	if (m_is_downloading || m_is_inserting) return;
-	
 	{
 		std::lock_guard<std::mutex> lock(m_counter_mutex);
 		m_is_inserting = true;
 	}
 	
 
-	std::shared_ptr<Market> owning_market = m_owning_market.lock();
-	assert(owning_market);
-	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
+	
+	//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	//std::cout << "Reading from file and creating json took : " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec." << std::endl;
+	//start = end;
 
-	Json::Value downloaded_candle_json_data;
-	{
-		// scope to make sure we aren't holding the file for more time than we should
-		std::ifstream downloaded_tmp_file(tmp_file_path);
-		downloaded_tmp_file >> downloaded_candle_json_data;
-	}
-
-	Json::Value json_candles = downloaded_candle_json_data[_DATA_][_CANDLES_];
+	Json::Value json_candles = m_raw_downloaded_data[_DATA_][_CANDLES_];
 	Json::ArrayIndex count = json_candles.size();
 	if (count > 0)
 	{
@@ -229,6 +243,9 @@ void Counter::InsertRawDataToDatabase()
 				}
 
 				SQLite::Transaction transaction(db);
+				// Prepare the insert statement once
+				SQLite::Statement insert(db, std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
+					"(?, ?, ?, ?, ?, ?, ?)", GetTableName()));
 				for (Json::Value& candle : json_candles)
 				{
 					std::string date_str = candle[0].asCString();
@@ -241,16 +258,38 @@ void Counter::InsertRawDataToDatabase()
 						m_cached_latest_candle_date = date;
 					}
 
-					WriteCandleToDatabase(db, candle);
+					// one candle from the data has negative value for volumes and open interest for some reason and this 
+					// is for that one random wrong value
+					int64_t volume = candle[5].asInt64();
+					if (volume < 0)
+					{
+						volume = 0;
+					}
+					int64_t open_interest = candle[6].asInt64();
+					if (open_interest < 0)
+					{
+						open_interest = 0;
+					}
+
+					insert.bind(1, date.time_since_epoch().count());
+					insert.bind(2, candle[1].asDouble());
+					insert.bind(3, candle[2].asDouble());
+					insert.bind(4, candle[3].asDouble());
+					insert.bind(5, candle[4].asDouble());
+					insert.bind(6, volume);
+					insert.bind(7, open_interest);
+					
+					insert.exec();                // execute insert
+					insert.reset();               // reset statement for next use
+					insert.clearBindings();       // clear bound values
 				}
 				transaction.commit();
-
 				UpdateLatestCandleDataDate();
 
 				m_is_memory_in_sync = false;
 				is_success = true;
 			}
-			catch (std::exception&)
+			catch (std::exception& e)
 			{
 				is_success = false;
 				//Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
@@ -261,151 +300,102 @@ void Counter::InsertRawDataToDatabase()
 		}
 	}
 	
+	// Unload the raw data. We never need it again
+	m_raw_downloaded_data = Json::Value();
+
+	//end = std::chrono::steady_clock::now();
+	//std::cout << "Inserting into db took : " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec." << std::endl;
+
 	{
 		std::lock_guard<std::mutex> lock(m_counter_mutex);
 		m_is_inserting = false;
 	}
 }
 
-void Counter::WriteCandleToDatabase(SQLite::Database& db, const Json::Value& candle)
-{
-	// Gather data from json
-	std::string date_str = candle[0].asCString();
-	std::istringstream is{ date_str };
-	std::chrono::system_clock::time_point date;
-	is >> std::chrono::parse("%F", date);
 
-	// one candle from the data has negative value for volumes and open interest for some reason and this 
-	// is for that one random wrong value
-	int64_t volume = candle[5].asInt64();
-	if (volume < 0)
-	{
-		volume = 0;
-	}
-	int64_t open_interest = candle[6].asInt64();
-	if (open_interest < 0)
-	{
-		open_interest = 0;
-	}
 
-	std::string query_str = std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
-		"(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
-		, GetTableName()
-		, date.time_since_epoch().count()
-		, candle[1].asDouble()
-		, candle[2].asDouble()
-		, candle[3].asDouble()
-		, candle[4].asDouble()
-		, volume
-		, open_interest);
-
-	db.exec(query_str);
-}
-
-void Counter::WriteCandleToDatabaseAndLoadToMemory(SQLite::Database& db, const Json::Value& candle)
-{
-	WriteCandleToDatabase(db, candle);
-
-	std::string date_str = candle[0].asCString();
-	std::istringstream is{ date_str };
-	std::chrono::system_clock::time_point date;
-	is >> std::chrono::parse("%F", date);
-
-	// one candle from the data has negative value for volumes and open interest for some reason and this 
-	// is for that one random wrong value
-	int64_t volume = candle[5].asInt64();
-	if (volume < 0)
-	{
-		volume = 0;
-	}
-	int64_t open_interest = candle[6].asInt64();
-	if (open_interest < 0)
-	{
-		open_interest = 0;
-	}
-
-	Candle candle_data;
-	candle_data.m_date = date;
-	candle_data.m_open = candle[1].asDouble();
-	candle_data.m_high = candle[2].asDouble();
-	candle_data.m_low = candle[3].asDouble();
-	candle_data.m_close = candle[4].asDouble();
-	candle_data.m_volume = volume;
-	candle_data.m_open_interest = open_interest;
-
-	m_candle_data->GetAsyncDataCopy()[date] = candle_data;
-}
 
 void Counter::LoadCandleDataToMemory()
 {
-	std::function<void()> load_candle_data_to_memory = [&]()
+	if (m_is_memory_in_sync)
+	{
+		return;
+	}
+
+	if (!DoesProcessedHistoricalDataExist())
+	{
+		m_candle_data->SetDataReady(true);
+		return;
+	}
+
+	bool is_success = false;
+	while (!is_success)
+	{
+		try
 		{
-			if (!DoesProcessedHistoricalDataExist())
+			if (m_candle_data->IsDataReady())
 			{
-				m_candle_data->SetDataReady(true);
-				return;
+				m_candle_data->SetDataReady(false);
 			}
 
-			bool is_success = false;
-			while (!is_success)
+			std::string query_str = std::format("SELECT * FROM \"{}\"", GetTableName());
+			SQLite::Statement query(m_database_connection, query_str);
+			
+			while (query.executeStep())
 			{
-				try
-				{
-					if (m_candle_data->IsDataReady())
-					{
-						m_candle_data->SetDataReady(false);
-					}
+				// Date, Open, High, Low, Close, Volume, OpenInterest
+				std::chrono::system_clock::rep time_count = query.getColumn(0);
+				std::chrono::system_clock::duration duration_since_epoch(time_count);
+				std::chrono::system_clock::time_point date(duration_since_epoch);
 
+				Candle candle_data;
+				candle_data.m_date = date;
+				candle_data.m_open = query.getColumn(1);
+				candle_data.m_high = query.getColumn(2);
+				candle_data.m_low = query.getColumn(3);
+				candle_data.m_close = query.getColumn(4);
+				candle_data.m_volume = query.getColumn(5).getInt64();
+				candle_data.m_open_interest = query.getColumn(6).getInt64();
 
-					std::string query_str = std::format("SELECT * FROM \"{}\"", GetTableName());
-					SQLite::Statement query(m_database_connection, query_str);
-					while (query.executeStep())
-					{
-						// Date, Open, High, Low, Close, Volume, OpenInterest
-						std::chrono::system_clock::rep time_count = query.getColumn(0);
-						std::chrono::system_clock::duration duration_since_epoch(time_count);
-						std::chrono::system_clock::time_point date(duration_since_epoch);
-
-						Candle candle_data;
-						candle_data.m_date = date;
-						candle_data.m_open = query.getColumn(1);
-						candle_data.m_high = query.getColumn(2);
-						candle_data.m_low = query.getColumn(3);
-						candle_data.m_close = query.getColumn(4);
-						candle_data.m_volume = query.getColumn(5).getInt64();
-						candle_data.m_open_interest = query.getColumn(6).getInt64();
-
-						m_candle_data->GetAsyncDataCopy()[date] = candle_data;
-					}
-
-					m_is_memory_in_sync = true;
-					m_candle_data->SetDataReady(true);
-					is_success = true;
-				}
-				catch (std::exception& e)
-				{
-					is_success = false;
-					Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
-
-					// Database might be locked by another thread. Wait for a bit and try again.
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				}
+				m_candle_data->GetAsyncDataCopy()[date] = candle_data;
 			}
-		};
 
+			m_candle_data->SetDataReady(true);
+			m_is_memory_in_sync = true;
+			is_success = true;
+		}
+		catch (std::exception& e)
+		{
+			is_success = false;
+			Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+}
+
+void Counter::LoadCandleDataToMemoryAsync()
+{
 	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
 	assert(owning_tradinator_core_thread);
 
-	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::make_unique<AsyncTask>(
+	std::function<void()> load_candle_data = std::bind(&Counter::LoadCandleDataToMemory, this);
+
+	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::move(std::make_unique<AsyncTask>(
 		std::format("Loading candle data for {}", m_symbol),
-		load_candle_data_to_memory,
+		load_candle_data,
 		[]() {}
-	));
+	)));
 }
 
 void Counter::UnloadCandleDataFromMemory()
 {
-	m_candle_data->Reset();
+	if (!m_lock_in_memory)
+	{
+		m_is_memory_in_sync = false;
+		m_candle_data->Reset();
+	}
 }
 
 
@@ -440,6 +430,79 @@ void Counter::UpdateLatestCandleDataDate()
 		}
 	}
 }
+
+
+
+
+
+
+
+
+std::unique_ptr<AsyncTask> Counter::GetGenerateNewsPointsTask()
+{
+	std::function<void()> generate_news_points = [&]()
+		{
+			LoadCandleDataToMemory();
+
+			std::vector<std::unique_ptr<Pattern>> patterns = std::move(TradinatorCoreSpace::Utils::GetAvailablePatterns());
+
+			CandleDataMapType::const_iterator itr = m_candle_data->GetData().begin();
+			CandleDataMapType::const_iterator begin = m_candle_data->GetData().begin();
+			CandleDataMapType::const_iterator end = m_candle_data->GetData().end();
+			
+			while (itr != end)
+			{
+				EPatternType satisfied_patterns;
+
+				for (const std::unique_ptr<Pattern>& pattern : patterns)
+				{
+					std::vector<std::chrono::system_clock::time_point> pattern_range = pattern->Check(itr, begin, end);
+					if (pattern_range.size() > 0)
+					{
+						NewsPoint news_point(this->shared_from_this());
+						news_point.m_date_range = pattern_range;
+						news_point.m_pattern |= pattern->PatternType();
+
+						m_news_points_data->GetAsyncDataCopy()[pattern_range[0]] = news_point;
+
+						// First come first serve
+						break;
+					}
+				}
+				
+				std::advance(itr, 1);
+			}
+		};
+
+
+	return std::make_unique<AsyncTask>(
+		std::format("Analysing candle data of {}", Symbol()),
+		[&]()
+		{
+			m_news_points_data->SetDataReady(false);
+		},
+		generate_news_points,
+		[&]()
+		{
+			m_news_points_data->SetDataReady(true);
+		}
+	);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void Counter::FromString(std::string str)
 {

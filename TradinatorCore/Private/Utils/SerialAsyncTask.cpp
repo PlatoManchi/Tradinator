@@ -67,6 +67,10 @@ void SerialAsyncTask::OnChildAsyncTaskComplete()
 			TaskCompleted();
 		}
 	}
+	else
+	{
+		TaskCompleted();
+	}
 }
 
 void SerialAsyncTask::Update()

@@ -34,7 +34,7 @@ public:
 	std::unique_ptr<AsyncTask> GetGatherSecuritiesTask();
 	std::unique_ptr<AsyncTask> GetParallelDownloadTask();
 	std::unique_ptr<AsyncTask> GetSerialWriteTask();
-	
+	std::vector<std::unique_ptr<AsyncTask>> GetGenerateNewsPointsTask();
 
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }

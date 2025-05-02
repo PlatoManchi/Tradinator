@@ -13,13 +13,10 @@ AsyncTaskManager::AsyncTaskManager()
 
 void AsyncTaskManager::AddTask(std::unique_ptr<AsyncTask>&& task)
 {
-	if (!m_is_shutting_down)
-	{
-		std::lock_guard<std::mutex> lock(m_async_task_manager_lock);
+	std::lock_guard<std::mutex> lock(m_async_task_manager_lock);
 
-		task->StartTask();
-		m_add_tasks_buffer.push_back(std::move(task));
-	}
+	task->StartTask();
+	m_add_tasks_buffer.push_back(std::move(task));
 }
 
 void AsyncTaskManager::Update()
@@ -39,6 +36,11 @@ void AsyncTaskManager::Update()
 	for (std::unique_ptr<AsyncTask>& task : m_tasks)
 	{
 		task->Update();
+
+		if (m_is_shutting_down && !task->m_is_shut_down)
+		{
+			task->Shutdown();
+		}
 	}
 
 	// remove all completed tasks

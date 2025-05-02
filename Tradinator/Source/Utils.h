@@ -7,6 +7,7 @@
 #include "json/json.h"
 
 #include "Indicators/Indicator.h"
+#include "Patterns/Pattern.h"
 
 class Indicator;
 class Counter;
@@ -15,6 +16,14 @@ class IIndicatorWrapper;
 
 namespace TradinatorAppSpace
 {
+	enum EPatternNatureType
+	{
+		NONE,
+
+		BULL,
+		BEAR
+	};
+
 	class Utils
 	{
 	public:
@@ -28,6 +37,8 @@ namespace TradinatorAppSpace
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(EIndicatorType type);
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter = nullptr);
 
+		static EPatternNatureType GetPatternNatureType(EPatternType pattern);
+		
 
 		static void OpenURL(const std::string& url);
 

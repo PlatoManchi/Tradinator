@@ -286,7 +286,7 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
 
     if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
     {
-        ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags, y_axis_flags);
+        ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags | ImPlotAxisFlags_NoGridLines, y_axis_flags);
 
         ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
         if (m_is_hovered)

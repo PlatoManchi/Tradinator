@@ -1,8 +1,11 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include "json/json.h"
+
+#include "Patterns/Pattern.h"
 
 class TradinatorSettings
 {
@@ -16,6 +19,9 @@ public:
 	
 	Json::Value GetAllOpenedWindowsStatus() const;
 	void SetAllOpenedWindowsStatus(Json::Value status);
+
+	bool GetPatternVisibility(EPatternType type);
+	void SetPatternVisbility(EPatternType type, bool is_visible);
 
 private:
 	TradinatorSettings();
@@ -31,7 +37,7 @@ private:
 	
 	std::string m_working_folder;
 
-
+	std::unordered_map<EPatternType, bool> m_pattern_visbility;
 
 	static std::string _SETTINGS_FILE_;
 	static TradinatorSettings _TRADINATOR_SETTINGS_;

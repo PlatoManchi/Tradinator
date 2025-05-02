@@ -1,6 +1,8 @@
 #include "Utils/Utils.h"
 
 #include <filesystem>
+#include <map>
+#include <unordered_map>
 
 #include "Indicators/SMA.h"
 #include "Indicators/WMA.h"
@@ -14,7 +16,9 @@
 #include "Patterns/Pattern.h"
 
 std::string TradinatorCoreSpace::Utils::_DATA_FOLDER_PATH_;
-
+size_t TradinatorCoreSpace::Utils::_MAX_PARALLEL_DOWNLOADS_ = 100;
+size_t TradinatorCoreSpace::Utils::_MAX_PARALLEL_ANALYSIS_ = 100;
+size_t TradinatorCoreSpace::Utils::_READ_WRITE_BATCH_SIZE_ = 10;
 
 std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailableIndicators()
 {
@@ -37,8 +41,10 @@ std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePa
 {
     std::vector<std::unique_ptr<Pattern>> result;
 
-    result.emplace_back(std::make_unique<BullishHaramiPattern>());
+    // Order is important, priority patterns should be first
     result.emplace_back(std::make_unique<BullishHaramiCrossPattern>());
+    result.emplace_back(std::make_unique<BullishHaramiPattern>());
+    
 
     return result;
 }
@@ -79,4 +85,95 @@ bool TradinatorCoreSpace::Utils::DoesFileExist(const std::string& file_path)
     }
 
     return false;
+}
+
+
+void TradinatorCoreSpace::Utils::SetMaxParallelDownloads(size_t max_parallel_downloads)
+{
+    if (max_parallel_downloads > 0)
+    {
+        _MAX_PARALLEL_DOWNLOADS_ = max_parallel_downloads;
+    }
+    else
+    {
+        _MAX_PARALLEL_DOWNLOADS_ = 100;
+    }
+}
+
+void TradinatorCoreSpace::Utils::SetMaxParallelAnalysis(size_t max_parallel_analysis)
+{
+    if (max_parallel_analysis > 0)
+    {
+        _MAX_PARALLEL_ANALYSIS_ = max_parallel_analysis;
+    }
+    else
+    {
+        _MAX_PARALLEL_ANALYSIS_ = 100;
+    }
+}
+
+void TradinatorCoreSpace::Utils::SetReadWriteBatchSize(size_t read_write_batch_size)
+{
+    if (read_write_batch_size > 0)
+    {
+        _READ_WRITE_BATCH_SIZE_ = read_write_batch_size;
+    }
+    else
+    {
+        _READ_WRITE_BATCH_SIZE_ = 10;
+    }
+}
+
+
+
+
+
+std::string TradinatorCoreSpace::Utils::GetPatternDescription(EPatternType pattern)
+{
+    if ((pattern & Bullish_Harami).any())
+    {
+        return "Bullish Harami";
+    }
+    else if ((pattern & Bullish_Harami_Cross).any())
+    {
+        return "Bullish Harami Cross";
+    }
+
+    return "Fill out details at TradinatorCoreSpace::Utils::GetPatternDescription";
+}
+
+std::string TradinatorCoreSpace::Utils::GetPatternShortDescription(EPatternType pattern)
+{
+    static std::unordered_map<EPatternType, std::string> s_pattern_to_string
+    {
+        { Bullish_Harami, "BullishHarami" },
+        { Bullish_Harami_Cross, "BullishHaramiCross" }
+    };
+
+    auto itr = s_pattern_to_string.find(pattern);
+    if (itr != s_pattern_to_string.end())
+    {
+        return (*itr).second;
+    }
+
+    return "Fill out details at TradinatorCoreSpace::Utils::GetPatternShortDescription";
+}
+
+EPatternType TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const std::string& short_description)
+{
+    EPatternType result(0);
+
+    static std::unordered_map<std::string, EPatternType> s_string_to_pattern
+    {
+        { "BullishHarami", Bullish_Harami },
+        { "BullishHaramiCross", Bullish_Harami_Cross }
+    };
+
+    auto itr = s_string_to_pattern.find(short_description);
+    if (itr != s_string_to_pattern.end())
+    {
+        return (*itr).second;
+    }
+
+    return result;
 }

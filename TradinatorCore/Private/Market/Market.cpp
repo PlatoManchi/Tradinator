@@ -17,6 +17,9 @@ Market::Market()
 
 }
 
+
+
+
 std::unique_ptr<AsyncTask> Market::GetGatherSecuritiesTask()
 {
     CreateFolderStructure();
@@ -55,6 +58,9 @@ std::unique_ptr<AsyncTask> Market::GetGatherSecuritiesTask()
     );
 }
 
+
+
+
 void Market::FindTenNewestIPOs()
 {
     m_ten_newest_counters.SetDataReady(false);
@@ -88,6 +94,9 @@ void Market::FindTenNewestIPOs()
     m_ten_newest_counters.SetDataReady(true);
 }
 
+
+
+
 std::unique_ptr<AsyncTask> Market::GetParallelDownloadTask()
 {
     std::vector<std::unique_ptr<AsyncTask>> download_tasks; // downloading latest candle data
@@ -98,7 +107,7 @@ std::unique_ptr<AsyncTask> Market::GetParallelDownloadTask()
     {
         if (pair.second->IsHistoricalCandleDataOutDated())
         {
-            //download_tasks.push_back(std::move(pair.second->GetDownloadLatestCandleDataTask([]() {})));
+            //download_tasks.push_back(std::move(pair.second->GetDownloadLatestCandleDataTask()));
         }
     }
 
@@ -110,39 +119,135 @@ std::unique_ptr<AsyncTask> Market::GetParallelDownloadTask()
         owning_tradinator_core_thread->GetAsyncTaskManager(),
         std::move(download_tasks),
         []() {}
-        , 100 // Magic number. Don't want to be considered as a DDoS attack by server. 
+        , TradinatorCoreSpace::Utils::GetMaxParallelDownloads() // Magic number. Don't want to be considered as a DDoS attack by server. 
     );
 }
+
+
+
 
 std::unique_ptr<AsyncTask> Market::GetSerialWriteTask()
 {
-    std::vector<std::unique_ptr<AsyncTask>> writting_tasks; // writting downloaded data into db
-    const  std::map<std::string, std::shared_ptr<Counter>>& securities_list = m_securities_async_data.GetData();
-
-    for (std::pair<std::string, std::shared_ptr<Counter>> pair : securities_list)
-    {
-        if (pair.second->IsHistoricalCandleDataOutDated())
-        {
-            /*writting_tasks.push_back(std::move(std::make_unique<AsyncTask>(
-                std::format("Inserting latest candle data for {} into database", pair.second->Symbol()),
-                std::bind(&Counter::InsertRawDataToDatabase, pair.second),
-                []() {}
-            )));*/
-        }
-    }
-
     std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
     assert(owning_tradinator_core_thread);
 
-    // Writting data into SQLiteCpp database needs to be serial. Otherwise task has to wait for other task to release 
-    // the database before it can insert it's data. 
+    const  std::map<std::string, std::shared_ptr<Counter>>& securities_list = m_securities_async_data.GetData();
+
+    std::vector<std::unique_ptr<AsyncTask>> read_write_tasks;
+
+    const size_t count = 0;// securities_list.size();
+    const size_t batch_size = TradinatorCoreSpace::Utils::GetReadWriteBatchSize();
+    const size_t total_batch_count = count / batch_size + (count % batch_size == 0 ? 0 : 1);
+
+    auto itr = securities_list.begin();
+
+    std::vector<std::function<void()>> batch_serial_inserts;
+    batch_serial_inserts.reserve(batch_size);
+    // while parallel reading current batch, insert into db for previous batch
+    // there by doing reading and writting in parallel
+    for (size_t batch = 1; batch <= total_batch_count; ++batch)
+    {
+        size_t items_in_batch = batch_size * batch < count ? batch_size : count - batch_size * (batch - 1);
+
+        std::vector<std::unique_ptr<AsyncTask>> batch_parallel_read_task;
+        batch_parallel_read_task.reserve(batch_size);
+
+        std::vector<std::function<void()>> prev_batch_serial_inserts;
+        prev_batch_serial_inserts.insert(prev_batch_serial_inserts.end(), 
+            std::make_move_iterator(batch_serial_inserts.begin()), std::make_move_iterator(batch_serial_inserts.end()));
+
+        batch_serial_inserts = std::vector<std::function<void()>>();
+        batch_serial_inserts.reserve(batch_size);
+
+        for (int i = 0; i < items_in_batch; ++i)
+        {
+            batch_parallel_read_task.push_back(std::move(std::make_unique<AsyncTask>(
+                std::string(""),
+                std::bind(&Counter::ReadFromRawFileToMemory, (*itr).second),
+                []() {}
+            )));
+
+            batch_serial_inserts.push_back(std::bind(&Counter::InsertRawDataToDatabase, (*itr).second));
+
+            std::advance(itr, 1);
+        }
+
+        if (batch == 1)
+        {
+            read_write_tasks.push_back(std::move(std::make_unique<ParallelAsyncTask>(
+                std::format("", batch),
+                owning_tradinator_core_thread->GetAsyncTaskManager(),
+                std::move(batch_parallel_read_task),
+                []() {}
+            )));
+        }
+        else
+        {
+            std::vector<std::unique_ptr<AsyncTask>> tmp;
+            tmp.push_back(std::move(std::make_unique<ParallelAsyncTask>(
+                std::format("", batch),
+                owning_tradinator_core_thread->GetAsyncTaskManager(),
+                std::move(batch_parallel_read_task),
+                []() {}
+            )));
+            tmp.push_back(std::move(std::make_unique<AsyncTask>(
+                std::format("", batch-1),
+                std::move(prev_batch_serial_inserts),
+                std::function<void()>([]() {})
+            )));
+
+            read_write_tasks.push_back(std::move(std::make_unique<ParallelAsyncTask>(
+                std::string(""),
+                owning_tradinator_core_thread->GetAsyncTaskManager(),
+                std::move(tmp),
+                []() {}
+            )));
+        }
+        
+        if (batch == total_batch_count)
+        {
+            read_write_tasks.push_back(std::move(std::make_unique<AsyncTask>(
+                std::format("", batch),
+                std::move(batch_serial_inserts),
+                std::function<void()>([]() {})
+            )));
+        }
+    }
+
+
     return std::make_unique<SerialAsyncTask>(
         std::format("Inserting latest candle data for {}({}) Market to local database", GetMarketCode(), GetMarketName()),
         owning_tradinator_core_thread->GetAsyncTaskManager(),
-        std::move(writting_tasks),
-        []() { }
+        std::move(read_write_tasks),
+        //[]() {}
+        std::function<void()>([]() {})
     );
 }
+
+
+
+
+std::vector<std::unique_ptr<AsyncTask>> Market::GetGenerateNewsPointsTask()
+{
+    std::vector<std::unique_ptr<AsyncTask>> result;
+
+    const  std::map<std::string, std::shared_ptr<Counter>>& securities_list = m_securities_async_data.GetData();
+    int count = 0;
+    for (std::pair<std::string, std::shared_ptr<Counter>> pair : securities_list)
+    {
+        count++;
+        if (count > 10)
+            break;
+
+        result.emplace_back(std::move(pair.second->GetGenerateNewsPointsTask()));
+        
+    }
+
+    return result;
+}
+
+
+
 
 void Market::CreateFolderStructure() const
 {

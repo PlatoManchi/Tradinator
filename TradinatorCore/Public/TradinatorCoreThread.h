@@ -43,6 +43,7 @@ public:
 private:
 	void InitializeDB();
 	void OnSecurityDataLoaded();
+	void OnDownloadAndWriteCompleted();
 
 	// Working directory for all data
 	std::string m_data_folder_path;

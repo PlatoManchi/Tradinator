@@ -8,12 +8,12 @@
 class AsyncTask
 {
 public:
-	AsyncTask(std::string human_readable_description, std::vector < std::function<void()> > workers, std::function<void()> callback)
+	AsyncTask(std::string human_readable_description, std::vector<std::function<void()>>&& workers, std::function<void()> callback)
 		: m_is_complete(false)
 		, m_is_shut_down(false)
 		, m_human_readable_description(human_readable_description)
 		, m_callback(callback)
-		, m_worker_list(workers)
+		, m_worker_list(std::move(workers))
 	{ }
 
 	// Last function should be callback when all the work is finished
@@ -32,6 +32,8 @@ public:
 	AsyncTask(AsyncTask&& other) noexcept = default;
 	AsyncTask& operator = (const AsyncTask& other) = default;
 	AsyncTask& operator = (AsyncTask&& other) noexcept = default;
+
+	void AddWork(std::function<void()> work);
 
 	virtual ~AsyncTask();
 

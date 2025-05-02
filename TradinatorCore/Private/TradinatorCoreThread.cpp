@@ -94,10 +94,35 @@ void TradinatorCoreThread::OnSecurityDataLoaded()
 		std::string(""),
 		m_async_task_manager,
 		std::move(download_and_write_tasks),
-		[]() {}
+		[&]() 
+		{
+			OnDownloadAndWriteCompleted();
+		}
 	));
 
 	m_async_task_manager->AddTask(std::move(download_and_write_task));
+}
+
+void TradinatorCoreThread::OnDownloadAndWriteCompleted()
+{
+	std::vector<std::unique_ptr<AsyncTask>> tasks;
+
+	for (std::shared_ptr<Market> market : m_market_list)
+	{
+		std::vector<std::unique_ptr<AsyncTask>> market_tasks = std::move(market->GetGenerateNewsPointsTask());
+
+		tasks.reserve(tasks.size() + market_tasks.size());
+
+		tasks.insert(tasks.end(), std::make_move_iterator(market_tasks.begin()), std::make_move_iterator(market_tasks.end()));
+	}
+
+	m_async_task_manager->AddTask(std::move(std::make_unique<ParallelAsyncTask>(
+		std::string("Analysing all securities data for patterns and stratiges"),
+		m_async_task_manager,
+		std::move(tasks),
+		[](){},
+		TradinatorCoreSpace::Utils::GetMaxParallelAnalysis()
+	)));
 }
 
 void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
@@ -105,7 +130,6 @@ void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 	assert(!m_is_initialized && "Add markets before TradinatorCoreThread::Init is called.");
 	std::shared_ptr<Market>& stored_market = m_market_list.emplace_back(market);
 	stored_market->SetOwningTradinatorCoreThread(this->weak_from_this());
-	//stored_market->Init();
 }
 
 

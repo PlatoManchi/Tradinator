@@ -87,9 +87,8 @@ void ParallelAsyncTask::StartFirstBatch()
 	for (int i = 0; i < num_tasks_to_start; ++i)
 	{
 		m_async_task_manager->AddTask(std::move(m_tasks[i]));
+		m_tasks_started_count++;
 	}
-
-	m_tasks_started_count = num_tasks_to_start;
 }
 
 void ParallelAsyncTask::OnChildAsyncTaskComplete(size_t index)
@@ -104,11 +103,16 @@ void ParallelAsyncTask::OnChildAsyncTaskComplete(size_t index)
 		{
 			TaskCompleted();
 		}
-		else if (m_tasks_started_count < m_tasks.size())
+		else if (m_tasks_started_count < m_tasks.size()
+			&& m_tasks_started_count - m_tasks_completed_count < m_max_parallel_tasks)
 		{
 			m_async_task_manager->AddTask(std::move(m_tasks[m_tasks_started_count]));
 			m_tasks_started_count++;
 		}
+	}
+	else
+	{
+		TaskCompleted();
 	}
 }
 

@@ -4,6 +4,10 @@
 #include "Utils/Log.h"
 
 
+void AsyncTask::AddWork(std::function<void()> work)
+{
+	m_worker_list.push_back(work);
+}
 
 void AsyncTask::StartTask()
 {

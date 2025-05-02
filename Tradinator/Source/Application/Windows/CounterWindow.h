@@ -35,26 +35,12 @@ public:
 
 
 private:
-	struct IndicatorData
-	{
-		std::vector<IndicatorPoint> m_top_points;
-		std::vector<IndicatorPoint> m_points;
-		std::vector<IndicatorPoint> m_bottom_points;
-
-		ImVec4 m_color;
-		bool m_show = true;
-		bool m_is_hovered = false;
-		size_t m_id = 0;
-
-		ImPlotRect m_chart_limits;
-		float m_label_width;
-	};
-
-
 	void ShowTitle();
 	void ShowIndicatorsList();
 	bool CanApplyIndicatorOfType(EIndicatorType type);
 	
+	void ShowPatterns(float chart_width, float chart_height,  ImPlotRect chart_limits);
+
 	void RebuildCachedPlotPoints();
 	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
 	
@@ -94,6 +80,11 @@ private:
 	ImPlotRect m_volume_chart_limits;
 
 	bool m_show_tool_tip;
+	bool m_show_patterns;
+	bool m_tooltip_override;
+
+	ImVec4 m_bull_color = ImVec4(0.031f, 0.600f, 0.505f, 1.000f);
+	ImVec4 m_bear_color = ImVec4(0.949f, 0.211f, 0.270f, 1.000f);
 
 	float m_first_time_chart_limit_x_min;
 	float m_first_time_chart_limit_x_max;

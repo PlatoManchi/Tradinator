@@ -3,6 +3,8 @@
 #include <fstream>
 
 #include "Utils.h"
+#include "Utils/Utils.h"
+#include "Patterns/Pattern.h"
 
 std::string TradinatorSettings::_SETTINGS_FILE_ = "Settings.json";
 TradinatorSettings TradinatorSettings::_TRADINATOR_SETTINGS_ = TradinatorSettings();
@@ -54,6 +56,17 @@ void TradinatorSettings::LoadSettings()
 		input_file >> m_settings;
 		input_file.close();
 
+		TradinatorCoreSpace::Utils::SetMaxParallelDownloads(m_settings["MaxParallelDownloads"].asUInt64());
+		TradinatorCoreSpace::Utils::SetMaxParallelAnalysis(m_settings["MaxParallelAnalysis"].asUInt64());
+		TradinatorCoreSpace::Utils::SetReadWriteBatchSize(m_settings["ReadWriteBatchSize"].asUInt64());
+
+		std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+		for (std::unique_ptr<Pattern>& pattern : patterns)
+		{
+			std::string pattern_name = TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType());
+			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"][pattern_name].asBool();
+		}
+
 		EvulateSettings();
 	}
 }
@@ -61,6 +74,17 @@ void TradinatorSettings::LoadSettings()
 void TradinatorSettings::SaveSettings()
 {
 	std::ofstream output_file(_SETTINGS_FILE_);
+
+	m_settings["MaxParallelDownloads"] = TradinatorCoreSpace::Utils::GetMaxParallelDownloads();
+	m_settings["MaxParallelAnalysis"] = TradinatorCoreSpace::Utils::GetMaxParallelAnalysis();
+	m_settings["ReadWriteBatchSize"] = TradinatorCoreSpace::Utils::GetReadWriteBatchSize();
+
+	std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+	for (std::unique_ptr<Pattern>& pattern : patterns)
+	{
+		std::string pattern_name = TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType());
+		m_settings["PatternVisibility"][pattern_name] = m_pattern_visbility[pattern->PatternType()];
+	}
 
 	output_file << m_settings;
 	output_file.close();
@@ -74,4 +98,21 @@ Json::Value TradinatorSettings::GetAllOpenedWindowsStatus() const
 void TradinatorSettings::SetAllOpenedWindowsStatus(Json::Value status)
 {
 	m_settings["OpenedWindows"] = status;
+}
+
+
+bool TradinatorSettings::GetPatternVisibility(EPatternType type)
+{
+	auto itr = m_pattern_visbility.find(type);
+	if (itr != m_pattern_visbility.end())
+	{
+		return (*itr).second;
+	}
+
+	return true;
+}
+
+void TradinatorSettings::SetPatternVisbility(EPatternType type, bool is_visible)
+{
+	m_pattern_visbility[type] = is_visible;
 }

@@ -6,9 +6,7 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(C
     std::vector<std::chrono::system_clock::time_point> result;
 
     const Candle& curr = (*current_candle_itr).second;
-    CandleDataMapType::const_iterator next_itr = std::next(current_candle_itr, 1);
-
-    if (next_itr != end)
+    if (current_candle_itr != begin)
     {
         /*
                       |
@@ -21,8 +19,14 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(C
                      |:|   |
                Close ---
                       |
-        
+
         */
+
+
+        // Remember the data is arranged in descending order of dates.
+        // Latest data is at 0 and previous day is at 1 and on
+        // so next day will be previous data in terms of iteration.
+        CandleDataMapType::const_iterator next_itr = std::prev(current_candle_itr, 1);
 
         const Candle& next = (*next_itr).second;
         bool is_pattern_matched = curr.m_close < curr.m_open && // curr is bearish
@@ -32,8 +36,8 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(C
 
         if (is_pattern_matched)
         {
-            result.push_back(curr.m_date);
             result.push_back(next.m_date);
+            result.push_back(curr.m_date);
         }
     }
 
@@ -46,14 +50,12 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Ch
     std::vector<std::chrono::system_clock::time_point> result;
 
     const Candle& curr = (*current_candle_itr).second;
-    CandleDataMapType::const_iterator next_itr = std::next(current_candle_itr, 1);
-
-    if (next_itr != end)
+    if (current_candle_itr != begin)
     {
         /*
                       |
                 Open ---
-                     |:|   
+                     |:|
                      |:|   |
                      |:|  ---  Open, Close
                      |:|   |
@@ -63,6 +65,12 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Ch
                       |
 
         */
+
+
+        // Remember the data is arranged in descending order of dates.
+        // Latest data is at 0 and previous day is at 1 and on
+        // so next day will be previous data in terms of iteration.
+        CandleDataMapType::const_iterator next_itr = std::prev(current_candle_itr, 1);
 
         const Candle& next = (*next_itr).second;
         if (next.IsDoji())
