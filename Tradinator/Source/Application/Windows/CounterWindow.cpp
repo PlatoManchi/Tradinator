@@ -193,7 +193,7 @@ void CounterWindow::Show()
                 m_price_chart_height = PRICE_CHART_MIN_HEIGHT;
             }
 
-            
+            bool is_any_plot_hovered = false;
             if (largest_label_width > (price_label_width + 5.0f))
             {
                 ImVec2 plot_padding(largest_label_width - price_label_width + 5.0f, 0); // x = left, y = top
@@ -244,6 +244,19 @@ void CounterWindow::Show()
                     ShowPatterns(ImGui::GetWindowWidth() - largest_label_width, m_price_chart_height, m_price_chart_limits);
                 }
 
+                if (m_is_any_plot_hovered)
+                {
+                    ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+                    float tool_l = ImPlot::PlotToPixels(m_hovered_highlight_l, m_current_hovered_plot_mouse_location.y).x;
+                    float tool_r = ImPlot::PlotToPixels(m_hovered_highlight_r, m_current_hovered_plot_mouse_location.y).x;
+                    float  tool_t = ImPlot::GetPlotPos().y;
+                    float  tool_b = tool_t + ImPlot::GetPlotSize().y;
+                    ImPlot::PushPlotClipRect();
+                    draw_list->AddRectFilled(ImVec2(tool_l, tool_t), ImVec2(tool_r, tool_b), IM_COL32(128, 128, 128, 64));
+                    ImPlot::PopPlotClipRect();
+                }
+
                 PlotCandlestick(m_counter->Name().c_str(), 
                     m_dates.data(), 
                     m_opens.data(), 
@@ -259,10 +272,15 @@ void CounterWindow::Show()
                 m_price_chart_limits = ImPlot::GetPlotLimits();
 
                 // sharing plot limits so they are all in sync
+                is_any_plot_hovered |= ImPlot::IsPlotHovered();
                 if (ImPlot::IsPlotHovered())
                 {
                     m_shared_limits = ImPlot::GetPlotLimits();
                     m_is_price_chart_hovered = true;
+
+
+                    m_current_hovered_plot_mouse_location = ImPlot::GetPlotMousePos();
+                    m_current_hovered_plot_mouse_location.x = ImPlot::RoundTime(ImPlotTime::FromDouble(m_current_hovered_plot_mouse_location.x), ImPlotTimeUnit_Day).ToDouble();
                 }
                 else
                 {
@@ -307,16 +325,33 @@ void CounterWindow::Show()
                 ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
 
+                if (m_is_any_plot_hovered)
+                {
+                    ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+                    float tool_l = ImPlot::PlotToPixels(m_hovered_highlight_l, m_current_hovered_plot_mouse_location.y).x;
+                    float tool_r = ImPlot::PlotToPixels(m_hovered_highlight_r, m_current_hovered_plot_mouse_location.y).x;
+                    float  tool_t = ImPlot::GetPlotPos().y;
+                    float  tool_b = tool_t + ImPlot::GetPlotSize().y;
+                    ImPlot::PushPlotClipRect();
+                    draw_list->AddRectFilled(ImVec2(tool_l, tool_t), ImVec2(tool_r, tool_b), IM_COL32(128, 128, 128, 64));
+                    ImPlot::PopPlotClipRect();
+                }
+
                 double x_axis_interval = 60 * 60 * 24; // one day in sec
                 ImPlot::PlotBars("Volume", m_dates.data(), m_volumes.data(), m_volumes.size(), x_axis_interval * 0.5);
 
                 m_volume_chart_limits = ImPlot::GetPlotLimits();
 
                 // sharing plot limits so they are all in sync
+                is_any_plot_hovered |= ImPlot::IsPlotHovered();
                 if (ImPlot::IsPlotHovered())
                 {
                     m_shared_limits = ImPlot::GetPlotLimits();
                     m_is_volume_chart_hovered = true;
+
+                    m_current_hovered_plot_mouse_location = ImPlot::GetPlotMousePos();
+                    m_current_hovered_plot_mouse_location.x = ImPlot::RoundTime(ImPlotTime::FromDouble(m_current_hovered_plot_mouse_location.x), ImPlotTimeUnit_Day).ToDouble();
                 }
                 else
                 {
@@ -359,7 +394,15 @@ void CounterWindow::Show()
                         ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
                     }
 
-                    chart_wrapper->DrawCustomChart(chart_height, x_axis_flags, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit, m_shared_limits);
+                    chart_wrapper->DrawCustomChart(chart_height, 
+                        x_axis_flags, 
+                        ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit, 
+                        m_shared_limits, 
+                        is_any_plot_hovered,
+                        m_is_any_plot_hovered,
+                        m_current_hovered_plot_mouse_location,
+                        m_hovered_highlight_l,
+                        m_hovered_highlight_r);
 
                     if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0))
                     {
@@ -368,6 +411,18 @@ void CounterWindow::Show()
                     ++applied_seperate_charts_index;
                 }
             }
+            
+            if (is_any_plot_hovered)
+            {
+                float width_percent = 0.25f;
+                double x_axis_interval = 60 * 60 * 24; // one day in sec
+                double half_width = count > 1 ? x_axis_interval * width_percent : width_percent;
+
+                m_hovered_highlight_l = m_current_hovered_plot_mouse_location.x - half_width * 1.5;
+                m_hovered_highlight_r = m_current_hovered_plot_mouse_location.x + half_width * 1.5;
+            }
+            
+            m_is_any_plot_hovered = is_any_plot_hovered;
         }
     }
     ImGui::End();
@@ -627,13 +682,6 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
     {
         ImPlotPoint mouse = ImPlot::GetPlotMousePos();
         mouse.x = ImPlot::RoundTime(ImPlotTime::FromDouble(mouse.x), ImPlotTimeUnit_Day).ToDouble();
-        float  tool_l = ImPlot::PlotToPixels(mouse.x - half_width * 1.5, mouse.y).x;
-        float  tool_r = ImPlot::PlotToPixels(mouse.x + half_width * 1.5, mouse.y).x;
-        float  tool_t = ImPlot::GetPlotPos().y;
-        float  tool_b = tool_t + ImPlot::GetPlotSize().y;
-        ImPlot::PushPlotClipRect();
-        draw_list->AddRectFilled(ImVec2(tool_l, tool_t), ImVec2(tool_r, tool_b), IM_COL32(128, 128, 128, 64));
-        ImPlot::PopPlotClipRect();
         
         // find mouse location index
         int idx = BinarySearch(xs, 0, count - 1, mouse.x);

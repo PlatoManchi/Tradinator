@@ -1,5 +1,8 @@
 #include "Components/IndicatorWrappers.h"
 
+#include "implot.h"
+#include "implot_internal.h"
+
 #include "Data/Counter.h"
 #include "Indicators/BollingerBand.h"
 #include "Indicators/MACD.h"
@@ -277,7 +280,7 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
     m_label_width = std::max(max_range_width, min_range_width);
 }
 
-void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits)
+void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r)
 {
     assert(m_counter);
     assert(!IsIndicatorOverlayable());
@@ -303,19 +306,37 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
         ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, m_x_axis_min, m_x_axis_max);
         ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, m_x_axis_max - m_x_axis_min); // 14 days at min and full chat at max
 
-        PlotItems();
-        
         m_chart_limits = ImPlot::GetPlotLimits();
 
+        is_any_plot_hovered |= ImPlot::IsPlotHovered();
         if (ImPlot::IsPlotHovered())
         {
             shared_limits = ImPlot::GetPlotLimits();
             m_is_hovered = true;
+
+            hovered_mouse_point = ImPlot::GetPlotMousePos();
+            hovered_mouse_point.x = ImPlot::RoundTime(ImPlotTime::FromDouble(hovered_mouse_point.x), ImPlotTimeUnit_Day).ToDouble();
         }
         else
         {
             m_is_hovered = false;
         }
+
+        if (show_highlight)
+        {
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+            float highlight_l = ImPlot::PlotToPixels(hover_highlight_l, hovered_mouse_point.y).x;
+            float highlight_r = ImPlot::PlotToPixels(hover_highlight_r, hovered_mouse_point.y).x;
+            float  highlight_t = ImPlot::GetPlotPos().y;
+            float  highlight_b = highlight_t + ImPlot::GetPlotSize().y;
+            ImPlot::PushPlotClipRect();
+            draw_list->AddRectFilled(ImVec2(highlight_l, highlight_t), ImVec2(highlight_r, highlight_b), IM_COL32(128, 128, 128, 64));
+            ImPlot::PopPlotClipRect();
+        }
+
+        PlotItems();
+
         ImPlot::EndPlot();
     }
 }

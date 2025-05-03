@@ -82,6 +82,9 @@ private:
 	bool m_show_tool_tip;
 	bool m_show_patterns;
 	bool m_tooltip_override;
+	bool m_is_any_plot_hovered;
+	ImPlotPoint m_current_hovered_plot_mouse_location;
+	float m_hovered_highlight_l, m_hovered_highlight_r;
 
 	ImVec4 m_bull_color = ImVec4(0.031f, 0.600f, 0.505f, 1.000f);
 	ImVec4 m_bear_color = ImVec4(0.949f, 0.211f, 0.270f, 1.000f);

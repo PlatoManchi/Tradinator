@@ -124,7 +124,7 @@ public:
 
 	virtual void Calculate() override;
 	void CalculateLabelWidth();
-	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits);
+	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r);
 	
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{
