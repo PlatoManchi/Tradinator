@@ -187,58 +187,6 @@ public:
 };
 
 /*********************************************************************************
-*                                RSI
-**********************************************************************************/
-class RSIIndicatorWrapper : public GenericChartIndicatorWrapper
-{
-public:
-	RSIIndicatorWrapper() : GenericChartIndicatorWrapper() {}
-	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator)
-		: GenericChartIndicatorWrapper(std::move(indicator)) { }
-
-	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) { }
-
-	RSIIndicatorWrapper(const RSIIndicatorWrapper& other) = default;
-	RSIIndicatorWrapper& operator=(const RSIIndicatorWrapper& other) = default;
-	RSIIndicatorWrapper(RSIIndicatorWrapper&& other) noexcept = default;
-	RSIIndicatorWrapper& operator=(RSIIndicatorWrapper&& other) noexcept = default;
-
-	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
-	{
-		return std::make_unique<RSIIndicatorWrapper>(*this);
-	}
-
-	virtual bool IsIndicatorOverlayable() override { return false; }
-};
-
-/*********************************************************************************
-*                                ROC
-**********************************************************************************/
-class ROCIndicatorWrapper : public GenericChartIndicatorWrapper
-{
-public:
-	ROCIndicatorWrapper() : GenericChartIndicatorWrapper() {}
-	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator)
-		: GenericChartIndicatorWrapper(std::move(indicator)) { }
-
-	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) { }
-
-	ROCIndicatorWrapper(const ROCIndicatorWrapper& other) = default;
-	ROCIndicatorWrapper& operator=(const ROCIndicatorWrapper& other) = default;
-	ROCIndicatorWrapper(ROCIndicatorWrapper&& other) noexcept = default;
-	ROCIndicatorWrapper& operator=(ROCIndicatorWrapper&& other) noexcept = default;
-
-	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
-	{
-		return std::make_unique<ROCIndicatorWrapper>(*this);
-	}
-
-	virtual bool IsIndicatorOverlayable() override { return false; }
-};
-
-/*********************************************************************************
 *                                     OBV
 **********************************************************************************/
 

@@ -33,6 +33,7 @@ namespace ispc { /* namespace */
 #if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )
 extern "C" {
 #endif // __cplusplus
+    extern void calculate_atr(double * input_high, double * input_low, double * input_close, double * true_range_buff, double * output, uint64_t data_size, uint64_t window_size);
     extern void calculate_bollinger_band(double * input, double * top_output, double * sma_output, double * bottom_output, uint64_t data_size, uint64_t window_size, double standard_deviation_multiplier);
     extern void calculate_ema(double * input, double * output, uint64_t data_size, uint64_t window_size);
     extern void calculate_mcda(double * input, double * ema_period_1_buffer, double * ema_period_2_buffer, double * mcda_output, double * signal_output, double * histogram_output, uint64_t period_1, uint64_t period_2, uint64_t signal_period, uint64_t data_size);

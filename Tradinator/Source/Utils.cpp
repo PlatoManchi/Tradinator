@@ -19,6 +19,7 @@
 #include "Indicators/RSI.h"
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
+#include "Indicators/ATR.h"
 
 #include "Components/IndicatorWrappers.h"
 
@@ -82,6 +83,8 @@ namespace TradinatorAppSpace
 				return ImVec4(1.0f, 0.349f, 0.349f, 1.0f);
 			}
 			break;
+		case E_ATR:
+			return ImVec4(0.8f, 0.0f, 0.0f, 1.0f);
 		}
 
 		return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -107,6 +110,8 @@ namespace TradinatorAppSpace
 			return "OBV";
 		case E_MACD:
 			return "MACD";
+		case E_ATR:
+			return "ATR";
 		}
 
 		return "";
@@ -130,6 +135,8 @@ namespace TradinatorAppSpace
 			return EIndicatorType::E_OBV;
 		else if (type_str == "MACD")
 			return EIndicatorType::E_MACD;
+		else if (type_str == "ATR")
+			return EIndicatorType::E_ATR;
 
 		return EIndicatorType::MAX;
 	}
@@ -154,6 +161,8 @@ namespace TradinatorAppSpace
 			return std::make_unique<OBV>();
 		case E_MACD:
 			return std::make_unique<MACD>();
+		case E_ATR:
+			return std::make_unique<ATR>();
 		}
 
 		return nullptr;
@@ -169,12 +178,13 @@ namespace TradinatorAppSpace
 		case E_EMA:
 			wrapper = std::move(std::make_unique<GenericIndicatorWrapper>());
 			break;
+
 		case E_ROC:
-			wrapper = std::move(std::make_unique<ROCIndicatorWrapper>());
-			break;
 		case E_RSI:
-			wrapper = std::move(std::make_unique<RSIIndicatorWrapper>());
+		case E_ATR:
+			wrapper = std::move(std::make_unique<GenericChartIndicatorWrapper>());
 			break;
+		
 		case E_BOLLINGER_BAND:
 			wrapper = std::move(std::make_unique<BollingerBandIndicatorWrapper>());
 			break;

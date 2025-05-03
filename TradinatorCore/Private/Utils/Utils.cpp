@@ -12,6 +12,7 @@
 #include "Indicators/RSI.h"
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
+#include "Indicators/ATR.h"
 
 #include "Patterns/Pattern.h"
 
@@ -32,6 +33,14 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
     result.emplace_back(std::make_unique<RSI>(14));
     result.emplace_back(std::make_unique<OBV>());
     result.emplace_back(std::make_unique<MACD>(12, 26, 9));
+    result.emplace_back(std::make_unique<ATR>(14));
+
+    // arrange them alphabet wise
+    std::sort(result.begin(), result.end(),
+        [](const std::unique_ptr<Indicator>& a, const std::unique_ptr<Indicator>& b) -> bool
+        {
+            return a->GetName() < b->GetName();
+        });
 
     return result;
 }

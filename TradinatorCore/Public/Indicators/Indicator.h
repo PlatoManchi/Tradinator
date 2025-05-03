@@ -32,6 +32,7 @@ enum EIndicatorType {
 	E_RSI,
 	E_OBV,
 	E_MACD,
+	E_ATR,
 
 
 	MAX

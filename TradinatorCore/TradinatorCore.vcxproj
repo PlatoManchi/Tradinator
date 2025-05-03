@@ -168,6 +168,7 @@
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
     <ClInclude Include="Public\Data\Counter.h" />
+    <ClInclude Include="Public\Indicators\ATR.h" />
     <ClInclude Include="Public\Indicators\BollingerBand.h" />
     <ClInclude Include="Public\Indicators\EMA.h" />
     <ClInclude Include="Public\Indicators\Indicator.h" />
@@ -195,6 +196,7 @@
     <ClCompile Include="Private\Data\Candle.cpp" />
     <ClCompile Include="Private\Data\Company.cpp" />
     <ClCompile Include="Private\Data\Counter.cpp" />
+    <ClCompile Include="Private\Indicators\ATR.cpp" />
     <ClCompile Include="Private\Indicators\BollingerBand.cpp" />
     <ClCompile Include="Private\Indicators\EMA.cpp" />
     <ClCompile Include="Private\Indicators\Indicator.cpp" />

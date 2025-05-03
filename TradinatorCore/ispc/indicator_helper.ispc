@@ -185,3 +185,31 @@ export void calculate_mcda(uniform double* uniform input,
         histogram_output[i] = mcda_output[i] - signal_output[i];
     }
 }
+
+
+// ---------------------------------- ATR -------------------------------------------
+export void calculate_atr(uniform double* uniform input_high, 
+                            uniform double* uniform input_low,
+                            uniform double* uniform input_close,  
+                            uniform double* uniform true_range_buff, 
+                            uniform double* uniform output, 
+                            uniform unsigned int64 data_size, 
+                            uniform unsigned int64 window_size) 
+{
+    
+    foreach(i = 0 ... data_size)
+    {
+        double diff_1 = input_high[i] - input_low[i];
+        double diff_2 = 0;
+        double diff_3 = 0;
+
+        if(i < data_size - 1)
+        {
+            diff_2 = input_high[i] - input_close[i+1];
+            diff_3 = input_low[i] - input_close[i+1];
+        }
+        true_range_buff[i] = max(max(diff_1, diff_2), diff_3);
+    }
+
+    calculate_sma(true_range_buff, output, data_size, window_size);
+}

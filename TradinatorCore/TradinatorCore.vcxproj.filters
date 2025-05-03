@@ -132,6 +132,9 @@
     <ClInclude Include="Public\News\News.h">
       <Filter>Public\News</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Indicators\ATR.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -208,6 +211,9 @@
     </ClCompile>
     <ClCompile Include="Private\News\News.cpp">
       <Filter>Private\News</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Indicators\ATR.cpp">
+      <Filter>Private\Indicators</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

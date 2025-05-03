@@ -94,3 +94,25 @@ std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 
 	return result;
 }
+
+
+void SMA::CalculateRaw(double* input, double* output, int64_t data_size, int64_t window_size)
+{
+#ifdef _SMA_ISPC_
+	ispc::calculate_sma(input, output, data_size, window_size);
+#else
+	for (size_t i = 0; i < data_size; ++i)
+	{
+		size_t essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+
+		double cumulative_closing_price = 0;
+		for (size_t j = 0; j < essential_window_size; ++j)
+		{
+			size_t index = i + j;
+			cumulative_closing_price += input[index];
+		}
+
+		output[i] = cumulative_closing_price / essential_window_size;
+	}
+#endif //_SMA_ISPC_
+}
