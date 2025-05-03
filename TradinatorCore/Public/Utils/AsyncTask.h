@@ -25,6 +25,8 @@ public:
 		m_is_shut_down = false;
 		m_human_readable_description = human_readable_description;
 		m_worker_list.push_back(worker);
+
+		std::reverse(m_worker_list.begin(), m_worker_list.end());
 	}
 
 	// copy and move sementics
@@ -67,6 +69,7 @@ protected:
 	};
 
 	virtual void StartTask();
+	void DoWork();
 	virtual void Update();
 	virtual void TaskCompleted();
 	virtual std::string GetHumanReadableDescription() const;
@@ -74,6 +77,8 @@ protected:
 	bool m_is_complete;
 	bool m_is_shut_down;
 	std::future<void> m_work_future;
+
+	size_t m_worker_index;
 
 	std::string m_human_readable_description;
 	std::function<void()> m_callback;
