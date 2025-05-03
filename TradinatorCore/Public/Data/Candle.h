@@ -15,8 +15,23 @@ public:
 	Candle& operator=(const Candle& other) = default;
 	Candle& operator=(Candle&& other) noexcept = default;
 
+	inline bool IsRed() const
+	{
+		return m_open > m_close;
+	}
+	inline bool IsGreen() const
+	{
+		return m_close > m_open;
+	}
+
 	bool IsDoji() const;
 	bool IsMarubozu() const;
+	bool IsHammer() const;
+	bool IsInvertedHammer() const;
+	bool IsDragonflyDoji() const;
+	bool IsGravestoneDoji() const;
+	bool IsLongLegDoji() const;
+
 
 	/**
 	* Volume should be a unsigned int. But for one stock one one particular day, the volume from upstox website

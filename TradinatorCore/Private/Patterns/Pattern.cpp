@@ -1,5 +1,17 @@
 #include "Patterns/Pattern.h"
 
+#include <cassert>
+
+Pattern::Pattern()
+{
+    // in C++ 23, any is made as constexpr so can just check at compile time by using static_assert.
+    // But since I'm compiling using C++20 this is a way to check atleast at compile time
+
+    // Make sure that all the flags are unique
+    assert((Bullish_Harami
+        & Bullish_Harami_Cross).any());
+}
+
 
 std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end)
 {

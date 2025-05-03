@@ -131,6 +131,23 @@ bool SettingsWindow::Show()
             ImGui::SetCursorPos(ImVec2(work_size.x / 2.0 - patterns_heading_size.x / 2.0, prev_pos.y));
             ImGui::Text(patterns_heading_str.c_str());
 
+            if (ImGui::Button("Select All"))
+            {
+                std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+                for (std::unique_ptr<Pattern>& pattern : patterns)
+                {
+                    TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), true);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Select None"))
+            {
+                std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+                for (std::unique_ptr<Pattern>& pattern : patterns)
+                {
+                    TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), false);
+                }
+            }
             std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
             for (std::unique_ptr<Pattern>& pattern : patterns)
             {

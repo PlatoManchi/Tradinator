@@ -64,7 +64,7 @@ void TradinatorSettings::LoadSettings()
 		for (std::unique_ptr<Pattern>& pattern : patterns)
 		{
 			std::string pattern_name = TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType());
-			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"][pattern_name].asBool();
+			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"].find(pattern_name) ? m_settings["PatternVisibility"][pattern_name].asBool() : pattern->IsDefaultVisible();
 		}
 
 		EvulateSettings();
