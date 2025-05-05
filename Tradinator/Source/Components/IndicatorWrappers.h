@@ -30,10 +30,10 @@ public:
 	virtual bool DrawAsAppliedIndicator() = 0;
 
 	// Anything that should be drawn before candles are drawn
-	virtual void PlotPreCandle() = 0;
+	virtual void PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color) = 0;
 
 	// Anything that should be drawn after candles are drawn
-	virtual void PlotPostCandle() = 0;
+	virtual void PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color) = 0;
 	virtual bool IsIndicatorOverlayable() = 0;
 
 	virtual void Calculate() = 0;
@@ -42,6 +42,8 @@ public:
 
 	virtual void FromJson(Json::Value value) = 0;
 	virtual Json::Value ToJson() const = 0;
+
+	virtual std::string GetHumanReadableValueAt(size_t index) const = 0;
 
 	inline size_t GetID() const { return m_id; }
 	inline EIndicatorType IndicatorType() const { return m_indicator->IndicatorType(); }
@@ -84,8 +86,8 @@ public:
 
 	virtual bool DrawAsAvailableIndicator() override;
 	virtual bool DrawAsAppliedIndicator() override;
-	virtual void PlotPreCandle() override;
-	virtual void PlotPostCandle() override;
+	virtual void PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color) override;
+	virtual void PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color) override;
 	virtual void Calculate() override;
 	virtual bool IsIndicatorOverlayable() override { return true; }
 
@@ -98,7 +100,7 @@ public:
 	virtual void FromJson(Json::Value value) override;
 	virtual Json::Value ToJson() const override;
 
-
+	virtual std::string GetHumanReadableValueAt(size_t index) const;
 protected:
 	
 };
@@ -124,7 +126,7 @@ public:
 
 	virtual void Calculate() override;
 	void CalculateLabelWidth();
-	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r);
+	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color);
 	
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{
@@ -136,7 +138,7 @@ public:
 	inline float GetLabelWidth() const { return m_label_width; }
 
 protected:
-	virtual void PlotItems();
+	virtual void PlotItems(ImVec4 bull_color, ImVec4 bear_color);
 
 
 	ImPlotRect m_chart_limits;
@@ -146,8 +148,8 @@ protected:
 	double m_x_axis_max = -DBL_MAX;
 
 private:
-	virtual void PlotPreCandle() override;
-	virtual void PlotPostCandle() override;
+	virtual void PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color) override;
+	virtual void PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color) override;
 };
 
 
@@ -172,8 +174,8 @@ public:
 
 	virtual bool DrawAsAvailableIndicator() override;
 	virtual bool DrawAsAppliedIndicator() override;
-	virtual void PlotPreCandle() override;
-	virtual void PlotPostCandle() override;
+	virtual void PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color) override;
+	virtual void PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color) override;
 	virtual void Calculate() override;
 	virtual bool IsIndicatorOverlayable() override { return true; }
 
@@ -182,9 +184,76 @@ public:
 		return std::make_unique<BollingerBandIndicatorWrapper>(*this);
 	}
 
+	virtual std::string GetHumanReadableValueAt(size_t index) const override;
+
 	virtual void FromJson(Json::Value value) override;
 	virtual Json::Value ToJson() const override;
 };
+
+
+/*********************************************************************************
+*                                ROC
+**********************************************************************************/
+class ROCIndicatorWrapper : public GenericChartIndicatorWrapper
+{
+public:
+	ROCIndicatorWrapper() : GenericChartIndicatorWrapper() {}
+	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator)
+		: GenericChartIndicatorWrapper(std::move(indicator)) {
+	}
+
+	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+		: GenericChartIndicatorWrapper(std::move(indicator), counter) {
+	}
+
+	ROCIndicatorWrapper(const ROCIndicatorWrapper& other) = default;
+	ROCIndicatorWrapper& operator=(const ROCIndicatorWrapper& other) = default;
+	ROCIndicatorWrapper(ROCIndicatorWrapper&& other) noexcept = default;
+	ROCIndicatorWrapper& operator=(ROCIndicatorWrapper&& other) noexcept = default;
+
+	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
+	{
+		return std::make_unique<ROCIndicatorWrapper>(*this);
+	}
+
+	virtual bool IsIndicatorOverlayable() override { return false; }
+
+protected:
+	virtual void PlotItems(ImVec4 bull_color, ImVec4 bear_color) override;
+};
+
+/*********************************************************************************
+*                                RSI
+**********************************************************************************/
+class RSIIndicatorWrapper : public GenericChartIndicatorWrapper
+{
+public:
+	RSIIndicatorWrapper() : GenericChartIndicatorWrapper() {}
+	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator)
+		: GenericChartIndicatorWrapper(std::move(indicator)) {
+	}
+
+	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+		: GenericChartIndicatorWrapper(std::move(indicator), counter) {
+	}
+
+	RSIIndicatorWrapper(const RSIIndicatorWrapper& other) = default;
+	RSIIndicatorWrapper& operator=(const RSIIndicatorWrapper& other) = default;
+	RSIIndicatorWrapper(RSIIndicatorWrapper&& other) noexcept = default;
+	RSIIndicatorWrapper& operator=(RSIIndicatorWrapper&& other) noexcept = default;
+
+	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
+	{
+		return std::make_unique<RSIIndicatorWrapper>(*this);
+	}
+
+	virtual bool IsIndicatorOverlayable() override { return false; }
+
+protected:
+	virtual void PlotItems(ImVec4 bull_color, ImVec4 bear_color) override;
+};
+
+
 
 /*********************************************************************************
 *                                     OBV
@@ -241,6 +310,7 @@ public:
 	virtual bool DrawAsAppliedIndicator() override;
 	virtual bool IsIndicatorOverlayable() override { return false; }
 	
+	virtual std::string GetHumanReadableValueAt(size_t index) const override;
 	virtual void FromJson(Json::Value value) override;
 	virtual Json::Value ToJson() const override;
 
@@ -250,5 +320,40 @@ public:
 	}
 
 protected:
-	virtual void PlotItems() override;
+	virtual void PlotItems(ImVec4 bull_color, ImVec4 bear_color) override;
+};
+
+
+
+
+/*********************************************************************************
+*                                Savitzky Golay Filter
+**********************************************************************************/
+
+class SavitzkyGolayFilterWrapper : public GenericIndicatorWrapper
+{
+public:
+	SavitzkyGolayFilterWrapper() : GenericIndicatorWrapper() {}
+	SavitzkyGolayFilterWrapper(std::unique_ptr<Indicator> indicator)
+		: GenericIndicatorWrapper(std::move(indicator)) {}
+
+	SavitzkyGolayFilterWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+		: GenericIndicatorWrapper(std::move(indicator), counter) {}
+
+	SavitzkyGolayFilterWrapper(const SavitzkyGolayFilterWrapper& other) = default;
+	SavitzkyGolayFilterWrapper& operator=(const SavitzkyGolayFilterWrapper& other) = default;
+	SavitzkyGolayFilterWrapper(SavitzkyGolayFilterWrapper&& other) noexcept = default;
+	SavitzkyGolayFilterWrapper& operator=(SavitzkyGolayFilterWrapper&& other) noexcept = default;
+
+	virtual bool DrawAsAvailableIndicator() override;
+	virtual bool DrawAsAppliedIndicator() override;
+	virtual void PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color) override;
+
+	virtual void FromJson(Json::Value value) override;
+	virtual Json::Value ToJson() const override;
+
+	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
+	{
+		return std::make_unique<SavitzkyGolayFilterWrapper>(*this);
+	}
 };

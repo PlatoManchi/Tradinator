@@ -20,6 +20,7 @@
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
 #include "Indicators/ATR.h"
+#include "Indicators/SavitzkyGolayFilter.h"
 
 #include "Components/IndicatorWrappers.h"
 
@@ -112,6 +113,8 @@ namespace TradinatorAppSpace
 			return "MACD";
 		case E_ATR:
 			return "ATR";
+		case E_SavitzkyGolayFilter:
+			return "SavitzkyGolayFilter";
 		}
 
 		return "";
@@ -131,12 +134,14 @@ namespace TradinatorAppSpace
 			return EIndicatorType::E_ROC;
 		else if (type_str == "RSI")
 			return EIndicatorType::E_RSI;
-		else if(type_str == "OBV")
+		else if (type_str == "OBV")
 			return EIndicatorType::E_OBV;
 		else if (type_str == "MACD")
 			return EIndicatorType::E_MACD;
 		else if (type_str == "ATR")
 			return EIndicatorType::E_ATR;
+		else if (type_str == "SavitzkyGolayFilter")
+			return EIndicatorType::E_SavitzkyGolayFilter;
 
 		return EIndicatorType::MAX;
 	}
@@ -163,6 +168,8 @@ namespace TradinatorAppSpace
 			return std::make_unique<MACD>();
 		case E_ATR:
 			return std::make_unique<ATR>();
+		case E_SavitzkyGolayFilter:
+			return std::make_unique<SavitzkyGolayFilter>();
 		}
 
 		return nullptr;
@@ -179,12 +186,15 @@ namespace TradinatorAppSpace
 			wrapper = std::move(std::make_unique<GenericIndicatorWrapper>());
 			break;
 
-		case E_ROC:
-		case E_RSI:
 		case E_ATR:
 			wrapper = std::move(std::make_unique<GenericChartIndicatorWrapper>());
 			break;
-		
+		case E_ROC:
+			wrapper = std::move(std::make_unique<ROCIndicatorWrapper>());
+			break; 
+		case E_RSI:
+			wrapper = std::move(std::make_unique<RSIIndicatorWrapper>());
+			break;
 		case E_BOLLINGER_BAND:
 			wrapper = std::move(std::make_unique<BollingerBandIndicatorWrapper>());
 			break;
@@ -194,6 +204,8 @@ namespace TradinatorAppSpace
 		case E_MACD:
 			wrapper = std::move(std::make_unique<MACDIndicatorWrapper>());
 			break;
+		case E_SavitzkyGolayFilter:
+			wrapper = std::move(std::make_unique<SavitzkyGolayFilterWrapper>());
 		}
 
 		if (wrapper)

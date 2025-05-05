@@ -66,7 +66,7 @@ export void calculate_ema(uniform double* uniform input,
 
     // since values are dependent on previous value cant do parallel execution
     // need to loop in scalar way
-    for (uniform unsigned int i = 1 ; i < data_size ; ++i) 
+    for (uint64 i = 1 ; i < data_size ; ++i) 
     {
         output[i] = input[i] * factor + output[i - 1] * (1.0 - factor);
     }

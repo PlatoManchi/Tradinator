@@ -402,7 +402,9 @@ void CounterWindow::Show()
                         m_is_any_plot_hovered,
                         m_current_hovered_plot_mouse_location,
                         m_hovered_highlight_l,
-                        m_hovered_highlight_r);
+                        m_hovered_highlight_r,
+                        m_bull_color,
+                        m_bear_color);
 
                     if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0))
                     {
@@ -691,6 +693,8 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
             char buff[32];
             ImPlot::FormatDate(ImPlotTime::FromDouble(xs[idx]), buff, 32, ImPlotDateFmt_DayMoYr, ImPlot::GetStyle().UseISO8601);
 
+            std::stringstream string_stream;
+
             std::string text = std::format(
                 "Day:    {}\n\n"
                 "Open:   ${}\n"
@@ -699,13 +703,25 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
                 "High:   ${}\n\n"
                 "Volume: {}", buff, opens[idx], closes[idx], lows[idx], highs[idx], m_volumes[idx]);
 
+            string_stream << text;
+            for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
+            {
+                if (wrapper->ShouldShow())
+                {
+                    string_stream << "\n\n";
+                    string_stream << wrapper->GetHumanReadableValueAt(count - 1 - idx);
+                }
+            }
+
+            std::string tool_tip = string_stream.str();
+            
             /*ImGui::Text("Day:    %s", buff);
             ImGui::Text("Open:   $%.2f", opens[idx]);
             ImGui::Text("Close:  $%.2f", closes[idx]);
             ImGui::Text("Low:    $%.2f", lows[idx]);
             ImGui::Text("High:   $%.2f", highs[idx]);
             ImGui::Text("\nVolume: %.0f", m_volumes[idx]);*/
-            ImGui::Text(text.c_str());
+            ImGui::Text(tool_tip.c_str());
 
             ImGui::EndTooltip();
         }
@@ -727,7 +743,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
         {
             if (wrapper->ShouldShow() && wrapper->IsIndicatorOverlayable())
             {
-                wrapper->PlotPreCandle();
+                wrapper->PlotPreCandle(m_bull_color, m_bear_color);
             }
         }
 
@@ -747,7 +763,7 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
         {
             if (wrapper->ShouldShow() && wrapper->IsIndicatorOverlayable())
             {
-                wrapper->PlotPostCandle();
+                wrapper->PlotPostCandle(m_bull_color, m_bear_color);
             }
         }
 

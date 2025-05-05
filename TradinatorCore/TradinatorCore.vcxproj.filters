@@ -135,6 +135,12 @@
     <ClInclude Include="Public\Indicators\ATR.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Indicators\SavitzkyGolayFilter.h">
+      <Filter>Public\Indicators</Filter>
+    </ClInclude>
+    <ClInclude Include="ispc\matrix_helper_ispc.h">
+      <Filter>ispc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -215,12 +221,18 @@
     <ClCompile Include="Private\Indicators\ATR.cpp">
       <Filter>Private\Indicators</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Indicators\SavitzkyGolayFilter.cpp">
+      <Filter>Private\Indicators</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Data\AsyncData.inl">
       <Filter>Public\Data</Filter>
     </None>
     <None Include="ispc\indicator_helper.ispc">
+      <Filter>ispc</Filter>
+    </None>
+    <None Include="ispc\matrix_helper.ispc">
       <Filter>ispc</Filter>
     </None>
   </ItemGroup>
@@ -235,6 +247,18 @@
       <Filter>ispc\Objects</Filter>
     </Object>
     <Object Include="ispc\indicator_helper_ispc_sse2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\matrix_helper_ispc.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\matrix_helper_ispc_avx2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\matrix_helper_ispc_avx512skx.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\matrix_helper_ispc_sse2.o">
       <Filter>ispc\Objects</Filter>
     </Object>
   </ItemGroup>

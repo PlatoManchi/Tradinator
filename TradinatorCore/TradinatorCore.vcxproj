@@ -164,6 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ispc\indicator_helper_ispc.h" />
+    <ClInclude Include="ispc\matrix_helper_ispc.h" />
     <ClInclude Include="Public\Data\AsyncData.h" />
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="Public\Indicators\OBV.h" />
     <ClInclude Include="Public\Indicators\ROC.h" />
     <ClInclude Include="Public\Indicators\RSI.h" />
+    <ClInclude Include="Public\Indicators\SavitzkyGolayFilter.h" />
     <ClInclude Include="Public\Indicators\SMA.h" />
     <ClInclude Include="Public\Indicators\WMA.h" />
     <ClInclude Include="Public\Market\Market.h" />
@@ -204,6 +206,7 @@
     <ClCompile Include="Private\Indicators\OBV.cpp" />
     <ClCompile Include="Private\Indicators\ROC.cpp" />
     <ClCompile Include="Private\Indicators\RSI.cpp" />
+    <ClCompile Include="Private\Indicators\SavitzkyGolayFilter.cpp" />
     <ClCompile Include="Private\Indicators\SMA.cpp" />
     <ClCompile Include="Private\Indicators\WMA.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
@@ -222,6 +225,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ispc\indicator_helper.ispc" />
+    <None Include="ispc\matrix_helper.ispc" />
     <None Include="Public\Data\AsyncData.inl" />
   </ItemGroup>
   <ItemGroup>
@@ -234,6 +238,10 @@
     <Object Include="ispc\indicator_helper_ispc_avx2.o" />
     <Object Include="ispc\indicator_helper_ispc_avx512skx.o" />
     <Object Include="ispc\indicator_helper_ispc_sse2.o" />
+    <Object Include="ispc\matrix_helper_ispc.o" />
+    <Object Include="ispc\matrix_helper_ispc_avx2.o" />
+    <Object Include="ispc\matrix_helper_ispc_avx512skx.o" />
+    <Object Include="ispc\matrix_helper_ispc_sse2.o" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -79,7 +79,7 @@ bool StartupWindow::Show()
 
             if (!m_working_folder_exists)
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(237, 67, 55, 255)); // Blue color
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(237, 67, 55, 255));
             }
 
             /// @begin Text

@@ -13,6 +13,7 @@
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
 #include "Indicators/ATR.h"
+#include "Indicators/SavitzkyGolayFilter.h"
 
 #include "Patterns/Pattern.h"
 
@@ -34,6 +35,7 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
     result.emplace_back(std::make_unique<OBV>());
     result.emplace_back(std::make_unique<MACD>(12, 26, 9));
     result.emplace_back(std::make_unique<ATR>(14));
+    result.emplace_back(std::make_unique<SavitzkyGolayFilter>(14));
 
     // arrange them alphabet wise
     std::sort(result.begin(), result.end(),

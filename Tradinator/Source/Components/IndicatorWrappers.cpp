@@ -6,6 +6,7 @@
 #include "Data/Counter.h"
 #include "Indicators/BollingerBand.h"
 #include "Indicators/MACD.h"
+#include "Indicators/SavitzkyGolayFilter.h"
 
 #include "Utils.h"
 
@@ -186,26 +187,36 @@ void GenericIndicatorWrapper::Calculate()
     m_points_list = std::move(m_indicator->Calculate());
 }
 
-void GenericIndicatorWrapper::PlotPreCandle()
+void GenericIndicatorWrapper::PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
 
 }
 
-void GenericIndicatorWrapper::PlotPostCandle()
+void GenericIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
-    size_t count = m_points_list[0].size();
+    if (m_points_list.size() == 0) return;
 
-    if (count != 0)
-    {
-        ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-        ImPlot::PlotLineG("Indicator", indicator_plot_point_getter, (void*)&m_points_list[0], count);
-    }
+    size_t count = m_points_list[0].size();
+    if (count == 0) return;
+
+    ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
+    ImPlot::PlotLineG(std::format("{}", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[0], count);
+}
+
+std::string GenericIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
+{
+    return std::format("{}({}) :   {}", 
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
+        m_points_list[0][index].value);
 }
 
 void GenericIndicatorWrapper::FromJson(Json::Value value)
 {
     EIndicatorType type = TradinatorAppSpace::Utils::GetIndicatorType(value["Name"].asString());
-    m_indicator = std::move(TradinatorAppSpace::Utils::GetIndicator(type));
+    if (!m_indicator)
+    {
+        m_indicator = std::move(TradinatorAppSpace::Utils::GetIndicator(type));
+    }
     m_indicator->SetLength(value["Length"].asUInt64());
     m_show = value["Show"].asBool();
 
@@ -242,12 +253,12 @@ Json::Value GenericIndicatorWrapper::ToJson() const
 *                                Generic Chart Wrapper
 **********************************************************************************/
 
-void GenericChartIndicatorWrapper::PlotPreCandle()
+void GenericChartIndicatorWrapper::PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
     assert("Chart indicator will draw its own chart. This shouldn't be called. Call DrawCustomChart to draw the chart.");
 }
 
-void GenericChartIndicatorWrapper::PlotPostCandle()
+void GenericChartIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
     assert("Chart indicator will draw its own chart. This shouldn't be called. Call DrawCustomChart to draw the chart.");
 }
@@ -280,7 +291,7 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
     m_label_width = std::max(max_range_width, min_range_width);
 }
 
-void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r)
+void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color)
 {
     assert(m_counter);
     assert(!IsIndicatorOverlayable());
@@ -335,13 +346,13 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
             ImPlot::PopPlotClipRect();
         }
 
-        PlotItems();
+        PlotItems(bull_color, bear_color);
 
         ImPlot::EndPlot();
     }
 }
 
-void GenericChartIndicatorWrapper::PlotItems()
+void GenericChartIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
     for (int i = 0; i < m_points_list.size(); ++i)
     {
@@ -510,7 +521,7 @@ void BollingerBandIndicatorWrapper::Calculate()
     m_points_list = std::move(bollinger_band->Calculate());
 }
 
-void BollingerBandIndicatorWrapper::PlotPreCandle()
+void BollingerBandIndicatorWrapper::PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
     size_t count = m_points_list[0].size();
 
@@ -524,7 +535,7 @@ void BollingerBandIndicatorWrapper::PlotPreCandle()
     }
 }
 
-void BollingerBandIndicatorWrapper::PlotPostCandle()
+void BollingerBandIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
     size_t count = m_points_list[0].size();
 
@@ -539,6 +550,15 @@ void BollingerBandIndicatorWrapper::PlotPostCandle()
         ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
         ImPlot::PlotLineG("Bottom", indicator_plot_point_getter, (void*)&m_points_list[2], m_points_list[2].size());
     }
+}
+
+std::string BollingerBandIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
+{
+    return std::format("{} :   {}, {}, {}", 
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), 
+        m_points_list[0][index].value,
+        m_points_list[1][index].value,
+        m_points_list[2][index].value);
 }
 
 void BollingerBandIndicatorWrapper::FromJson(Json::Value value)
@@ -562,6 +582,75 @@ Json::Value BollingerBandIndicatorWrapper::ToJson() const
     return json_indicator;
 }
 
+
+/*********************************************************************************
+*                                ROC
+**********************************************************************************/
+void ROCIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
+{
+    if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
+    {
+        if (ImPlot::BeginItem("Zero Line"))
+        {
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();    
+            ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
+            double left = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][m_points_list[0].size() - 1].date.time_since_epoch()).count();
+            double right = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][0].date.time_since_epoch()).count();
+            
+            ImVec2 left_point = ImPlot::PlotToPixels(left, 0);
+            ImVec2 right_point = ImPlot::PlotToPixels(right, 0);
+
+            draw_list->AddLine(left_point, right_point, color);
+
+            ImPlot::EndItem();
+        }
+    }
+    
+    GenericChartIndicatorWrapper::PlotItems(bull_color, bear_color);
+}
+
+/*********************************************************************************
+*                                RSI
+**********************************************************************************/
+void RSIIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
+{
+    if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
+    {
+        if (ImPlot::BeginItem("50 Line and Zones"))
+        {
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+            ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
+            double left = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][m_points_list[0].size() - 1].date.time_since_epoch()).count();
+            double right = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][0].date.time_since_epoch()).count();
+
+            ImVec2 left_point = ImPlot::PlotToPixels(left, 50);
+            ImVec2 right_point = ImPlot::PlotToPixels(right, 50);
+
+            // 50 line
+            draw_list->AddLine(left_point, right_point, color);
+
+            // Over Bought Zone
+            ImVec2 over_bought_top_left = ImPlot::PlotToPixels(left, 100);
+            ImVec2 over_bought_bottom_right = ImPlot::PlotToPixels(right, 70);
+
+            ImVec4 tmp_bear_color = bear_color;
+            tmp_bear_color.w = 0.1;
+            draw_list->AddRectFilled(over_bought_top_left, over_bought_bottom_right, ImGui::GetColorU32(tmp_bear_color));
+
+            // Over Sold Zone
+            ImVec2 over_sold_top_left = ImPlot::PlotToPixels(left, 30);
+            ImVec2 over_sold_bottom_right = ImPlot::PlotToPixels(right, 0);
+
+            ImVec4 tmp_bull_color = bull_color;
+            tmp_bull_color.w = 0.1;
+            draw_list->AddRectFilled(over_sold_top_left, over_sold_bottom_right, ImGui::GetColorU32(tmp_bull_color));
+
+            ImPlot::EndItem();
+        }
+    }
+
+    GenericChartIndicatorWrapper::PlotItems(bull_color, bear_color);
+}
 
 /*********************************************************************************
 *                                     OBV
@@ -819,7 +908,7 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
     return is_pressed;
 }
 
-void MACDIndicatorWrapper::PlotItems()
+void MACDIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
     if (m_points_list.size() == 3)
     {
@@ -846,6 +935,15 @@ void MACDIndicatorWrapper::PlotItems()
             , m_points_list[2].size()
             , 60 * 60 * 12);
     }
+}
+
+std::string MACDIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
+{
+    return std::format("{} :   {}, {}, {}",
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
+        m_points_list[0][index].value,
+        m_points_list[1][index].value,
+        m_points_list[2][index].value);
 }
 
 void MACDIndicatorWrapper::FromJson(Json::Value value)
@@ -877,6 +975,10 @@ void MACDIndicatorWrapper::FromJson(Json::Value value)
     m_colors_list.push_back(macd_color);
     m_colors_list.push_back(signal_color);
     m_colors_list.push_back(histogram_color);
+
+    macd->SetPeriod_1(value["Period1"].asInt64());
+    macd->SetPeriod_2(value["Period2"].asInt64());
+    macd->SetSignalPeriod(value["SignalPeriod"].asInt64());
 }
 
 Json::Value MACDIndicatorWrapper::ToJson() const
@@ -886,7 +988,7 @@ Json::Value MACDIndicatorWrapper::ToJson() const
 
     Json::Value json_indicator = GenericChartIndicatorWrapper::ToJson();
     json_indicator.removeMember("Color");
-
+    json_indicator.removeMember("Length");
     
     Json::Value json_macd_color;
     json_macd_color["R"] = m_colors_list[0].x;
@@ -912,6 +1014,293 @@ Json::Value MACDIndicatorWrapper::ToJson() const
     json_colors["Histogram"] = json_histogram_color;
 
     json_indicator["Colors"] = json_colors;
+
+    json_indicator["Period1"] = macd->GetPeriod_1();
+    json_indicator["Period2"] = macd->GetPeriod_2();
+    json_indicator["SignalPeriod"] = macd->GetSignalPeriod();
+    
+    return json_indicator;
+}
+
+
+/*********************************************************************************
+*                                Savitzky Golay Filter
+**********************************************************************************/
+
+bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
+{
+    bool is_pressed = false;
+
+    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
+    assert(savitzky_golay_filter);
+
+    /// @begin Text
+    ImGui::SetNextItemWidth(280);
+    ImGui::TextUnformatted(m_indicator->GetName().c_str()); ImGui::SameLine();
+    /// @end Text
+
+    /// @begin Input
+    /// @ period 1
+    ImGui::SetNextItemWidth(70);
+    std::string window_size_str = std::format("{}", savitzky_golay_filter->GetLength());
+    char window_size_input_str[4] = "";
+    std::copy(window_size_str.begin(), window_size_str.end(), window_size_input_str);
+
+    if (ImGui::InputText(std::format("##window_size{}", m_id).c_str(), window_size_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int window_size = std::atoi(window_size_input_str);
+        savitzky_golay_filter->SetLength(window_size);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Window Size");
+    }
+    ImGui::SameLine();
+
+
+    /// @ period 2
+    ImGui::SetNextItemWidth(70);
+    std::string polynomial_order_str = std::format("{}", savitzky_golay_filter->GetPolynomialOrder());
+    char polynomial_order_input_str[4] = "";
+    std::copy(polynomial_order_str.begin(), polynomial_order_str.end(), polynomial_order_input_str);
+
+    if (ImGui::InputText(std::format("##period 2{}", m_id).c_str(), polynomial_order_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int polynomial_order = std::atoi(polynomial_order_input_str);
+        savitzky_golay_filter->SetPolynomialOrder(polynomial_order);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Polynomial Order (Must be odd number)");
+    }
+    ImGui::SameLine();
+
+
+    /// @ Distance
+    ImGui::SetNextItemWidth(70);
+    std::string distance_str = std::format("{}", savitzky_golay_filter->GetDistance());
+    char distance_input_str[4] = "";
+    std::copy(distance_str.begin(), distance_str.end(), distance_input_str);
+
+    if (ImGui::InputText(std::format("##distance{}", m_id).c_str(), distance_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int distance = std::atoi(distance_input_str);
+        savitzky_golay_filter->SetDistance(distance);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Min distance between each peak.");
+    }
+    ImGui::SameLine();
+
+
+    /// @ Width
+    ImGui::SetNextItemWidth(70);
+    std::string width_str = std::format("{}", savitzky_golay_filter->GetWidth());
+    char width_input_str[4] = "";
+    std::copy(width_str.begin(), width_str.end(), width_input_str);
+
+    if (ImGui::InputText(std::format("##width{}", m_id).c_str(), width_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int width = std::atoi(width_input_str);
+        savitzky_golay_filter->SetWidth(width);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Width for finding peaks.");
+    }
+    ImGui::SameLine();
+
+
+    /// @begin Button
+    ImGui::SetNextItemWidth(50);
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
+    {
+        std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
+        new_indicator->SetCounter(m_counter);
+
+        is_pressed = true;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Apply {}", m_indicator->GetName()).c_str());
+    }
+
+    return is_pressed;
+}
+
+bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
+{
+    bool is_pressed = false;
+
+    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
+    assert(savitzky_golay_filter);
+
+
+    /// @begin Text
+    ImGui::Checkbox(std::format("##show/hide{}", m_id).c_str(), &m_show); ImGui::SameLine();
+    ImGui::SetNextItemWidth(250);
+    ImGui::TextUnformatted(m_indicator->GetName().c_str()); ImGui::SameLine();
+    /// @end Text
+
+
+
+    /// @begin Input
+    /// @ period 1
+    ImGui::SetNextItemWidth(70);
+
+    std::string window_size_str = std::format("{}", savitzky_golay_filter->GetLength());
+    char window_size_input_str[4] = "";
+    std::copy(window_size_str.begin(), window_size_str.end(), window_size_input_str);
+
+    if (ImGui::InputText(std::format("##window_size{}", m_id).c_str(), window_size_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int window_size = std::atoi(window_size_input_str);
+        savitzky_golay_filter->SetLength(window_size);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Window Size");
+    }
+    ImGui::SameLine();
+
+
+    /// @ Polynomial order
+    ImGui::SetNextItemWidth(70);
+    std::string polynomial_order_str = std::format("{}", savitzky_golay_filter->GetPolynomialOrder());
+    char polynomial_order_input_str[4] = "";
+    std::copy(polynomial_order_str.begin(), polynomial_order_str.end(), polynomial_order_input_str);
+
+    bool is_polynomial_order_valid = savitzky_golay_filter->GetPolynomialOrder() % 2 != 0 &&
+        savitzky_golay_filter->GetPolynomialOrder() >= 5;
+    if (!is_polynomial_order_valid)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(237, 67, 55, 255));
+    }
+    if (ImGui::InputText(std::format("##polynomial_order{}", m_id).c_str(), polynomial_order_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int polynomial_order = std::atoi(polynomial_order_input_str);
+        savitzky_golay_filter->SetPolynomialOrder(polynomial_order);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Polynomial Order (Must be odd number and greater than or equal to 5)");
+    }
+    if (!is_polynomial_order_valid)
+    {
+        ImGui::PopStyleColor();
+    }
+    ImGui::SameLine();
+
+
+
+    /// @ Distance
+    ImGui::SetNextItemWidth(70);
+    std::string distance_str = std::format("{}", savitzky_golay_filter->GetDistance());
+    char distance_input_str[4] = "";
+    std::copy(distance_str.begin(), distance_str.end(), distance_input_str);
+
+    if (ImGui::InputText(std::format("##distance{}", m_id).c_str(), distance_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int distance = std::atoi(distance_input_str);
+        savitzky_golay_filter->SetDistance(distance);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Min distance between each peak.");
+    }
+    ImGui::SameLine();
+
+
+    /// @ Width
+    ImGui::SetNextItemWidth(70);
+    std::string width_str = std::format("{}", savitzky_golay_filter->GetWidth());
+    char width_input_str[4] = "";
+    std::copy(width_str.begin(), width_str.end(), width_input_str);
+
+    if (ImGui::InputText(std::format("##width{}", m_id).c_str(), width_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
+    {
+        int width = std::atoi(width_input_str);
+        savitzky_golay_filter->SetWidth(width);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Width for finding peaks.");
+    }
+    ImGui::SameLine();
+
+
+    /// @ rel_width
+    ImGui::SetNextItemWidth(70);
+    std::string rel_width_str = std::format("{:.2f}", savitzky_golay_filter->GetRelativeWidth());
+    char rel_width_input_str[10] = "";
+    std::copy(rel_width_str.begin(), rel_width_str.end(), rel_width_input_str);
+
+    if (ImGui::InputText(std::format("##rel_width{}", m_id).c_str(), rel_width_input_str, 10, ImGuiInputTextFlags_CharsDecimal))
+    {
+        double rel_width = std::atof(rel_width_input_str);
+        savitzky_golay_filter->SetRelativeWidth(rel_width);
+
+        Calculate();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("rel_width for finding peaks.");
+    }
+    ImGui::SameLine();
+
+
+    /// @begin Colors
+    ImGui::ColorEdit4(std::format("##savitzky_golay_filter_color{}", m_id).c_str(), &m_colors_list[0].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
+    /// @end Colors
+
+
+    /// @begin Button
+    ImGui::SetNextItemWidth(50);
+    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
+    {
+        is_pressed = true;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(std::format("Apply {}", m_indicator->GetName()).c_str());
+    }
+
+    return is_pressed;
+}
+
+void SavitzkyGolayFilterWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
+{
+    GenericIndicatorWrapper::PlotPostCandle(bull_color, bear_color);
+
+    if (m_points_list.size() < 1) return;
+
+    size_t count = m_points_list[1].size();
+    if (count == 0) return;
+
+    //ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
+
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bear_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[1], count);
+}
+
+void SavitzkyGolayFilterWrapper::FromJson(Json::Value value)
+{
+    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
+    assert(savitzky_golay_filter);
+
+    GenericIndicatorWrapper::FromJson(value);
+    savitzky_golay_filter->SetPolynomialOrder(value["PolynomialOrder"].asUInt());
+    savitzky_golay_filter->SetDistance(value["Distance"].asUInt());
+    savitzky_golay_filter->SetWidth(value["Width"].asUInt());
+}
+
+Json::Value SavitzkyGolayFilterWrapper::ToJson() const
+{
+    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
+    assert(savitzky_golay_filter);
+
+    Json::Value json_indicator = GenericIndicatorWrapper::ToJson();
+    json_indicator["PolynomialOrder"] = savitzky_golay_filter->GetPolynomialOrder();
+    json_indicator["Distance"] = savitzky_golay_filter->GetDistance();
+    json_indicator["Width"] = savitzky_golay_filter->GetWidth();
 
     return json_indicator;
 }
