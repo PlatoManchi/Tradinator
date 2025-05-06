@@ -36,6 +36,7 @@ Security::Security()
 	, m_candle_count(0)
 	, m_database_connection(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath())
 	, m_candle_data(std::make_shared<AsyncData<CandleDataMapType>>())
+	, m_candles_data(std::make_shared<AsyncData<CandlesData>>())
 	, m_news_points_data(std::make_shared<AsyncData<NewsPointMapType>>())
 	, m_is_downloading(false)
 	, m_is_inserting(false)
@@ -300,6 +301,7 @@ void Security::InsertRawDataToDatabase()
 					std::chrono::system_clock::time_point date;
 					is >> std::chrono::parse("%F", date);
 
+					// Only process new data
 					if (date > tmp_latest_candle_date)
 					{
 						if (date > m_cached_latest_candle_date)
@@ -375,6 +377,7 @@ void Security::LoadCandleDataToMemory()
 	if (!DoesProcessedHistoricalDataExist())
 	{
 		m_candle_data->SetDataReady(true);
+		m_candles_data->SetDataReady(true);
 		return;
 	}
 
@@ -387,8 +390,20 @@ void Security::LoadCandleDataToMemory()
 			{
 				m_candle_data->SetDataReady(false);
 			}
+			if (m_candles_data->IsDataReady())
+			{
+				m_candles_data->SetDataReady(false);
+			}
 
-			std::string query_str = std::format("SELECT * FROM \"{}\"", GetTableName());
+			m_candles_data->GetAsyncDataCopy().m_dates.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_opens.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_highs.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_lows.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_closes.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_volumes.reserve(m_candle_count);
+			m_candles_data->GetAsyncDataCopy().m_open_interests.reserve(m_candle_count);
+
+			std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date ASC", GetTableName());
 			SQLite::Statement query(m_database_connection, query_str);
 			
 			while (query.executeStep())
@@ -408,9 +423,19 @@ void Security::LoadCandleDataToMemory()
 				candle_data.m_open_interest = query.getColumn(6).getInt64();
 
 				m_candle_data->GetAsyncDataCopy()[date] = candle_data;
+
+				m_candles_data->GetAsyncDataCopy().m_dates.push_back(date);
+				m_candles_data->GetAsyncDataCopy().m_opens.push_back(query.getColumn(1));
+				m_candles_data->GetAsyncDataCopy().m_highs.push_back(query.getColumn(2));
+				m_candles_data->GetAsyncDataCopy().m_lows.push_back(query.getColumn(3));
+				m_candles_data->GetAsyncDataCopy().m_closes.push_back(query.getColumn(4));
+				m_candles_data->GetAsyncDataCopy().m_volumes.push_back(query.getColumn(5).getInt64());
+				m_candles_data->GetAsyncDataCopy().m_open_interests.push_back(query.getColumn(6).getInt64());
 			}
 
 			m_candle_data->SetDataReady(true);
+			m_candles_data->SetDataReady(true);
+
 			m_is_memory_in_sync = true;
 			is_success = true;
 		}
@@ -455,6 +480,7 @@ void Security::UnloadCandleDataFromMemory()
 	{
 		m_is_memory_in_sync = false;
 		m_candle_data->Reset();
+		m_candles_data->Reset();
 	}
 }
 

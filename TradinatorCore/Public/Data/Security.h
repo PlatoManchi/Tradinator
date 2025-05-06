@@ -127,6 +127,8 @@ protected:
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncData<CandleDataMapType>> m_candle_data;
 
+	std::shared_ptr<AsyncData<CandlesData>> m_candles_data;
+
 	// News points sorted from latest to oldest
 	std::shared_ptr<AsyncData<NewsPointMapType>> m_news_points_data;
 
