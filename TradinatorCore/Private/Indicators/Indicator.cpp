@@ -1,20 +1,45 @@
 #include "Indicators/Indicator.h"
 
 Indicator::Indicator()
-	: m_length(0)
+	: m_source(EIndicatorSource::E_CLOSE)
+	, m_length(0)
+{
+
+}
+
+Indicator::Indicator(EIndicatorSource source)
+	: m_source(source)
+	, m_length(0)
 {
 
 }
 
 Indicator::Indicator(size_t length)
-	: m_length(length)
+	: m_source(EIndicatorSource::E_CLOSE)
+	, m_length(length)
 {
 
 }
 
-
-Indicator::Indicator(std::weak_ptr<Security> security, size_t length)
-	: Indicator(length)
+Indicator::Indicator(EIndicatorSource source, size_t length)
+	: m_source(source)
+	, m_length(length)
 {
-	m_security = security;
+
+}
+
+Indicator::Indicator(size_t length, std::weak_ptr<Security> security)
+	: m_source(EIndicatorSource::E_CLOSE)
+	, m_length(length)
+	, m_security(security)
+{
+	
+}
+
+Indicator::Indicator(EIndicatorSource source, size_t length, std::weak_ptr<Security> security)
+	: m_source(source)
+	, m_length(length)
+	, m_security(security)
+{
+
 }

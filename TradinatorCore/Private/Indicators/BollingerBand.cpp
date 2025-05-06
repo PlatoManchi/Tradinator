@@ -14,14 +14,14 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
+std::vector<std::vector<double>> BollingerBand::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	result.reserve(3);
 
-	std::vector<IndicatorPoint> top;
-	std::vector<IndicatorPoint> sma;
-	std::vector<IndicatorPoint> bottom;
+	std::vector<double> top;
+	std::vector<double> sma;
+	std::vector<double> bottom;
 
 	if (m_length == 0 || m_standard_deviation_multiplier == 0.0)
 	{
@@ -37,18 +37,18 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
-
-		// Wait till candle data is ready
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		size_t count = data.m_dates.size();
+
 		if (count == 0)
 		{
 			result.emplace_back(std::move(top));
@@ -58,87 +58,46 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 			return result;
 		}
 
-		top.reserve(count);
-		bottom.reserve(count);
+		top = std::vector<double>(count);
+		sma = std::vector<double>(count);
+		bottom = std::vector<double>(count);
 
 #ifdef _BOLLINGER_BAND_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output_top(count);
-		std::vector<double> ispc_output_sma(count);
-		std::vector<double> ispc_output_bottom(count);
-
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_bollinger_band(data.m_closes.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
 		}
-
-		ispc::calculate_bollinger_band(ispc_input.data(), ispc_output_top.data(), ispc_output_sma.data(), ispc_output_bottom.data(), count, m_length, m_standard_deviation_multiplier);
-
-		auto itr = candle_data->GetData().begin();
-		size_t index = 0;
-		for (auto& pair : data)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint top_point;
-			top_point.date = pair.first;
-			top_point.value = ispc_output_top[index];
-			top.emplace_back(std::move(top_point));
-
-			IndicatorPoint sma_point;
-			sma_point.date = pair.first;
-			sma_point.value = ispc_output_sma[index];
-			sma.emplace_back(std::move(sma_point));
-
-			IndicatorPoint bottom_point;
-			bottom_point.date = pair.first;
-			bottom_point.value = ispc_output_bottom[index];
-			bottom.emplace_back(std::move(bottom_point));
-
-			++index;
+			ispc::calculate_bollinger_band(data.m_highs.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_bollinger_band(data.m_opens.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_bollinger_band(data.m_lows.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
 		}
 #else
 		// standard deviation calculation
 		// https://en.wikipedia.org/wiki/Standard_deviation
 
-		// Get the sma
-		SMA sma_indicator(m_security, m_length);
-		sma = std::move(sma_indicator.Calculate()[0]);
-
-		auto itr = candle_data->GetData().begin();
-		for (size_t i = 0; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_size = i + m_length < count ? m_length : count - i;
-			auto tmp_itr = itr;
-
-			double cumulative_deviation_squared = 0;
-			double mean = sma[i].value;
-
-			for (size_t j = 0; j < window_size; ++j)
-			{
-				double deviation = (*tmp_itr).second.m_close - mean;
-				cumulative_deviation_squared += (deviation * deviation);
-
-				std::advance(tmp_itr, 1);
-			}
-
-			double variance = cumulative_deviation_squared / window_size;
-			double standard_deviation = sqrt(variance);
-
-			IndicatorPoint top_point;
-			top_point.date = (*itr).first;
-			top_point.value = mean + m_standard_deviation_multiplier * standard_deviation;
-
-			top.emplace_back(std::move(top_point));
-
-			IndicatorPoint bottom_point;
-			bottom_point.date = (*itr).first;
-			bottom_point.value = mean - m_standard_deviation_multiplier * standard_deviation;
-
-			bottom.emplace_back(std::move(bottom_point));
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
+		}
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), top.data(), sma.data(), bottom.data(), m_length, m_standard_deviation_multiplier, count);
 		}
 #endif
 
@@ -148,4 +107,35 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 	}
 
 	return result;
+}
+
+
+void BollingerBand::CalculateRaw(const double* input, double* top, double* sma, double* bottom, size_t window_size, double standard_deviation_multiplier, size_t data_size)
+{
+	SMA sma_indicator;
+	sma_indicator.CalculateRaw(input, sma, window_size, standard_deviation_multiplier);
+
+	top[0] = input[0];
+	sma[0] = input[0];
+	bottom[0] = input[0];
+
+	for (size_t i = 1; i < data_size; ++i)
+	{
+		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+
+		double mean = sma[i];
+		double cumulative_deviation_squared = 0;
+
+		for (size_t j = start; j <= i; ++j)
+		{
+			double deviation = input[j] - mean;
+			cumulative_deviation_squared += (deviation * deviation);
+		}
+
+		double variance = cumulative_deviation_squared / (i - start);
+		double standard_deviation = sqrt(variance);
+
+		top[i] = mean + standard_deviation_multiplier * standard_deviation;
+		bottom[i] = mean - standard_deviation_multiplier * standard_deviation;
+	}
 }

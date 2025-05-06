@@ -12,74 +12,64 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> ROC::Calculate()
+std::vector<std::vector<double>> ROC::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		size_t count = data.m_dates.size();
+
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> roc;
-		roc.reserve(count);
+		std::vector<double> roc(count);
 
 #ifdef _ROC_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_roc(data.m_closes.data(), roc.data(), m_length, count);
 		}
-
-		ispc::calculate_roc(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			roc.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			ispc::calculate_roc(data.m_highs.data(), roc.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_roc(data.m_opens.data(), roc.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_roc(data.m_lows.data(), roc.data(), m_length, count);
 		}
 #else
-		auto itr = candle_data->GetData().begin();
-		auto end_itr = candle_data->GetData().end();
-		for (size_t i = 0 ; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_count = i + m_length < count ? m_length : count - i;
-
-			double current = (*itr).second.m_close;
-			auto tmp_itr = std::next(itr, window_count);
-			double compare_with = tmp_itr != end_itr ? (*tmp_itr).second.m_close : current;
-
-			double roc_value = ((current - compare_with) / compare_with) * 100.0;
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = roc_value;
-
-			roc.emplace_back(point);
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), roc.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), roc.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), roc.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), roc.data(), m_length, count);
 		}
 #endif // _ROC_ISPC_
 
@@ -87,4 +77,24 @@ std::vector<std::vector<IndicatorPoint>> ROC::Calculate()
 	}
 
 	return result;
+}
+
+
+void ROC::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+{
+	for (size_t i = 0; i < data_size; ++i)
+	{
+		size_t compare_with_index = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+
+		double current = input[i];
+		double compare_with = input[compare_with_index];
+		if (compare_with != 0)
+		{
+			output[i] = ((current - compare_with) / compare_with) * 100.0;
+		}
+		else
+		{
+			output[i] = 0.0;
+		}
+	}
 }

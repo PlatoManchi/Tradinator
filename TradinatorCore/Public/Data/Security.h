@@ -62,6 +62,7 @@ public:
 	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncData<CandleDataMapType>> GetCandleData() const { return m_candle_data; }
+	inline std::shared_ptr<const AsyncData<CandlesData>> GetCandlesData() const { return m_candles_data; }
 	inline std::shared_ptr<const AsyncData<NewsPointMapType>> GetNewsPointsData() const { return m_news_points_data; }
 
 	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }

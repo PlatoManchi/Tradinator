@@ -12,85 +12,64 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
+std::vector<std::vector<double>> EMA::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		size_t count = data.m_dates.size();
+
 		if (count == 0) return result;
-		
-		std::vector<IndicatorPoint> ema;
+
+		std::vector<double> ema(count);
 
 #ifdef _EMA_ISPC_
-		ema.reserve(count);
-
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		// ISPC doesn't like reading from back to front. So reverse the array here and unreverse the output
-		auto itr = candle_data->GetData().end();
-		for (size_t i = 0; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			itr = std::prev(itr, 1);
-			ispc_input.emplace_back((*itr).second.m_close);
+			ispc::calculate_ema(data.m_closes.data(), ema.data(), m_length, count);
 		}
-		
-		ispc::calculate_ema(ispc_input.data(), ispc_output.data(), count, m_length);
-		
-		itr = candle_data->GetData().end();
-		for (double sma : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			itr = std::prev(itr, 1);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			ema.emplace_back(std::move(point));
+			ispc::calculate_ema(data.m_highs.data(), ema.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_ema(data.m_opens.data(), ema.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_ema(data.m_lows.data(), ema.data(), m_length, count);
 		}
 #else
-		ema = std::move(std::vector<IndicatorPoint>(count));
-
-		auto itr = candle_data->GetData().end();
-
-		itr = std::prev(itr, 1);
-
-		// 0th element is same value as closing
-		IndicatorPoint first_point;
-		first_point.date = (*itr).first;
-		first_point.value = (*itr).second.m_close;
-
-		ema[count - 1] = first_point;
-
-		const double factor = 2.0 / (m_length + 1.0);
-
-		itr = std::prev(itr, 1);
-
-		for (int64_t i = count - 2; i >= 0; --i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = (*itr).second.m_close * factor + ema[i + 1].value * (1.0 - factor);
-
-			ema[i] = point;
-
-			itr = std::prev(itr, 1);
+			CalculateRaw(data.m_closes.data(), ema.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), ema.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), ema.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), ema.data(), m_length, count);
 		}
 #endif // _EMA_ISPC_
 		
@@ -100,13 +79,16 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 	return result;
 }
 
-void EMA::CalculateRaw(double* input, double* output, int64_t data_size, int64_t window_size)
+void EMA::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
 {
-	output[data_size - 1] = input[data_size - 1];
+	double factor = 2.0 / ((double)window_size + 1.0);
+	double prev_ema = input[0];
+	output[0] = prev_ema;
 
 	const double factor = 2.0 / (window_size + 1.0);
-	for (int64_t i = data_size - 2; i >= 0; --i)
+	for (int64_t i = 1; i < data_size; ++i)
 	{
-		output[i] = input[i] * factor + output[i + 1] * (1.0 - factor);
+		prev_ema = input[i] * factor + (1.0 - factor) * prev_ema;
+		output[i] = prev_ema;
 	}
 }

@@ -12,102 +12,94 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> RSI::Calculate()
+std::vector<std::vector<double>> RSI::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		size_t count = data.m_dates.size();
+
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> rsi;
-		rsi.reserve(count);
+		std::vector<double> rsi(count);
 
 
 #ifdef _RSI_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_rsi(data.m_closes.data(), rsi.data(), m_length, count);
 		}
-
-		ispc::calculate_rsi(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			rsi.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			ispc::calculate_rsi(data.m_highs.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_rsi(data.m_opens.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_rsi(data.m_lows.data(), rsi.data(), m_length, count);
 		}
 #else
-		auto itr = candle_data->GetData().begin();
-		auto end_itr = candle_data->GetData().end();
-
-		for (size_t i = 0; i < count-1; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_size = i + m_length < count - 1 ? m_length : count - i - 1;
-			auto tmp_itr = itr;
-			
-			double cumulative_gain = 0;
-			double cumulative_loss = 0;
-
-			for (size_t j = 0; j < window_size; ++j)
-			{
-				double current = (*tmp_itr).second.m_close;
-
-				std::advance(tmp_itr, 1);
-				
-				double prev = (*tmp_itr).second.m_close;
-
-				double diff = current - prev;
-				if (diff > 0)
-					cumulative_gain += diff;
-				else if (diff < 0)
-					cumulative_loss += diff;
-			}
-			double relative_strength = cumulative_gain / fabs(cumulative_loss);
-			double relative_strength_index = 100.0 - 100.0 / (1 + relative_strength);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = relative_strength_index;
-
-			rsi.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), rsi.data(), m_length, count);
 		}
-
-		IndicatorPoint point;
-		point.date = (*itr).first;
-		point.value = 0;
-
-		rsi.emplace_back(std::move(point));
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), rsi.data(), m_length, count);
+		}
 #endif // _RSI_ISPC_
 
 		result.emplace_back(std::move(rsi));
 	}
 
 	return result;
+}
+
+void RSI::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+{
+	output[0] = 0;
+
+	for (size_t i = 1; i < data_size; ++i)
+	{
+		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+
+		double cumulative_gain = 0;
+		double cumulative_loss = 0;
+
+		for (size_t j = start; j <= i; ++j)
+		{
+			double diff = input[j] - input[j - 1];
+
+			cumulative_gain += (diff > 0.0 ? diff : 0.0);
+			cumulative_loss += (diff < 0.0 ? diff : 0.0);
+		}
+
+		double relative_strength = cumulative_gain / abs(cumulative_loss);
+		output[i] = 100.0 - 100.0 / (1 + relative_strength);
+	}
 }

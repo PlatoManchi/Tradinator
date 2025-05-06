@@ -16,76 +16,66 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
+std::vector<std::vector<double>> SMA::Calculate()
 {
 	
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		size_t count = data.m_dates.size();
+
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> sma;
-		sma.reserve(count);
-
+		std::vector<double> sma(count);
+		
+		
 #ifdef _SMA_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_sma(data.m_closes.data(), sma.data(), m_length, count);
 		}
-		
-		ispc::calculate_sma(ispc_input.data(), ispc_output.data(), count, m_length);
-		
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma_value : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma_value;
-
-			sma.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			ispc::calculate_sma(data.m_highs.data(), sma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_sma(data.m_opens.data(), sma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_sma(data.m_lows.data(), sma.data(), m_length, count);
 		}
 #else
-		auto itr = candle_data->GetData().begin();
-		for (size_t i = 0; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_size = i + m_length < count ? m_length : count - i;
-			auto tmp_itr = itr;
-			double cumulative_closing_price = 0;
-			for (size_t j = 0; j < window_size; ++j)
-			{
-				cumulative_closing_price += (*tmp_itr).second.m_close;
-				std::advance(tmp_itr, 1);
-			}
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = cumulative_closing_price / window_size;
-
-			sma.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), sma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), sma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), sma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), sma.data(), m_length, count);
 		}
 #endif // _SMA_ISPC_
 
@@ -96,23 +86,19 @@ std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 }
 
 
-void SMA::CalculateRaw(double* input, double* output, int64_t data_size, int64_t window_size)
+void SMA::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
 {
-#ifdef _SMA_ISPC_
-	ispc::calculate_sma(input, output, data_size, window_size);
-#else
-	for (size_t i = 0; i < data_size; ++i)
+	output[0] = input[0];
+	for (size_t i = 1; i < data_size; ++i)
 	{
-		size_t essential_window_size = i + window_size < data_size ? window_size : data_size - i;
+		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
-		double cumulative_closing_price = 0;
-		for (size_t j = 0; j < essential_window_size; ++j)
+		double sum = 0.0f;
+		for (size_t j = start; j <= i; ++j)
 		{
-			size_t index = i + j;
-			cumulative_closing_price += input[index];
+			sum += input[j];
 		}
 
-		output[i] = cumulative_closing_price / essential_window_size;
+		output[i] = sum / (i - start);
 	}
-#endif //_SMA_ISPC_
 }

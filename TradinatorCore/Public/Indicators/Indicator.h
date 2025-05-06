@@ -21,7 +21,16 @@ struct IndicatorPoint
 	IndicatorPoint& operator = (IndicatorPoint&& other) noexcept = default;
 };
 
-enum EIndicatorType {
+enum class EIndicatorSource
+{
+	E_HIGH,
+	E_OPEN,
+	E_LOW,
+	E_CLOSE	
+};
+
+enum class EIndicatorType 
+{
 	MIN,
 
 	E_SMA,
@@ -43,10 +52,13 @@ class Indicator
 {
 public:
 	Indicator();
+	Indicator(EIndicatorSource source);
 	Indicator(size_t length);
-	Indicator(std::weak_ptr<Security> security, size_t length);
+	Indicator(EIndicatorSource source, size_t length);
+	Indicator(size_t length, std::weak_ptr<Security> security);
+	Indicator(EIndicatorSource source, size_t length, std::weak_ptr<Security> security);
 
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() = 0;
+	virtual std::vector<std::vector<double>> Calculate() = 0;
 	virtual std::string GetName() const = 0;
 	virtual EIndicatorType IndicatorType() const = 0;
 	virtual std::unique_ptr<Indicator> Clone() = 0;
@@ -59,7 +71,8 @@ public:
 	size_t& GetLength() { return m_length; }
 
 protected:
-	std::weak_ptr<Security> m_security;
+	EIndicatorSource m_source;
 	size_t m_length;
+	std::weak_ptr<Security> m_security;
 };
 
