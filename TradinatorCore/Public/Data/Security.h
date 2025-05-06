@@ -34,16 +34,16 @@ size_t - number of candles
 
 */
 
-class Counter : public Company, public std::enable_shared_from_this<Counter>
+class Security : public Company, public std::enable_shared_from_this<Security>
 {
 public:
-	Counter();
+	Security();
 
 	// copy and move sementics
-	Counter(const Counter& other) = default;
-	Counter(Counter&& other) noexcept = default;
-	Counter& operator = (const Counter& other) = default;
-	Counter& operator = (Counter&& other) noexcept = default;
+	Security(const Security& other) = default;
+	Security(Security&& other) noexcept = default;
+	Security& operator = (const Security& other) = default;
+	Security& operator = (Security&& other) noexcept = default;
 
 	bool IsHistoricalCandleDataOutDated() const;
 	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask();
@@ -108,7 +108,7 @@ protected:
 	// Raw json from reading the downloaded data
 	Json::Value m_raw_downloaded_data;
 
-	// market this counter belongs to
+	// market this security belongs to
 	std::weak_ptr<Market> m_owning_market;
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
@@ -137,7 +137,7 @@ protected:
 	// Check to make sure there are no double update tasks.
 	// we want to be able to acecss previous historical data that is stored locally while
 	// new data is being downloaded in parallel. 
-	std::mutex m_counter_mutex;
+	std::mutex m_security_mutex;
 	bool m_is_downloading = false;
 	bool m_is_inserting = false;
 };

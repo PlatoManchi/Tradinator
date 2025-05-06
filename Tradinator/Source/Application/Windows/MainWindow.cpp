@@ -8,7 +8,7 @@
 
 #include "TradinatorCore.h"
 #include "Data/AsyncData.h"
-#include "Data/Counter.h"
+#include "Data/Security.h"
 
 #include "Utils.h"
 #include "Application/TradinatorApp.h"
@@ -61,9 +61,9 @@ bool MainWindow::Show()
 
         ImGui::SetNextWindowPos(work_pos);
         ImGui::SetNextWindowSize(ImVec2(work_size.x, search_bar_height));
-        if (std::shared_ptr<Counter> counter = m_securities_search_bar.Show())
+        if (std::shared_ptr<Security> security = m_securities_search_bar.Show())
         {
-            m_tradinator_app.ShowCounterWindow(counter);
+            m_tradinator_app.ShowSecurityWindow(security);
         }
 
         ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + search_bar_height));

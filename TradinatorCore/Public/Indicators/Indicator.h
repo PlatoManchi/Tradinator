@@ -5,7 +5,7 @@
 #include <vector>
 
 
-class Counter;
+class Security;
 
 struct IndicatorPoint
 {
@@ -44,22 +44,22 @@ class Indicator
 public:
 	Indicator();
 	Indicator(size_t length);
-	Indicator(std::weak_ptr<Counter> counter, size_t length);
+	Indicator(std::weak_ptr<Security> security, size_t length);
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() = 0;
 	virtual std::string GetName() const = 0;
 	virtual EIndicatorType IndicatorType() const = 0;
 	virtual std::unique_ptr<Indicator> Clone() = 0;
 
-	// If true: only one instance of this indicator can be applied to a counter
+	// If true: only one instance of this indicator can be applied to a security
 	virtual bool IsSingleInstanceType() const { return false; }
 	
-	void SetCounter(std::weak_ptr<Counter> counter) { m_counter = counter; }
+	void SetSecurity(std::weak_ptr<Security> security) { m_security = security; }
 	void SetLength(size_t length) { m_length = length; }
 	size_t& GetLength() { return m_length; }
 
 protected:
-	std::weak_ptr<Counter> m_counter;
+	std::weak_ptr<Security> m_security;
 	size_t m_length;
 };
 

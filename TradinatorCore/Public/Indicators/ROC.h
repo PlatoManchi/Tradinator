@@ -14,7 +14,7 @@ public:
 	ROC() : Indicator() {}
 
 	ROC(size_t length) : Indicator(length) {}
-	ROC(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
+	ROC(std::weak_ptr<Security> security, size_t length) : Indicator(security, length) {}
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 

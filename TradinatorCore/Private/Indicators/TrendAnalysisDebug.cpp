@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 
 #include "Utils/StopWatch.h"
@@ -78,11 +78,11 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 		return result;
 	}
 	
-	std::shared_ptr<Counter> counter = m_counter.lock();
+	std::shared_ptr<Security> security = m_security.lock();
 
-	if (counter)
+	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
+		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
 		bool is_ready = candle_data->IsDataReady();
 		while (!is_ready)
 		{

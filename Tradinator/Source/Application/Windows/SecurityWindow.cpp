@@ -1,4 +1,4 @@
-#include "CounterWindow.h"
+#include "SecurityWindow.h"
 
 #include <float.h>
 #include <iostream>
@@ -7,7 +7,7 @@
 
 #include  "json/json.h"
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Indicators/BollingerBand.h"
 
 #include "Utils.h"
@@ -23,8 +23,8 @@ ImPlotPoint indicator_plot_point_getter2(int idx, void* data) {
     return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(point.date.time_since_epoch()).count(), point.value);
 }
 
-CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
-	: m_counter(counter)
+SecurityWindow::SecurityWindow(std::shared_ptr<Security> security)
+	: m_security(security)
     , m_close(false)
     , m_maximize(false)
     , m_is_dirty(true)
@@ -43,7 +43,7 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
     , m_bull_color(0.031f, 0.600f, 0.505f, 1.000f)
     , m_bear_color(0.949f, 0.211f, 0.270f, 1.000f)
 {
-	m_cached_label_id = m_counter->Name() + "##" +m_counter->ISIN_Number();
+	m_cached_label_id = m_security->Name() + "##" +m_security->ISIN_Number();
 
     std::vector<std::unique_ptr<Indicator>> indicators = TradinatorCoreSpace::Utils::GetAvailableIndicators();
     for (std::unique_ptr<Indicator>& indicator : indicators)
@@ -51,30 +51,30 @@ CounterWindow::CounterWindow(std::shared_ptr<Counter> counter)
         m_available_indicator_wrappers.push_back(TradinatorAppSpace::Utils::GetIndicatorWrapper(std::move(indicator)));
     }
 
-    m_counter->SetLockInMemory(true);
-    m_counter->LoadCandleDataToMemoryAsync();
+    m_security->SetLockInMemory(true);
+    m_security->LoadCandleDataToMemoryAsync();
 }
 
-CounterWindow::~CounterWindow()
+SecurityWindow::~SecurityWindow()
 {
-    m_counter->SetLockInMemory(false);
-    m_counter->UnloadCandleDataFromMemory();
+    m_security->SetLockInMemory(false);
+    m_security->UnloadCandleDataFromMemory();
 }
 
-void CounterWindow::Show()
+void SecurityWindow::Show()
 {
     if (ImGui::Begin(m_cached_label_id.c_str(), nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse))
     {
         ShowTitle();
 
-        const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_counter->GetCandleData();
+        const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_security->GetCandleData();
 
 
         if (candle_data->IsDataReady())
         {
-            if (!m_counter->IsMemoryInSync())
+            if (!m_security->IsMemoryInSync())
             {
-                m_counter->LoadCandleDataToMemoryAsync();
+                m_security->LoadCandleDataToMemoryAsync();
             }
 
             if (m_is_dirty)
@@ -96,12 +96,12 @@ void CounterWindow::Show()
             ImGui::SetCursorPos(ImVec2(avail.x / 2.0f - label_size.x / 2.0f, avail.y / 2.0f - label_size.y / 2.0f));
 
             ImGui::Text(label.c_str()); ImGui::SameLine();
-            ImSpinner::SpinnerScaleDots(m_counter->ISIN_Number().c_str(), 15, 5);
+            ImSpinner::SpinnerScaleDots(m_security->ISIN_Number().c_str(), 15, 5);
         }
         else if (candle_data->GetData().size() == 0)
         {
             ImGuiStyle& style = ImGui::GetStyle();
-            std::string label = "No candle data available for this counter.";
+            std::string label = "No candle data available for this security.";
             ImVec2 label_size = ImGui::CalcTextSize(label.c_str());
             ImVec2 avail = ImGui::GetContentRegionAvail();
 
@@ -200,7 +200,7 @@ void CounterWindow::Show()
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
             
-            if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
+            if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
                 if (!m_is_first_time_limit_set)
                 {
@@ -257,7 +257,7 @@ void CounterWindow::Show()
                     ImPlot::PopPlotClipRect();
                 }
 
-                PlotCandlestick(m_counter->Name().c_str(), 
+                PlotCandlestick(m_security->Name().c_str(), 
                     m_dates.data(), 
                     m_opens.data(), 
                     m_closes.data(), 
@@ -301,7 +301,7 @@ void CounterWindow::Show()
                 ImVec2 plot_padding(largest_label_width - volume_label_width + 5.0f, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
-            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_counter->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
                 //seperate_charts_count
                 ImPlotAxisFlags x_axis_flags = ImPlotAxisFlags_NoGridLines;
@@ -430,7 +430,7 @@ void CounterWindow::Show()
     ImGui::End();
 }
 
-void CounterWindow::ShowIndicatorsList()
+void SecurityWindow::ShowIndicatorsList()
 {
     float indicator_height = 55.0f;
     float indicator_width = 600.0f;
@@ -518,7 +518,7 @@ void CounterWindow::ShowIndicatorsList()
                 if (m_available_indicator_wrappers[i]->DrawAsAvailableIndicator())
                 {
                     std::unique_ptr<IIndicatorWrapper> clone_wrapper = m_available_indicator_wrappers[i]->Clone();
-                    clone_wrapper->SetCounter(m_counter);
+                    clone_wrapper->SetSecurity(m_security);
                     clone_wrapper->Calculate();
 
                     m_applied_indicator_wrappers.push_back(std::move(clone_wrapper));
@@ -537,7 +537,7 @@ void CounterWindow::ShowIndicatorsList()
     /// @end Child
 }
 
-bool CounterWindow::CanApplyIndicatorOfType(EIndicatorType type)
+bool SecurityWindow::CanApplyIndicatorOfType(EIndicatorType type)
 {
     auto applied_itr = std::find_if(m_applied_indicator_wrappers.begin(), m_applied_indicator_wrappers.end(),
         [type](const std::unique_ptr<IIndicatorWrapper>& other) -> bool
@@ -556,14 +556,14 @@ bool CounterWindow::CanApplyIndicatorOfType(EIndicatorType type)
     return true;
 }
 
-void CounterWindow::ShowTitle()
+void SecurityWindow::ShowTitle()
 {
     ImVec2 title_size = ImGui::CalcTextSize(m_cached_label_id.c_str());
     ImVec2 close_text_size = ImGui::CalcTextSize(" X ");
 
     ImGuiID id = ImGui::GetID(m_cached_label_id.c_str());
     float top = ImGui::GetCursorPosY();
-    ImGui::Text(m_counter->Name().c_str());
+    ImGui::Text(m_security->Name().c_str());
 
 
 
@@ -600,9 +600,9 @@ void CounterWindow::ShowTitle()
 
 
 
-void CounterWindow::RebuildCachedPlotPoints()
+void SecurityWindow::RebuildCachedPlotPoints()
 {
-    const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_counter->GetCandleData();
+    const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_security->GetCandleData();
     size_t count = candle_data->GetData().size();
 
     // don't care about previous data stored in cache
@@ -671,7 +671,7 @@ void CounterWindow::RebuildCachedPlotPoints()
     }
 }
 
-void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
+void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
 
     // get ImGui window DrawList
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
@@ -774,15 +774,15 @@ void CounterWindow::PlotCandlestick(const char* label_id, const size_t* xs, cons
     
 }
 
-void CounterWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
+void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
 {
     m_tooltip_override = false;
 
-    if (m_counter->GetNewsPointsData()->IsDataReady() && m_counter->GetCandleData()->IsDataReady())
+    if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandleData()->IsDataReady())
     {
         if (ImPlot::BeginItem("Patterns")) {
-            const CandleDataMapType& candle_data = m_counter->GetCandleData()->GetData();
-            const NewsPointMapType& news_points = m_counter->GetNewsPointsData()->GetData();
+            const CandleDataMapType& candle_data = m_security->GetCandleData()->GetData();
+            const NewsPointMapType& news_points = m_security->GetNewsPointsData()->GetData();
 
             ImDrawList* draw_list = ImPlot::GetPlotDrawList();
 
@@ -897,7 +897,7 @@ void CounterWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRe
 }
 
 //template <typename T>
-int CounterWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
+int SecurityWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
     if (r >= l) {
         int mid = l + (r - l) / 2;
         if (arr[mid] == x)
@@ -913,12 +913,12 @@ int CounterWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
 
 
 
-Json::Value CounterWindow::GetCounterStatus()
+Json::Value SecurityWindow::GetSecurityStatus()
 {
     Json::Value result;
 
-    result["Symbol"] = m_counter->Symbol();
-    result["ISIN"] = m_counter->ISIN_Number();
+    result["Symbol"] = m_security->Symbol();
+    result["ISIN"] = m_security->ISIN_Number();
     result["Range"]["Min"] = m_price_chart_limits.X.Min;
     result["Range"]["Max"] = m_price_chart_limits.X.Max;
     result["ShowToolTip"] = m_show_tool_tip;
@@ -946,7 +946,7 @@ Json::Value CounterWindow::GetCounterStatus()
     return result;
 }
 
-void CounterWindow::SetCounterStatus(Json::Value status)
+void SecurityWindow::SetSecurityStatus(Json::Value status)
 {
     m_first_time_chart_limit_x_min = status["Range"]["Min"].asFloat();
     m_first_time_chart_limit_x_max = status["Range"]["Max"].asFloat();
@@ -974,7 +974,7 @@ void CounterWindow::SetCounterStatus(Json::Value status)
         if (wrapper)
         {
             wrapper->FromJson(applied_indicators[i]);
-            wrapper->SetCounter(m_counter);
+            wrapper->SetSecurity(m_security);
 
             m_applied_indicator_wrappers.push_back(std::move(wrapper));
         }

@@ -25,7 +25,7 @@ public:
 		m_signal_period = signal_period;
 	}
 
-	MACD(std::weak_ptr<Counter> counter, size_t period_1, size_t period_2, size_t signal_period) : Indicator(counter, 0)
+	MACD(std::weak_ptr<Security> security, size_t period_1, size_t period_2, size_t signal_period) : Indicator(security, 0)
 	{
 		m_period_1 = period_1;
 		m_period_2 = period_2;

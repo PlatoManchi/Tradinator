@@ -21,7 +21,7 @@ public:
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
-	BollingerBand(std::weak_ptr<Counter> counter, size_t length, double standard_deviation_multiplier) : Indicator(counter, length)
+	BollingerBand(std::weak_ptr<Security> security, size_t length, double standard_deviation_multiplier) : Indicator(security, length)
 	{
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}

@@ -10,7 +10,7 @@
 #include "Patterns/Pattern.h"
 
 class Indicator;
-class Counter;
+class Security;
 class IIndicatorWrapper;
 
 
@@ -35,7 +35,7 @@ namespace TradinatorAppSpace
 		static EIndicatorType GetIndicatorType(std::string type_str);
 		static std::unique_ptr<Indicator> GetIndicator(EIndicatorType type);
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(EIndicatorType type);
-		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter = nullptr);
+		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security = nullptr);
 
 		static EPatternNatureType GetPatternNatureType(EPatternType pattern);
 		

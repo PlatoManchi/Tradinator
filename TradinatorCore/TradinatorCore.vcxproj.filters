@@ -78,7 +78,7 @@
     <ClInclude Include="Public\Data\Candle.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Data\Counter.h">
+    <ClInclude Include="Public\Data\Security.h">
       <Filter>Public\Data</Filter>
     </ClInclude>
     <ClInclude Include="Public\Data\AsyncData.h">
@@ -158,7 +158,7 @@
     <ClCompile Include="Private\Utils\AsyncTaskManager.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Data\Counter.cpp">
+    <ClCompile Include="Private\Data\Security.cpp">
       <Filter>Private\Data</Filter>
     </ClCompile>
     <ClCompile Include="Private\Utils\AsyncTask.cpp">

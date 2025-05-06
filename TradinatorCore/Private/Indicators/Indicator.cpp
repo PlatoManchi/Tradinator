@@ -13,8 +13,8 @@ Indicator::Indicator(size_t length)
 }
 
 
-Indicator::Indicator(std::weak_ptr<Counter> counter, size_t length)
+Indicator::Indicator(std::weak_ptr<Security> security, size_t length)
 	: Indicator(length)
 {
-	m_counter = counter;
+	m_security = security;
 }

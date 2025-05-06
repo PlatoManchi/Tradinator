@@ -12,7 +12,7 @@ class RSI : public Indicator
 public:
 	RSI() : Indicator() {}
 	RSI(size_t length) : Indicator(length) {}
-	RSI(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
+	RSI(std::weak_ptr<Security> security, size_t length) : Indicator(security, length) {}
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 

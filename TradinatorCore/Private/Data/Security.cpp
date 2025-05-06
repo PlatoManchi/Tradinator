@@ -1,4 +1,4 @@
-#include "Data/Counter.h"
+#include "Data/Security.h"
 
 #include <iostream>
 #include <format>
@@ -27,7 +27,7 @@ static std::string _DATA_ = "data";
 static std::string _CANDLES_ = "candles";
 
 
-Counter::Counter()
+Security::Security()
 	: Company()
 	, m_series()
 	, m_paid_up_value(0)
@@ -50,7 +50,7 @@ Counter::Counter()
 
 
 
-std::string Counter::GetProcessedHistoricalDataFilePath() const
+std::string Security::GetProcessedHistoricalDataFilePath() const
 {
 	std::shared_ptr<Market> owning_market = m_owning_market.lock();
 	assert(owning_market);
@@ -59,12 +59,12 @@ std::string Counter::GetProcessedHistoricalDataFilePath() const
 	return folder_path + "/" + m_symbol + ".bin";
 }
 
-bool Counter::DoesProcessedHistoricalDataExist() const
+bool Security::DoesProcessedHistoricalDataExist() const
 {
 	return m_database_connection.tableExists(GetTableName());
 }
 
-std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
+std::chrono::system_clock::time_point Security::GetLastCandleDataDate() const
 {
 	if (!m_is_latest_date_dirty)
 		return m_cached_latest_candle_date;
@@ -95,7 +95,7 @@ std::chrono::system_clock::time_point Counter::GetLastCandleDataDate() const
 }
 
 
-bool Counter::IsHistoricalCandleDataOutDated() const
+bool Security::IsHistoricalCandleDataOutDated() const
 {
 	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
 
@@ -112,7 +112,7 @@ bool Counter::IsHistoricalCandleDataOutDated() const
 	return true;
 }
 
-std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask()
+std::unique_ptr<AsyncTask> Security::GetDownloadLatestCandleDataTask()
 {
 	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
 	std::chrono::system_clock::time_point from_tp = GetLastCandleDataDate() + std::chrono::days(1);
@@ -137,12 +137,12 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask()
 		, from);
 
 	
-	// Set the counter to updating state
+	// Set the security to updating state
 	std::unique_ptr<AsyncTask> set_updating_true = std::make_unique<AsyncTask>(
 		std::string(""),
 		[&]()
 		{
-			std::lock_guard<std::mutex> lock(m_counter_mutex);
+			std::lock_guard<std::mutex> lock(m_security_mutex);
 
 			m_is_downloading = true;
 		},
@@ -164,12 +164,12 @@ std::unique_ptr<AsyncTask> Counter::GetDownloadLatestCandleDataTask()
 		owning_tradinator_core_thread->GetAsyncTaskManager(),
 		std::move(tasks),
 		[&]() { 
-			std::lock_guard<std::mutex> lock(m_counter_mutex); 
+			std::lock_guard<std::mutex> lock(m_security_mutex); 
 			m_is_downloading = false; 
 		});
 }
 
-void Counter::ReadFromRawFileToMemory()
+void Security::ReadFromRawFileToMemory()
 {
 	//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -185,7 +185,7 @@ void Counter::ReadFromRawFileToMemory()
 	//std::cout << "Reading from file and creating json took : " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec." << std::endl;
 }
 
-void Counter::InsertRawDataToDatabase()
+void Security::InsertRawDataToDatabase()
 {
 	//std::cout << "Inserting: " << Name() << std::endl;
 
@@ -193,7 +193,7 @@ void Counter::InsertRawDataToDatabase()
 
 	if (m_is_downloading || m_is_inserting) return;
 	{
-		std::lock_guard<std::mutex> lock(m_counter_mutex);
+		std::lock_guard<std::mutex> lock(m_security_mutex);
 		m_is_inserting = true;
 	}
 	
@@ -216,7 +216,7 @@ void Counter::InsertRawDataToDatabase()
 
 				if (!DoesProcessedHistoricalDataExist())
 				{
-					// table that contains daily candle data for this counter
+					// table that contains daily candle data for this security
 
 					/*
 					*	std::chrono::system_clock::time_point m_date;
@@ -307,7 +307,7 @@ void Counter::InsertRawDataToDatabase()
 	//std::cout << "Inserting into db took : " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec." << std::endl;
 
 	{
-		std::lock_guard<std::mutex> lock(m_counter_mutex);
+		std::lock_guard<std::mutex> lock(m_security_mutex);
 		m_is_inserting = false;
 	}
 }
@@ -315,7 +315,7 @@ void Counter::InsertRawDataToDatabase()
 
 
 
-void Counter::LoadCandleDataToMemory()
+void Security::LoadCandleDataToMemory()
 {
 	if (m_is_memory_in_sync)
 	{
@@ -375,12 +375,12 @@ void Counter::LoadCandleDataToMemory()
 	}
 }
 
-void Counter::LoadCandleDataToMemoryAsync()
+void Security::LoadCandleDataToMemoryAsync()
 {
 	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
 	assert(owning_tradinator_core_thread);
 
-	std::function<void()> load_candle_data = std::bind(&Counter::LoadCandleDataToMemory, this);
+	std::function<void()> load_candle_data = std::bind(&Security::LoadCandleDataToMemory, this);
 
 	owning_tradinator_core_thread->GetAsyncTaskManager()->AddTask(std::move(std::make_unique<AsyncTask>(
 		std::format("Loading candle data for {}", m_symbol),
@@ -389,7 +389,7 @@ void Counter::LoadCandleDataToMemoryAsync()
 	)));
 }
 
-void Counter::UnloadCandleDataFromMemory()
+void Security::UnloadCandleDataFromMemory()
 {
 	if (!m_lock_in_memory)
 	{
@@ -399,7 +399,7 @@ void Counter::UnloadCandleDataFromMemory()
 }
 
 
-void Counter::UpdateLatestCandleDataDate()
+void Security::UpdateLatestCandleDataDate()
 {
 	bool is_success = false;
 	while (!is_success)
@@ -438,7 +438,7 @@ void Counter::UpdateLatestCandleDataDate()
 
 
 
-std::unique_ptr<AsyncTask> Counter::GetGenerateNewsPointsTask()
+std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 {
 	std::function<void()> generate_news_points = [&]()
 		{
@@ -504,7 +504,7 @@ std::unique_ptr<AsyncTask> Counter::GetGenerateNewsPointsTask()
 
 
 
-void Counter::FromString(std::string str)
+void Security::FromString(std::string str)
 {
 	std::vector<std::string> split_strings;
 	int prev_index = 0;

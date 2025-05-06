@@ -10,8 +10,8 @@
 #include "Windows/StartupWindow.h"
 
 
-class Counter;
-class CounterWindow;
+class Security;
+class SecurityWindow;
 
 class TradinatorApp final
 {
@@ -23,7 +23,7 @@ public:
 	bool ShowApp();
 	void Shutdown();
 
-	void ShowCounterWindow(std::shared_ptr<Counter> counter);
+	void ShowSecurityWindow(std::shared_ptr<Security> security);
 
 private:
 	bool ShowMainWindow();
@@ -35,5 +35,5 @@ private:
 	StartupWindow m_startup_window;
 
 	std::shared_ptr<TradinatorCore> m_tradinator_core;
-	std::map<std::string, std::shared_ptr<CounterWindow>> m_counter_windows;
+	std::map<std::string, std::shared_ptr<SecurityWindow>> m_security_windows;
 };

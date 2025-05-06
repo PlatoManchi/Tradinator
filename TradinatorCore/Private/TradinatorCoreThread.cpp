@@ -200,7 +200,7 @@ void TradinatorCoreThread::Shutdown()
 	m_async_task_manager->Shutdown();
 }
 
-const AsyncData<std::vector<std::weak_ptr<Counter>>>& TradinatorCoreThread::GetTenNewestIPOs() const
+const AsyncData<std::vector<std::weak_ptr<Security>>>& TradinatorCoreThread::GetTenNewestIPOs() const
 {
 	return m_market_list[0]->GetTenNewestIPOs();
 }

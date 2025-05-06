@@ -9,7 +9,7 @@ class OBV : public Indicator
 public:
 	OBV() : Indicator() {}
 
-	OBV(std::weak_ptr<Counter> counter) : Indicator(counter, 0) {};
+	OBV(std::weak_ptr<Security> security) : Indicator(security, 0) {};
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 

@@ -3,7 +3,7 @@
 #include "implot.h"
 #include "implot_internal.h"
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Indicators/BollingerBand.h"
 #include "Indicators/MACD.h"
 #include "Indicators/TrendAnalysisDebug.h"
@@ -26,15 +26,15 @@ IIndicatorWrapper::IIndicatorWrapper()
 }
 
 IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator)
-    : m_indicator(std::move(indicator)), m_counter(nullptr)
+    : m_indicator(std::move(indicator)), m_security(nullptr)
 {
     m_id = _INCREMENTAL_WRAPPER_ID_++;
 
     m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(m_indicator->IndicatorType()));
 }
 
-IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-    : m_indicator(std::move(indicator)), m_counter(counter)
+IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+    : m_indicator(std::move(indicator)), m_security(security)
 {
     m_id = _INCREMENTAL_WRAPPER_ID_++;
 
@@ -43,7 +43,7 @@ IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::
 
 IIndicatorWrapper::IIndicatorWrapper(const IIndicatorWrapper& other)
     : m_indicator(std::move(other.m_indicator->Clone()))
-    , m_counter(other.m_counter)
+    , m_security(other.m_security)
     , m_points_list(other.m_points_list)
     , m_colors_list(other.m_colors_list)
     , m_show(other.m_show)
@@ -55,7 +55,7 @@ IIndicatorWrapper::IIndicatorWrapper(const IIndicatorWrapper& other)
 IIndicatorWrapper& IIndicatorWrapper::operator=(const IIndicatorWrapper& other)
 {
     m_indicator = std::move(other.m_indicator->Clone());
-    m_counter = other.m_counter;
+    m_security = other.m_security;
 
     m_points_list = other.m_points_list;
     m_colors_list = other.m_colors_list;
@@ -75,12 +75,12 @@ void IIndicatorWrapper::SetIndicator(std::unique_ptr<Indicator> indicator)
     m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(m_indicator->IndicatorType()));
 }
 
-void IIndicatorWrapper::SetCounter(std::shared_ptr<Counter> counter)
+void IIndicatorWrapper::SetSecurity(std::shared_ptr<Security> security)
 {
-    m_counter = counter;
+    m_security = security;
     if (m_indicator)
     {
-        m_indicator->SetCounter(counter);
+        m_indicator->SetSecurity(security);
     }
 }
 
@@ -120,7 +120,7 @@ bool GenericIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -184,7 +184,7 @@ bool GenericIndicatorWrapper::DrawAsAppliedIndicator()
 
 void GenericIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
     m_points_list.clear();
     m_points_list = std::move(m_indicator->Calculate());
@@ -274,7 +274,7 @@ void GenericChartIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear
 
 void GenericChartIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
     GenericIndicatorWrapper::Calculate();
 
@@ -302,12 +302,12 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
 
 void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color)
 {
-    assert(m_counter);
+    assert(m_security);
     assert(!IsIndicatorOverlayable());
     
     
 
-    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
+    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
     {
         ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags | ImPlotAxisFlags_NoGridLines, y_axis_flags);
 
@@ -372,7 +372,7 @@ void GenericChartIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_colo
         }
 
         ImPlot::SetNextLineStyle(color, color.w);
-        ImPlot::PlotLineG(std::format("{}##Chart{}_{}{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id, i).c_str()
+        ImPlot::PlotLineG(std::format("{}##Chart{}_{}{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id, i).c_str()
             , indicator_plot_point_getter
             , (void*)&m_points_list[i]
             , m_points_list[i].size());
@@ -437,7 +437,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -527,7 +527,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
 
 void BollingerBandIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
     BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(m_indicator.get());
     assert(bollinger_band);
@@ -692,7 +692,7 @@ bool OBVIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -821,7 +821,7 @@ bool MACDIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -944,14 +944,14 @@ void MACDIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
     {
         ImVec4 macd_color = m_colors_list[0];
         ImPlot::SetNextLineStyle(macd_color, macd_color.w);
-        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str()
+        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str()
             , indicator_plot_point_getter
             , (void*)&m_points_list[0]
             , m_points_list[0].size());
 
         ImVec4 signal_color = m_colors_list[1];
         ImPlot::SetNextLineStyle(signal_color, signal_color.w);
-        ImPlot::PlotLineG(std::format("Signal##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
+        ImPlot::PlotLineG(std::format("Signal##Chart{}_{}", m_security->ISIN_Number(), m_id).c_str()
             , indicator_plot_point_getter
             , (void*)&m_points_list[1]
             , m_points_list[1].size());
@@ -959,7 +959,7 @@ void MACDIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
         ImVec4 histogram_color = m_colors_list[2];
         ImPlot::SetNextLineStyle(histogram_color, histogram_color.w);
         ImPlot::SetNextFillStyle(histogram_color, histogram_color.w);
-        ImPlot::PlotBarsG(std::format("Histogram##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
+        ImPlot::PlotBarsG(std::format("Histogram##Chart{}_{}", m_security->ISIN_Number(), m_id).c_str()
             , indicator_plot_point_getter
             , (void*)&m_points_list[2]
             , m_points_list[2].size()
@@ -1150,7 +1150,7 @@ bool TrendAnalysisDebugWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }

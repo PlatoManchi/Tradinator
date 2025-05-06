@@ -13,7 +13,7 @@ public:
 	ATR() : Indicator() {}
 
 	ATR(size_t length) : Indicator(length) {};
-	ATR(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {};
+	ATR(std::weak_ptr<Security> security, size_t length) : Indicator(security, length) {};
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 

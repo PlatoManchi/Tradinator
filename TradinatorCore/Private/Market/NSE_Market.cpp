@@ -31,19 +31,19 @@ NSE_Market::NSE_Market()
 {
 }
 
-void NSE_Market::ParseCounterListData()
+void NSE_Market::ParseSecurityListData()
 {
     if (!IsRawFileExist())
     {
-        std::string err_str = std::format("ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/securities/EQUITY_L.csv' and place the file at '{}'.", GetCounterListRawDataFilePath());
+        std::string err_str = std::format("ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/securities/EQUITY_L.csv' and place the file at '{}'.", GetSecurityListRawDataFilePath());
         Log::GetInstance().Write(err_str);
-        std::cout << "ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/securities/EQUITY_L.csv' and place the file at '" << GetCounterListRawDataFilePath() << "'." << std::endl;
+        std::cout << "ERROR: File containing symbols not found. Download from 'https://nsearchives.nseindia.com/content/securities/EQUITY_L.csv' and place the file at '" << GetSecurityListRawDataFilePath() << "'." << std::endl;
     }
 
     if (IsRawFileExist())
     {
         // Raw file exist but not processed.
-        std::ifstream  raw_file(GetCounterListRawDataFilePath());
+        std::ifstream  raw_file(GetSecurityListRawDataFilePath());
 
         std::string line;
         std::getline(raw_file, line); // first line is just headings so discard it
@@ -53,16 +53,16 @@ void NSE_Market::ParseCounterListData()
         // fill up the map
         while (std::getline(raw_file, line))
         {
-            std::shared_ptr<Counter> counter = std::make_shared<Counter>();
-            counter->FromString(line);
+            std::shared_ptr<Security> security = std::make_shared<Security>();
+            security->FromString(line);
 
             // We process only securities that are equity
-            if (counter->Series() == "EQ")
+            if (security->Series() == "EQ")
             {
-                counter->SetOwningMarket(this->weak_from_this());
-                counter->SetOwningTradinatorCoreThread(m_owning_tradinator_core_thread);
+                security->SetOwningMarket(this->weak_from_this());
+                security->SetOwningTradinatorCoreThread(m_owning_tradinator_core_thread);
 
-                m_securities_async_data.GetAsyncDataCopy()[counter->Symbol()] = counter;
+                m_securities_async_data.GetAsyncDataCopy()[security->Symbol()] = security;
             }
         }
     }
@@ -106,20 +106,20 @@ void NSE_Market::ParseCounterListData()
 
 bool NSE_Market::IsRawFileExist() const
 {
-    return TradinatorCoreSpace::Utils::DoesFileExist(GetCounterListRawDataFilePath());
+    return TradinatorCoreSpace::Utils::DoesFileExist(GetSecurityListRawDataFilePath());
 }
 
 bool NSE_Market::IsProcessedFileExist() const
 {
-    return TradinatorCoreSpace::Utils::DoesFileExist(GetCounterListProcessedDataFilePath());
+    return TradinatorCoreSpace::Utils::DoesFileExist(GetSecurityListProcessedDataFilePath());
 }
 
-std::string NSE_Market::GetCounterListRawDataFileName() const
+std::string NSE_Market::GetSecurityListRawDataFileName() const
 {
     return _SRC_EQUITY_DATA_FILE_;
 }
 
-std::string NSE_Market::GetCounterListProcessedDataFileName() const
+std::string NSE_Market::GetSecurityListProcessedDataFileName() const
 {
     return _DST_EQUITY_DATA_FILE_;
 }

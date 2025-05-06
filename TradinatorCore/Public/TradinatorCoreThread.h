@@ -11,7 +11,7 @@
 
 class AsyncTaskManager;
 class Market;
-class Counter;
+class Security;
 
 class TradinatorCoreThread : public std::enable_shared_from_this<TradinatorCoreThread>
 {
@@ -29,7 +29,7 @@ public:
 	void AddMarket(std::shared_ptr<Market>&& market);
 	bool CanSafelyShutdown() const;
 	
-	const AsyncData<std::vector<std::weak_ptr<Counter>>>& GetTenNewestIPOs() const;
+	const AsyncData<std::vector<std::weak_ptr<Security>>>& GetTenNewestIPOs() const;
 	const AsyncData<NewsPointMapType>& GetGlobalNews() const { return m_global_news; }
 
 
@@ -54,7 +54,7 @@ private:
 	// List of markets that this core will process
 	std::vector<std::shared_ptr<Market>> m_market_list;
 
-	// Will contain cummulation of news points from all counters in all markets.
+	// Will contain cummulation of news points from all securities in all markets.
 	AsyncData<NewsPointMapType> m_global_news;
 
 	bool m_is_initialized;

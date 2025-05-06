@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 #include "Indicators/SMA.h"
 #include "Utils/StopWatch.h"
@@ -33,11 +33,11 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 	}
 
 
-	std::shared_ptr<Counter> counter = m_counter.lock();
+	std::shared_ptr<Security> security = m_security.lock();
 
-	if (counter)
+	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
+		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
 		bool is_ready = candle_data->IsDataReady();
 
 		// Wait till candle data is ready
@@ -103,7 +103,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 		// https://en.wikipedia.org/wiki/Standard_deviation
 
 		// Get the sma
-		SMA sma_indicator(m_counter, m_length);
+		SMA sma_indicator(m_security, m_length);
 		sma = std::move(sma_indicator.Calculate()[0]);
 
 		auto itr = candle_data->GetData().begin();

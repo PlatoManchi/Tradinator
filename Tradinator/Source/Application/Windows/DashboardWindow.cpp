@@ -9,7 +9,7 @@
 
 #include "TradinatorCore.h"
 #include "Data/AsyncData.h"
-#include "Data/Counter.h"
+#include "Data/Security.h"
 
 #include "Utils.h"
 #include "Application/TradinatorApp.h"
@@ -46,7 +46,7 @@ void DashboardWindow::Show()
 
         ImGui::SeparatorText("Newest 10 Listings");
 
-        const AsyncData<std::vector<std::weak_ptr<Counter>>>& ten_newest = m_tradinator_core->GetTenNewestIPOs();
+        const AsyncData<std::vector<std::weak_ptr<Security>>>& ten_newest = m_tradinator_core->GetTenNewestIPOs();
 
         if (ten_newest.IsDataReady())
         {
@@ -62,57 +62,57 @@ void DashboardWindow::Show()
                 ImGui::TableSetupColumn("Face Value", ImGuiTableColumnFlags_WidthFixed, 0);
                 ImGui::TableHeadersRow();
 
-                const std::vector<std::weak_ptr<Counter>>& list = ten_newest.GetData();
-                for (std::weak_ptr<Counter> counter_weak : list)
+                const std::vector<std::weak_ptr<Security>>& list = ten_newest.GetData();
+                for (std::weak_ptr<Security> security_weak : list)
                 {
-                    std::shared_ptr<Counter> counter = counter_weak.lock();
-                    if (counter)
+                    std::shared_ptr<Security> security = security_weak.lock();
+                    if (security)
                     {
                         ImGui::TableNextRow(0, 0);
 
                         ImGui::TableSetColumnIndex(0);
-                        //ImGui::Text(std::format("{:%d-%b-%y}", counter->DateOfListing()).c_str());
+                        //ImGui::Text(std::format("{:%d-%b-%y}", security->DateOfListing()).c_str());
                         bool is_selected = false;
-                        ImGui::Selectable(std::format("{:%d-%b-%Y}##{}{}", counter->DateOfListing(), counter->ISIN_Number(), "TenNewest").c_str(), &is_selected, ImGuiSelectableFlags_SpanAllColumns);
+                        ImGui::Selectable(std::format("{:%d-%b-%Y}##{}{}", security->DateOfListing(), security->ISIN_Number(), "TenNewest").c_str(), &is_selected, ImGuiSelectableFlags_SpanAllColumns);
                         if (ImGui::IsItemClicked())
                         {
-                            m_tradinator_app.ShowCounterWindow(counter);
+                            m_tradinator_app.ShowSecurityWindow(security);
                         }
 
 
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::PushID(std::format("{}##{}{}", counter->Symbol(), counter->ISIN_Number(), "TenNewest").c_str());
-                        ImGui::Text(counter->Symbol().c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->Symbol(), security->ISIN_Number(), "TenNewest").c_str());
+                        ImGui::Text(security->Symbol().c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::PushID(std::format("{}##{}{}", counter->Name(), counter->ISIN_Number(), "TenNewest").c_str());
-                        ImGui::Text(counter->Name().c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->Name(), security->ISIN_Number(), "TenNewest").c_str());
+                        ImGui::Text(security->Name().c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(3);
-                        ImGui::PushID(std::format("{}##{}{}", counter->Series(), counter->ISIN_Number(), "TenNewest").c_str());
-                        ImGui::Text(counter->Series().c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->Series(), security->ISIN_Number(), "TenNewest").c_str());
+                        ImGui::Text(security->Series().c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(4);
-                        ImGui::PushID(std::format("{}##{}{}", counter->PaidUpValue(), counter->ISIN_Number(), "PaidUpValue TenNewest").c_str());
-                        ImGui::Text(std::format("{}", counter->PaidUpValue()).c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->PaidUpValue(), security->ISIN_Number(), "PaidUpValue TenNewest").c_str());
+                        ImGui::Text(std::format("{}", security->PaidUpValue()).c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(5);
-                        ImGui::PushID(std::format("{}##{}{}", counter->MarketLot(), counter->ISIN_Number(), "MarkerLot TenNewest").c_str());
-                        ImGui::Text(std::format("{}", counter->MarketLot()).c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->MarketLot(), security->ISIN_Number(), "MarkerLot TenNewest").c_str());
+                        ImGui::Text(std::format("{}", security->MarketLot()).c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(6);
-                        ImGui::PushID(std::format("{}##{}", counter->ISIN_Number(), "TenNewest").c_str());
-                        ImGui::Text(counter->ISIN_Number().c_str());
+                        ImGui::PushID(std::format("{}##{}", security->ISIN_Number(), "TenNewest").c_str());
+                        ImGui::Text(security->ISIN_Number().c_str());
                         ImGui::PopID();
 
                         ImGui::TableSetColumnIndex(7);
-                        ImGui::PushID(std::format("{}##{}{}", counter->FaceValue(), counter->ISIN_Number(), "FaceValue TenNewest").c_str());
-                        ImGui::Text(std::format("{}", counter->FaceValue()).c_str());
+                        ImGui::PushID(std::format("{}##{}{}", security->FaceValue(), security->ISIN_Number(), "FaceValue TenNewest").c_str());
+                        ImGui::Text(std::format("{}", security->FaceValue()).c_str());
                         ImGui::PopID();
                     }
                 }

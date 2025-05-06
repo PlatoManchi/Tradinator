@@ -15,20 +15,20 @@
 
 #include "Indicators/Indicator.h"
 
-class Counter;
+class Security;
 class IIndicatorWrapper;
 
 
-class CounterWindow
+class SecurityWindow
 {
 public:
-	CounterWindow(std::shared_ptr<Counter> counter);
-	~CounterWindow();
+	SecurityWindow(std::shared_ptr<Security> security);
+	~SecurityWindow();
 
 	void Show();
 
-	Json::Value GetCounterStatus();
-	void SetCounterStatus(Json::Value status);
+	Json::Value GetSecurityStatus();
+	void SetSecurityStatus(Json::Value status);
 
 	bool m_close;
 	bool m_maximize;
@@ -70,7 +70,7 @@ private:
 	float m_price_chart_height;
 
 	std::string m_cached_label_id;
-	std::shared_ptr<Counter> m_counter;
+	std::shared_ptr<Security> m_security;
 
 	bool m_is_dirty;
 

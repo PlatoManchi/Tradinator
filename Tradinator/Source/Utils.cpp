@@ -216,13 +216,13 @@ namespace TradinatorAppSpace
 		return wrapper;
 	}
 
-	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
 	{
 		std::unique_ptr<IIndicatorWrapper> wrapper = std::move(GetIndicatorWrapper(indicator->IndicatorType()));
 		if (wrapper)
 		{
 			wrapper->SetIndicator(std::move(indicator));
-			wrapper->SetCounter(counter);
+			wrapper->SetSecurity(security);
 
 
 			return wrapper;
