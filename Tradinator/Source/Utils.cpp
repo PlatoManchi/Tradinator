@@ -114,7 +114,7 @@ namespace TradinatorAppSpace
 		case E_ATR:
 			return "ATR";
 		case E_TrendAnalysisDebug:
-			return "TrendAnalysisDebug";
+			return "Trend Analysis Debug";
 		}
 
 		return "";
@@ -140,7 +140,7 @@ namespace TradinatorAppSpace
 			return EIndicatorType::E_MACD;
 		else if (type_str == "ATR")
 			return EIndicatorType::E_ATR;
-		else if (type_str == "TrendAnalysisDebug")
+		else if (type_str == "Trend Analysis Debug")
 			return EIndicatorType::E_TrendAnalysisDebug;
 
 		return EIndicatorType::MAX;

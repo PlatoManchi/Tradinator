@@ -100,7 +100,7 @@ public:
 	virtual void FromJson(Json::Value value) override;
 	virtual Json::Value ToJson() const override;
 
-	virtual std::string GetHumanReadableValueAt(size_t index) const;
+	virtual std::string GetHumanReadableValueAt(size_t index) const override;
 protected:
 	
 };
@@ -351,6 +351,8 @@ public:
 
 	virtual void FromJson(Json::Value value) override;
 	virtual Json::Value ToJson() const override;
+
+	virtual std::string GetHumanReadableValueAt(size_t index) const override;
 
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{

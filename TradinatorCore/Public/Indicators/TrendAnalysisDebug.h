@@ -58,7 +58,7 @@ protected:
 	double* Inverse(double* matrix, uint64_t size);
 	void Normalize(double* input, double* output, uint64_t size);
 
-	void FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominance = {}, uint64_t min_distance = 15, uint64_t min_width = 3, double relative_height = 0.5);
+	void FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominance = {}, uint64_t min_distance = 15, uint64_t min_width = 3, double relative_height = 0.5, int modifier = 1);
 
 	uint16_t m_polynomial_order = 5;
 	uint16_t m_distance_btw_peaks = 15;

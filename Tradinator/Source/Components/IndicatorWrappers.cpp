@@ -208,9 +208,15 @@ void GenericIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_colo
 
 std::string GenericIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
 {
-    return std::format("{}({}) :   {}", 
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
-        m_points_list[0][index].value);
+    if (m_points_list.size() >= 1)
+    {
+        return std::format("{}({}) :   {}",
+            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
+            m_points_list[0][index].value);
+    }
+
+    return std::format("{}({}) :   Invalid Input",
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void GenericIndicatorWrapper::FromJson(Json::Value value)
@@ -563,11 +569,17 @@ void BollingerBandIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bea
 
 std::string BollingerBandIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
 {
-    return std::format("{} :   {}, {}, {}", 
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), 
-        m_points_list[0][index].value,
-        m_points_list[1][index].value,
-        m_points_list[2][index].value);
+    if (m_points_list.size() >= 3)
+    {
+        return std::format("{}({}) :   {}, {}, {}",
+            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
+            m_points_list[0][index].value,
+            m_points_list[1][index].value,
+            m_points_list[2][index].value);
+    }
+
+    return std::format("{}({}) :   Invalid Input",
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void BollingerBandIndicatorWrapper::FromJson(Json::Value value)
@@ -957,11 +969,18 @@ void MACDIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 
 std::string MACDIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
 {
-    return std::format("{} :   {}, {}, {}",
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
-        m_points_list[0][index].value,
-        m_points_list[1][index].value,
-        m_points_list[2][index].value);
+    if (m_points_list.size() >= 3)
+    {
+        return std::format("{}({}) :   {}, {}, {}",
+            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), 
+            index,
+            m_points_list[0][index].value,
+            m_points_list[1][index].value,
+            m_points_list[2][index].value);
+    }
+    
+    return std::format("{}({}) :   Invalid Input",
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void MACDIndicatorWrapper::FromJson(Json::Value value)
@@ -1308,10 +1327,43 @@ void TrendAnalysisDebugWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_co
     size_t count = m_points_list[1].size();
     if (count == 0) return;
 
-    //ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-
     ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bear_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[1], count);
+
+
+
+
+    if (m_points_list.size() < 2) return;
+
+    count = m_points_list[2].size();
+    if (count == 0) return;
+
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bull_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImPlot::PlotScatterG(std::format("{}##trough", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[2], count);
+}
+
+std::string TrendAnalysisDebugWrapper::GetHumanReadableValueAt(size_t index) const
+{
+    if (m_points_list.size() >= 4)
+    {
+        double trend = m_points_list[3][index].value;
+        std::string trend_str = "None";
+        if (trend > 0.9)
+        {
+            trend_str = "Up";
+        }
+        else if(trend < -0.9)
+        {
+            trend_str = "Down";
+        }
+        return std::format("{}({}) :   {}",
+            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
+            index,
+            trend_str);
+    }
+
+    return std::format("{}({}) :   Invalid Input",
+        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void TrendAnalysisDebugWrapper::FromJson(Json::Value value)

@@ -43,7 +43,7 @@ void AsyncData<T>::SetDataReady(bool is_ready)
 		else
 		{
 			// reset the copy to default value
-			m_async_data_copy = T();
+			m_async_data_copy = std::move(T());
 		}
 
 		m_is_ready = is_ready;
@@ -61,8 +61,8 @@ bool AsyncData<T>::Reset()
 	m_is_ready = false;
 	m_was_ready_before = false;
 
-	m_data = T();
-	m_async_data_copy = T();
+	m_data = std::move(T());
+	m_async_data_copy = std::move(T());
 
 	return true;
 }

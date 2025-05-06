@@ -264,10 +264,16 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 		ispc::calculate_atr(highs.data(), lows.data(), closes.data(), true_ranges.data(), average_true_ranges.data(), count, 30);
 
 		std::vector<size_t> peaks;
+		std::vector<size_t> troughs;
 
 		FindPeaks(smoothed_values, peaks, average_true_ranges, m_distance_btw_peaks, m_width_for_peaks, m_relative_height);
+		FindPeaks(smoothed_values, troughs, average_true_ranges, m_distance_btw_peaks, m_width_for_peaks, m_relative_height, -1);
 
 		std::vector<IndicatorPoint> peak_points;
+		peak_points.reserve(count);
+		std::vector<IndicatorPoint> trough_points;
+		trough_points.reserve(count);
+
 		for (size_t peak : peaks)
 		{
 			auto itr = candle_data->GetData().begin();
@@ -280,11 +286,114 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 			peak_points.emplace_back(std::move(point));
 		}
 
+		for (size_t trough : troughs)
+		{
+			auto itr = candle_data->GetData().begin();
+			std::advance(itr, trough);
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = smoothed_values[trough];
+
+			trough_points.emplace_back(std::move(point));
+		}
+
+		// Reversing becuase fuck my decision to have data in ascending order
+		//std::reverse(peaks.begin(), peaks.end());
+		//std::reverse(troughs.begin(), troughs.end());
+		std::vector<IndicatorPoint> trend_points;
+		trend_points.reserve(count);
+		
+		itr = candle_data->GetData().begin();
+		for (size_t i = 0; i < count; ++i)
+		{
+			size_t peak_index = 0;
+			for (size_t j = 0; j < peaks.size(); ++j)
+			{
+				if (peaks[j] > i)
+				{
+					peak_index = j;
+					break;
+				}
+			}
+
+			size_t trough_index = 0;
+			for (size_t j = 0; j < troughs.size(); ++j)
+			{
+				if (troughs[j] > i)
+				{
+					trough_index = j;
+					break;
+				}
+			}
+
+			//  0 - none
+			//  1 - up trend
+			// -1 - down trend
+			double trend = 0;
+			size_t history_length = 2;
+			if (peak_index + history_length < peaks.size() &&
+				trough_index + history_length < troughs.size())
+			{
+				size_t peaks_up_count = 0;
+				size_t troughs_up_count = 0;
+				size_t peaks_down_count = 0;
+				size_t troughs_down_count = 0;
+
+				double threshold = 0.001;
+				for (int j = peak_index; j < peak_index + history_length; ++j)
+				{
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
+						smoothed_values[peaks[j]] > smoothed_values[peaks[j + 1]])
+					{
+						peaks_up_count++;
+					}
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+						smoothed_values[peaks[j]] < smoothed_values[peaks[j + 1]])
+					{
+						peaks_down_count++;
+					}
+				}
+				for (int j = trough_index; j < trough_index + history_length; ++j)
+				{
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+						smoothed_values[troughs[j]] > smoothed_values[troughs[j + 1]])
+					{
+						troughs_up_count++;
+					}
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+						smoothed_values[troughs[j]] < smoothed_values[troughs[j + 1]])
+					{
+						troughs_down_count++;
+					}
+				}
+
+				if (peaks_up_count == history_length && troughs_up_count == history_length)
+				{
+					trend = 1.0f;
+				}
+				else if (peaks_down_count == history_length && troughs_down_count == history_length)
+				{
+					trend = -1.0f;
+				}
+			}
+
+			IndicatorPoint point;
+			point.date = (*itr).first;
+			point.value = trend;
+
+			trend_points.emplace_back(std::move(point));
+
+			std::advance(itr, 1);
+		}
+
 #endif // _SAVITZKY_GOLAY_FILTER_ISPC_
 
 
 		result.emplace_back(std::move(trend_analysis_debug));
 		result.emplace_back(std::move(peak_points));
+		result.emplace_back(std::move(trough_points));
+		result.emplace_back(std::move(trend_points));
 	}
 	
 
@@ -293,40 +402,43 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 
 
 
-double find_local_min_left(const std::vector<double>& input_data, size_t at_index)
+
+
+
+double find_local_min_left(const std::vector<double>& input_data, size_t at_index, int modifier)
 {
 	for (size_t i = at_index; i > 0; --i)
 	{
-		if (input_data[i] < input_data[i - 1])
-			return input_data[i];
+		if (input_data[i] * modifier < input_data[i - 1] * modifier)
+			return input_data[i] * modifier;
 	}
 
-	return input_data[0];
+	return input_data[0] * modifier;
 }
 	
-double find_local_min_right(const std::vector<double>& input_data, size_t at_index)
+double find_local_min_right(const std::vector<double>& input_data, size_t at_index, int modifier)
 {
 	size_t count = input_data.size();
 	for (size_t i = at_index; i < count - 1; ++i)
 	{
-		if (input_data[i] < input_data[i + 1])
+		if (input_data[i] * modifier < input_data[i + 1] * modifier)
 		{
-			return input_data[i];
+			return input_data[i] * modifier;
 		}
 	}
 
-	return input_data[count - 1];
+	return input_data[count - 1] * modifier;
 }
 
-size_t find_crossing_left(const std::vector<double>& input_data, size_t at_index, double height)
+size_t find_crossing_left(const std::vector<double>& input_data, size_t at_index, double height, int modifier)
 {
 	for (int64_t i = at_index; i >= 0; --i)
 	{
-		if (input_data[i] < height)
+		if (input_data[i] * modifier < height)
 		{
 			return i;
 		}
-		else if (input_data[i] > input_data[at_index])
+		else if (input_data[i] * modifier > input_data[at_index] * modifier)
 		{
 			return at_index;
 		}
@@ -335,16 +447,16 @@ size_t find_crossing_left(const std::vector<double>& input_data, size_t at_index
 	return 0;
 }
 
-size_t find_crossing_right(const std::vector<double>& input_data, size_t at_index, double height)
+size_t find_crossing_right(const std::vector<double>& input_data, size_t at_index, double height, int modifier)
 {
 	size_t count = input_data.size();
 	for (size_t i = at_index; i < count; ++i)
 	{
-		if (input_data[i] < height)
+		if (input_data[i] * modifier < height)
 		{
 			return i;
 		}
-		else if (input_data[i] > input_data[at_index])
+		else if (input_data[i] * modifier > input_data[at_index] * modifier)
 		{
 			return at_index;
 		}
@@ -353,7 +465,7 @@ size_t find_crossing_right(const std::vector<double>& input_data, size_t at_inde
 	return count - 1;
 }
 
-size_t find_next_peak(const std::vector<double>& input_data, const std::vector<size_t>& all_peaks, size_t start, uint64_t min_distance)
+size_t find_next_peak(const std::vector<double>& input_data, const std::vector<size_t>& all_peaks, size_t start, uint64_t min_distance, int modifier)
 {
 	size_t count = all_peaks.size();
 	if (start >= count)
@@ -372,7 +484,7 @@ size_t find_next_peak(const std::vector<double>& input_data, const std::vector<s
 	{
 		if (all_peaks[i] - all_peaks[start] <= min_distance)
 		{
-			if (input_data[all_peaks[i]] > input_data[all_peaks[result]])
+			if (input_data[all_peaks[i]] * modifier > input_data[all_peaks[result]] * modifier)
 			{
 				result = i;
 			}
@@ -386,7 +498,7 @@ size_t find_next_peak(const std::vector<double>& input_data, const std::vector<s
 	return result;
 }
 
-void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominences, uint64_t min_distance, uint64_t min_width, double relative_height)
+void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominences, uint64_t min_distance, uint64_t min_width, double relative_height, int input_modifier)
 {
 	output_peaks_indices.clear();
 	std::vector<size_t> all_peaks;
@@ -395,9 +507,9 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 
 	for (size_t i = 1; i < count - 2; ++i)
 	{
-		if (input_data[i] > input_data[i - 1] && input_data[i] > input_data[i + 1])
+		if (input_data[i] * input_modifier > input_data[i - 1] * input_modifier && input_data[i] * input_modifier > input_data[i + 1] * input_modifier)
 		{
-			double peak_height = input_data[i];
+			double peak_height = input_data[i] * input_modifier;
 
 			// Step 1: Estimate prominence
 			double prominence = 0;
@@ -408,8 +520,8 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 			else
 			{
 				// Estimate prominence
-				double left_min = find_local_min_left(input_data, i);
-				double right_min = find_local_min_right(input_data, i);
+				double left_min = find_local_min_left(input_data, i, input_modifier);
+				double right_min = find_local_min_right(input_data, i, input_modifier);
 				double base_height = std::max(left_min, right_min);
 				prominence = peak_height - base_height;
 			}
@@ -418,8 +530,8 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 			double height_at_width = peak_height - (prominence * relative_height);
 
 			// Step 3: Walk left and right from peak to find crossing points
-			size_t left_index = find_crossing_left(input_data, i, height_at_width);
-			size_t right_index = find_crossing_right(input_data, i, height_at_width);
+			size_t left_index = find_crossing_left(input_data, i, height_at_width, input_modifier);
+			size_t right_index = find_crossing_right(input_data, i, height_at_width, input_modifier);
 
 			// Step 4: Measure width
 			size_t width = right_index - left_index;
@@ -441,7 +553,7 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 	size_t start = 0;
 	while (!is_done)
 	{
-		size_t index = find_next_peak(input_data, all_peaks, start, min_distance);
+		size_t index = find_next_peak(input_data, all_peaks, start, min_distance, input_modifier);
 		if (index == -1)
 		{
 			is_done = true;
