@@ -151,7 +151,8 @@ void TradinatorCoreThread::InitializeDB()
 			"PaidUpValue      INTEGER      NOT NULL," \
 			"MarketLot        INTEGER      NOT NULL," \
 			"FaceValue        INTEGER      NOT NULL," \
-			"LatestCandleData INTEGER      NOT NULL );");
+			"LatestCandleData INTEGER      NOT NULL," \
+			"CandlesCount     INTEGER      NOT NULL); ");
 		transaction.commit();
 	}
 	

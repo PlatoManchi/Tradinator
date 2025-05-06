@@ -93,5 +93,6 @@ private:
 	float m_first_time_chart_limit_x_max;
 	bool m_is_first_time_limit_set;
 
+	std::chrono::steady_clock::time_point m_last_load_request_time;
 };
 

@@ -75,7 +75,7 @@ void NSE_Market::ParseSecurityListData()
             SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath());
 
             // Begin transaction
-            std::string query_str = std::format("SELECT Symbol, LatestCandleData FROM Securities;");
+            std::string query_str = std::format("SELECT Symbol, LatestCandleData, CandlesCount FROM Securities;");
             SQLite::Statement query(db, query_str);
 
             while (query.executeStep())
@@ -88,6 +88,7 @@ void NSE_Market::ParseSecurityListData()
 
 
                 m_securities_async_data.GetAsyncDataCopy()[symbol]->SetCachedLatestCandleDate(time);
+                m_securities_async_data.GetAsyncDataCopy()[symbol]->SetCandleCount(query.getColumn(2).getInt64());
             }
 
             is_success = true;

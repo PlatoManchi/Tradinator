@@ -85,6 +85,10 @@ public:
 		m_is_latest_date_dirty = false;
 	}
 	
+	void SetCandleCount(size_t candle_count)
+	{
+		m_candle_count = candle_count;
+	}
 
 protected:
 	// -----------------------------------------------
@@ -93,7 +97,7 @@ protected:
 	
 	std::chrono::system_clock::time_point GetLastCandleDataDate() const;
 
-	void UpdateLatestCandleDataDate();
+	void UpdateSecuritySkeletonData();
 	void LoadCandleDataToMemory();
 	std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
@@ -104,7 +108,10 @@ protected:
 	uint32_t m_paid_up_value;
 	uint32_t m_market_lot;
 	uint32_t m_face_value;
-	
+
+	// Used to pre reserve memory when needed
+	size_t m_candle_count;
+
 	// Raw json from reading the downloaded data
 	Json::Value m_raw_downloaded_data;
 

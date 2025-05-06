@@ -20,7 +20,7 @@
 std::string TradinatorCoreSpace::Utils::_DATA_FOLDER_PATH_;
 size_t TradinatorCoreSpace::Utils::_MAX_PARALLEL_DOWNLOADS_ = 100;
 size_t TradinatorCoreSpace::Utils::_MAX_PARALLEL_ANALYSIS_ = 100;
-size_t TradinatorCoreSpace::Utils::_READ_WRITE_BATCH_SIZE_ = 10;
+size_t TradinatorCoreSpace::Utils::_READ_WRITE_BATCH_SIZE_ = 30;
 
 std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailableIndicators()
 {

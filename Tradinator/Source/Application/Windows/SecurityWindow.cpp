@@ -74,7 +74,14 @@ void SecurityWindow::Show()
         {
             if (!m_security->IsMemoryInSync())
             {
-                m_security->LoadCandleDataToMemoryAsync();
+                // Restrict requsting data from memory
+                std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+                size_t seconds_elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_last_load_request_time).count();
+                if (seconds_elapsed > 2)
+                {
+                    m_last_load_request_time = now;
+                    m_security->LoadCandleDataToMemoryAsync();
+                }
             }
 
             if (m_is_dirty)
