@@ -135,11 +135,14 @@
     <ClInclude Include="Public\Indicators\ATR.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Indicators\SavitzkyGolayFilter.h">
+    <ClInclude Include="Public\Indicators\TrendAnalysisDebug.h">
       <Filter>Public\Indicators</Filter>
     </ClInclude>
     <ClInclude Include="ispc\matrix_helper_ispc.h">
       <Filter>ispc</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Utils\StopWatch.h">
+      <Filter>Public\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -221,8 +224,11 @@
     <ClCompile Include="Private\Indicators\ATR.cpp">
       <Filter>Private\Indicators</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Indicators\SavitzkyGolayFilter.cpp">
+    <ClCompile Include="Private\Indicators\TrendAnalysisDebug.cpp">
       <Filter>Private\Indicators</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Utils\StopWatch.cpp">
+      <Filter>Private\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

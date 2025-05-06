@@ -4,6 +4,8 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#include "Utils/StopWatch.h"
+
 #include "Indicators/SMA.h"
 
 #ifdef _ATR_ISPC_
@@ -26,7 +28,7 @@ std::vector<std::vector<IndicatorPoint>> ATR::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -110,13 +112,8 @@ std::vector<std::vector<IndicatorPoint>> ATR::Calculate()
 		}
 #endif // _ATR_ISPC_
 
-
-
-
 		result.emplace_back(std::move(average_true_ranges_result));
-
-		//std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-		//std::cout << "ATR Took " << std::to_string(std::chrono::duration<double>(end_time - start_time).count()) << " sec" << std::endl;
 	}
+
 	return result;
 }

@@ -6,6 +6,7 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 #include "Indicators/SMA.h"
+#include "Utils/StopWatch.h"
 
 #ifdef _BOLLINGER_BAND_ISPC_
 #include "indicator_helper_ispc.h"
@@ -45,7 +46,7 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0)
@@ -141,14 +142,10 @@ std::vector<std::vector<IndicatorPoint>> BollingerBand::Calculate()
 		}
 #endif
 
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "Bollinger Band Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
+		result.emplace_back(std::move(top));
+		result.emplace_back(std::move(sma));
+		result.emplace_back(std::move(bottom));
 	}
-
-
-	result.emplace_back(std::move(top));
-	result.emplace_back(std::move(sma));
-	result.emplace_back(std::move(bottom));
 
 	return result;
 }

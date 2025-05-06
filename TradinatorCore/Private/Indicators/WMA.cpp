@@ -4,6 +4,7 @@
 
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
+#include "Utils/StopWatch.h"
 
 #ifdef _WMA_ISPC_
 #include "indicator_helper_ispc.h"
@@ -27,7 +28,7 @@ std::vector<std::vector<IndicatorPoint>> WMA::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -87,9 +88,6 @@ std::vector<std::vector<IndicatorPoint>> WMA::Calculate()
 #endif // _WMA_ISPC_
 
 		result.emplace_back(std::move(wma));
-
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "WMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

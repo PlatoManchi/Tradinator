@@ -4,7 +4,7 @@
 
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
-
+#include "Utils/StopWatch.h"
 
 
 std::vector<std::vector<IndicatorPoint>> OBV::Calculate()
@@ -22,7 +22,7 @@ std::vector<std::vector<IndicatorPoint>> OBV::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -62,9 +62,6 @@ std::vector<std::vector<IndicatorPoint>> OBV::Calculate()
 		}
 
 		result.emplace_back(std::move(obv));
-
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "OBV Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

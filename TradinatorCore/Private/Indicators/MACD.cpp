@@ -5,6 +5,7 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 #include "Indicators/EMA.h"
+#include "Utils/StopWatch.h"
 
 #ifdef _MACD_ISPC_
 #include "indicator_helper_ispc.h"
@@ -27,7 +28,7 @@ std::vector<std::vector<IndicatorPoint>> MACD::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -152,9 +153,6 @@ std::vector<std::vector<IndicatorPoint>> MACD::Calculate()
 		result.emplace_back(std::move(macd));
 		result.emplace_back(std::move(signal));
 		result.emplace_back(std::move(histogram));
-
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "MACD Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

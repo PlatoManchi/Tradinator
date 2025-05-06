@@ -330,20 +330,20 @@ protected:
 *                                Savitzky Golay Filter
 **********************************************************************************/
 
-class SavitzkyGolayFilterWrapper : public GenericIndicatorWrapper
+class TrendAnalysisDebugWrapper : public GenericIndicatorWrapper
 {
 public:
-	SavitzkyGolayFilterWrapper() : GenericIndicatorWrapper() {}
-	SavitzkyGolayFilterWrapper(std::unique_ptr<Indicator> indicator)
+	TrendAnalysisDebugWrapper() : GenericIndicatorWrapper() {}
+	TrendAnalysisDebugWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericIndicatorWrapper(std::move(indicator)) {}
 
-	SavitzkyGolayFilterWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+	TrendAnalysisDebugWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
 		: GenericIndicatorWrapper(std::move(indicator), counter) {}
 
-	SavitzkyGolayFilterWrapper(const SavitzkyGolayFilterWrapper& other) = default;
-	SavitzkyGolayFilterWrapper& operator=(const SavitzkyGolayFilterWrapper& other) = default;
-	SavitzkyGolayFilterWrapper(SavitzkyGolayFilterWrapper&& other) noexcept = default;
-	SavitzkyGolayFilterWrapper& operator=(SavitzkyGolayFilterWrapper&& other) noexcept = default;
+	TrendAnalysisDebugWrapper(const TrendAnalysisDebugWrapper& other) = default;
+	TrendAnalysisDebugWrapper& operator=(const TrendAnalysisDebugWrapper& other) = default;
+	TrendAnalysisDebugWrapper(TrendAnalysisDebugWrapper&& other) noexcept = default;
+	TrendAnalysisDebugWrapper& operator=(TrendAnalysisDebugWrapper&& other) noexcept = default;
 
 	virtual bool DrawAsAvailableIndicator() override;
 	virtual bool DrawAsAppliedIndicator() override;
@@ -354,6 +354,6 @@ public:
 
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{
-		return std::make_unique<SavitzkyGolayFilterWrapper>(*this);
+		return std::make_unique<TrendAnalysisDebugWrapper>(*this);
 	}
 };

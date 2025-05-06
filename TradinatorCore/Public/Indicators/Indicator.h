@@ -33,7 +33,7 @@ enum EIndicatorType {
 	E_OBV,
 	E_MACD,
 	E_ATR,
-	E_SavitzkyGolayFilter,
+	E_TrendAnalysisDebug,
 
 
 	MAX

@@ -6,7 +6,7 @@
 #include "Data/Counter.h"
 #include "Indicators/BollingerBand.h"
 #include "Indicators/MACD.h"
-#include "Indicators/SavitzkyGolayFilter.h"
+#include "Indicators/TrendAnalysisDebug.h"
 
 #include "Utils.h"
 
@@ -151,9 +151,12 @@ bool GenericIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##indicator length{}", m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
-        m_indicator->SetLength(length);
+        if (m_indicator->GetLength() != length)
+        {
+            m_indicator->SetLength(length);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Length");
@@ -463,9 +466,12 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##indicator length{}", m_id).c_str(), length_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int length = std::atoi(length_str);
-        m_indicator->SetLength(length);
+        if (m_indicator->GetLength() != length)
+        {
+            m_indicator->SetLength(length);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Length");
@@ -481,9 +487,12 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##standard deviation multiplier{}", m_id).c_str(), multiplier_str, 5, ImGuiInputTextFlags_CharsDecimal))
     {
         double multiplier = std::atof(multiplier_str);
-        bollinger_band->SetStandardDeviationMultiplier(multiplier);
+        if (fabs(bollinger_band->GetStandardDeviationMultiplier() - multiplier) > LDBL_EPSILON)
+        {
+            bollinger_band->SetStandardDeviationMultiplier(multiplier);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Standard Deviation Multiplier");
@@ -836,9 +845,12 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##period 1{}", m_id).c_str(), period_1_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int period_1 = std::atoi(period_1_input_str);
-        macd->SetPeriod_1(period_1);
+        if (macd->GetPeriod_1() != period_1)
+        {
+            macd->SetPeriod_1(period_1);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Period 1");
@@ -855,9 +867,12 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##period 2{}", m_id).c_str(), period_2_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int period_2 = std::atoi(period_2_input_str);
-        macd->SetPeriod_2(period_2);
+        if (macd->GetPeriod_2() != period_2)
+        {
+            macd->SetPeriod_2(period_2);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Period 2");
@@ -875,9 +890,12 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##signal period{}", m_id).c_str(), signal_period_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int signal_period = std::atoi(signal_period_input_str);
-        macd->SetSignalPeriod(signal_period);
+        if (macd->GetSignalPeriod() != signal_period)
+        {
+            macd->SetSignalPeriod(signal_period);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Signal Period");
@@ -1027,12 +1045,12 @@ Json::Value MACDIndicatorWrapper::ToJson() const
 *                                Savitzky Golay Filter
 **********************************************************************************/
 
-bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
+bool TrendAnalysisDebugWrapper::DrawAsAvailableIndicator()
 {
     bool is_pressed = false;
 
-    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
-    assert(savitzky_golay_filter);
+    TrendAnalysisDebug* trend_analysis_debug = dynamic_cast<TrendAnalysisDebug*>(m_indicator.get());
+    assert(trend_analysis_debug);
 
     /// @begin Text
     ImGui::SetNextItemWidth(280);
@@ -1042,14 +1060,14 @@ bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
     /// @begin Input
     /// @ period 1
     ImGui::SetNextItemWidth(70);
-    std::string window_size_str = std::format("{}", savitzky_golay_filter->GetLength());
+    std::string window_size_str = std::format("{}", trend_analysis_debug->GetLength());
     char window_size_input_str[4] = "";
     std::copy(window_size_str.begin(), window_size_str.end(), window_size_input_str);
 
     if (ImGui::InputText(std::format("##window_size{}", m_id).c_str(), window_size_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int window_size = std::atoi(window_size_input_str);
-        savitzky_golay_filter->SetLength(window_size);
+        trend_analysis_debug->SetLength(window_size);
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Window Size");
@@ -1059,14 +1077,14 @@ bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
 
     /// @ period 2
     ImGui::SetNextItemWidth(70);
-    std::string polynomial_order_str = std::format("{}", savitzky_golay_filter->GetPolynomialOrder());
+    std::string polynomial_order_str = std::format("{}", trend_analysis_debug->GetPolynomialOrder());
     char polynomial_order_input_str[4] = "";
     std::copy(polynomial_order_str.begin(), polynomial_order_str.end(), polynomial_order_input_str);
 
     if (ImGui::InputText(std::format("##period 2{}", m_id).c_str(), polynomial_order_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int polynomial_order = std::atoi(polynomial_order_input_str);
-        savitzky_golay_filter->SetPolynomialOrder(polynomial_order);
+        trend_analysis_debug->SetPolynomialOrder(polynomial_order);
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Polynomial Order (Must be odd number)");
@@ -1076,14 +1094,14 @@ bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
 
     /// @ Distance
     ImGui::SetNextItemWidth(70);
-    std::string distance_str = std::format("{}", savitzky_golay_filter->GetDistance());
+    std::string distance_str = std::format("{}", trend_analysis_debug->GetDistance());
     char distance_input_str[4] = "";
     std::copy(distance_str.begin(), distance_str.end(), distance_input_str);
 
     if (ImGui::InputText(std::format("##distance{}", m_id).c_str(), distance_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int distance = std::atoi(distance_input_str);
-        savitzky_golay_filter->SetDistance(distance);
+        trend_analysis_debug->SetDistance(distance);
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Min distance between each peak.");
@@ -1093,14 +1111,14 @@ bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
 
     /// @ Width
     ImGui::SetNextItemWidth(70);
-    std::string width_str = std::format("{}", savitzky_golay_filter->GetWidth());
+    std::string width_str = std::format("{}", trend_analysis_debug->GetWidth());
     char width_input_str[4] = "";
     std::copy(width_str.begin(), width_str.end(), width_input_str);
 
     if (ImGui::InputText(std::format("##width{}", m_id).c_str(), width_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int width = std::atoi(width_input_str);
-        savitzky_golay_filter->SetWidth(width);
+        trend_analysis_debug->SetWidth(width);
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Width for finding peaks.");
@@ -1124,12 +1142,12 @@ bool SavitzkyGolayFilterWrapper::DrawAsAvailableIndicator()
     return is_pressed;
 }
 
-bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
+bool TrendAnalysisDebugWrapper::DrawAsAppliedIndicator()
 {
     bool is_pressed = false;
 
-    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
-    assert(savitzky_golay_filter);
+    TrendAnalysisDebug* trend_analysis_debug = dynamic_cast<TrendAnalysisDebug*>(m_indicator.get());
+    assert(trend_analysis_debug);
 
 
     /// @begin Text
@@ -1144,16 +1162,19 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
     /// @ period 1
     ImGui::SetNextItemWidth(70);
 
-    std::string window_size_str = std::format("{}", savitzky_golay_filter->GetLength());
+    std::string window_size_str = std::format("{}", trend_analysis_debug->GetLength());
     char window_size_input_str[4] = "";
     std::copy(window_size_str.begin(), window_size_str.end(), window_size_input_str);
 
     if (ImGui::InputText(std::format("##window_size{}", m_id).c_str(), window_size_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int window_size = std::atoi(window_size_input_str);
-        savitzky_golay_filter->SetLength(window_size);
+        if (trend_analysis_debug->GetLength() != window_size)
+        {
+            trend_analysis_debug->SetLength(window_size);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Window Size");
@@ -1163,12 +1184,12 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
 
     /// @ Polynomial order
     ImGui::SetNextItemWidth(70);
-    std::string polynomial_order_str = std::format("{}", savitzky_golay_filter->GetPolynomialOrder());
+    std::string polynomial_order_str = std::format("{}", trend_analysis_debug->GetPolynomialOrder());
     char polynomial_order_input_str[4] = "";
     std::copy(polynomial_order_str.begin(), polynomial_order_str.end(), polynomial_order_input_str);
 
-    bool is_polynomial_order_valid = savitzky_golay_filter->GetPolynomialOrder() % 2 != 0 &&
-        savitzky_golay_filter->GetPolynomialOrder() >= 5;
+    bool is_polynomial_order_valid = trend_analysis_debug->GetPolynomialOrder() % 2 != 0 &&
+        trend_analysis_debug->GetPolynomialOrder() >= 5;
     if (!is_polynomial_order_valid)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(237, 67, 55, 255));
@@ -1176,9 +1197,12 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
     if (ImGui::InputText(std::format("##polynomial_order{}", m_id).c_str(), polynomial_order_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int polynomial_order = std::atoi(polynomial_order_input_str);
-        savitzky_golay_filter->SetPolynomialOrder(polynomial_order);
+        if (trend_analysis_debug->GetPolynomialOrder() != polynomial_order)
+        {
+            trend_analysis_debug->SetPolynomialOrder(polynomial_order);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Polynomial Order (Must be odd number and greater than or equal to 5)");
@@ -1193,16 +1217,19 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
 
     /// @ Distance
     ImGui::SetNextItemWidth(70);
-    std::string distance_str = std::format("{}", savitzky_golay_filter->GetDistance());
+    std::string distance_str = std::format("{}", trend_analysis_debug->GetDistance());
     char distance_input_str[4] = "";
     std::copy(distance_str.begin(), distance_str.end(), distance_input_str);
 
     if (ImGui::InputText(std::format("##distance{}", m_id).c_str(), distance_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int distance = std::atoi(distance_input_str);
-        savitzky_golay_filter->SetDistance(distance);
+        if (trend_analysis_debug->GetDistance() != distance)
+        {
+            trend_analysis_debug->SetDistance(distance);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Min distance between each peak.");
@@ -1212,16 +1239,19 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
 
     /// @ Width
     ImGui::SetNextItemWidth(70);
-    std::string width_str = std::format("{}", savitzky_golay_filter->GetWidth());
+    std::string width_str = std::format("{}", trend_analysis_debug->GetWidth());
     char width_input_str[4] = "";
     std::copy(width_str.begin(), width_str.end(), width_input_str);
 
     if (ImGui::InputText(std::format("##width{}", m_id).c_str(), width_input_str, 4, ImGuiInputTextFlags_CharsDecimal))
     {
         int width = std::atoi(width_input_str);
-        savitzky_golay_filter->SetWidth(width);
+        if (trend_analysis_debug->GetWidth() != width)
+        {
+            trend_analysis_debug->SetWidth(width);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Width for finding peaks.");
@@ -1231,16 +1261,19 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
 
     /// @ rel_width
     ImGui::SetNextItemWidth(70);
-    std::string rel_width_str = std::format("{:.2f}", savitzky_golay_filter->GetRelativeWidth());
+    std::string rel_width_str = std::format("{:.2f}", trend_analysis_debug->GetRelativeWidth());
     char rel_width_input_str[10] = "";
     std::copy(rel_width_str.begin(), rel_width_str.end(), rel_width_input_str);
 
     if (ImGui::InputText(std::format("##rel_width{}", m_id).c_str(), rel_width_input_str, 10, ImGuiInputTextFlags_CharsDecimal))
     {
         double rel_width = std::atof(rel_width_input_str);
-        savitzky_golay_filter->SetRelativeWidth(rel_width);
+        if (fabs(trend_analysis_debug->GetRelativeWidth() - rel_width) > LDBL_EPSILON)
+        {
+            trend_analysis_debug->SetRelativeWidth(rel_width);
 
-        Calculate();
+            Calculate();
+        }
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("rel_width for finding peaks.");
@@ -1249,7 +1282,7 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
 
 
     /// @begin Colors
-    ImGui::ColorEdit4(std::format("##savitzky_golay_filter_color{}", m_id).c_str(), &m_colors_list[0].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
+    ImGui::ColorEdit4(std::format("##trend_analysis_debug_color{}", m_id).c_str(), &m_colors_list[0].x, ImGuiColorEditFlags_NoInputs); ImGui::SameLine();
     /// @end Colors
 
 
@@ -1266,7 +1299,7 @@ bool SavitzkyGolayFilterWrapper::DrawAsAppliedIndicator()
     return is_pressed;
 }
 
-void SavitzkyGolayFilterWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
+void TrendAnalysisDebugWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
     GenericIndicatorWrapper::PlotPostCandle(bull_color, bear_color);
 
@@ -1281,26 +1314,26 @@ void SavitzkyGolayFilterWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_c
     ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[1], count);
 }
 
-void SavitzkyGolayFilterWrapper::FromJson(Json::Value value)
+void TrendAnalysisDebugWrapper::FromJson(Json::Value value)
 {
-    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
-    assert(savitzky_golay_filter);
+    TrendAnalysisDebug* trend_analysis_debug = dynamic_cast<TrendAnalysisDebug*>(m_indicator.get());
+    assert(trend_analysis_debug);
 
     GenericIndicatorWrapper::FromJson(value);
-    savitzky_golay_filter->SetPolynomialOrder(value["PolynomialOrder"].asUInt());
-    savitzky_golay_filter->SetDistance(value["Distance"].asUInt());
-    savitzky_golay_filter->SetWidth(value["Width"].asUInt());
+    trend_analysis_debug->SetPolynomialOrder(value["PolynomialOrder"].asUInt());
+    trend_analysis_debug->SetDistance(value["Distance"].asUInt());
+    trend_analysis_debug->SetWidth(value["Width"].asUInt());
 }
 
-Json::Value SavitzkyGolayFilterWrapper::ToJson() const
+Json::Value TrendAnalysisDebugWrapper::ToJson() const
 {
-    SavitzkyGolayFilter* savitzky_golay_filter = dynamic_cast<SavitzkyGolayFilter*>(m_indicator.get());
-    assert(savitzky_golay_filter);
+    TrendAnalysisDebug* trend_analysis_debug = dynamic_cast<TrendAnalysisDebug*>(m_indicator.get());
+    assert(trend_analysis_debug);
 
     Json::Value json_indicator = GenericIndicatorWrapper::ToJson();
-    json_indicator["PolynomialOrder"] = savitzky_golay_filter->GetPolynomialOrder();
-    json_indicator["Distance"] = savitzky_golay_filter->GetDistance();
-    json_indicator["Width"] = savitzky_golay_filter->GetWidth();
+    json_indicator["PolynomialOrder"] = trend_analysis_debug->GetPolynomialOrder();
+    json_indicator["Distance"] = trend_analysis_debug->GetDistance();
+    json_indicator["Width"] = trend_analysis_debug->GetWidth();
 
     return json_indicator;
 }

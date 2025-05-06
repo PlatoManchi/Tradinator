@@ -138,7 +138,7 @@ void normalize(uniform double* uniform input,
 
 }
 
-export void calculate_savitzky_golay_filter(uniform double* uniform input,
+export void calculate_trend_analysis_debug(uniform double* uniform input,
                                             uniform uint64 count,
                                             uniform double* uniform a_buff,
                                             uniform double* uniform at_buff,

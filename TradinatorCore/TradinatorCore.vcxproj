@@ -177,7 +177,7 @@
     <ClInclude Include="Public\Indicators\OBV.h" />
     <ClInclude Include="Public\Indicators\ROC.h" />
     <ClInclude Include="Public\Indicators\RSI.h" />
-    <ClInclude Include="Public\Indicators\SavitzkyGolayFilter.h" />
+    <ClInclude Include="Public\Indicators\TrendAnalysisDebug.h" />
     <ClInclude Include="Public\Indicators\SMA.h" />
     <ClInclude Include="Public\Indicators\WMA.h" />
     <ClInclude Include="Public\Market\Market.h" />
@@ -192,6 +192,7 @@
     <ClInclude Include="Public\Utils\Log.h" />
     <ClInclude Include="Public\Utils\ParallelAsyncTask.h" />
     <ClInclude Include="Public\Utils\SerialAsyncTask.h" />
+    <ClInclude Include="Public\Utils\StopWatch.h" />
     <ClInclude Include="Public\Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -206,7 +207,7 @@
     <ClCompile Include="Private\Indicators\OBV.cpp" />
     <ClCompile Include="Private\Indicators\ROC.cpp" />
     <ClCompile Include="Private\Indicators\RSI.cpp" />
-    <ClCompile Include="Private\Indicators\SavitzkyGolayFilter.cpp" />
+    <ClCompile Include="Private\Indicators\TrendAnalysisDebug.cpp" />
     <ClCompile Include="Private\Indicators\SMA.cpp" />
     <ClCompile Include="Private\Indicators\WMA.cpp" />
     <ClCompile Include="Private\Market\Market.cpp" />
@@ -221,6 +222,7 @@
     <ClCompile Include="Private\Utils\Log.cpp" />
     <ClCompile Include="Private\Utils\ParallelAsyncTask.cpp" />
     <ClCompile Include="Private\Utils\SerialAsyncTask.cpp" />
+    <ClCompile Include="Private\Utils\StopWatch.cpp" />
     <ClCompile Include="Private\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

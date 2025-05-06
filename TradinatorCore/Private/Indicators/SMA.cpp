@@ -5,6 +5,8 @@
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
 
+#include "Utils/StopWatch.h"
+
 #ifdef _SMA_ISPC_
 #include "indicator_helper_ispc.h"
 #endif // _SMA_ISPC_
@@ -31,7 +33,7 @@ std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -49,8 +51,9 @@ std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 		{
 			ispc_input.emplace_back(pair.second.m_close);
 		}
-
+		
 		ispc::calculate_sma(ispc_input.data(), ispc_output.data(), count, m_length);
+		
 
 		auto itr = candle_data->GetData().begin();
 		for (double sma_value : ispc_output)
@@ -87,9 +90,6 @@ std::vector<std::vector<IndicatorPoint>> SMA::Calculate()
 #endif // _SMA_ISPC_
 
 		result.emplace_back(std::move(sma));
-
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "SMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

@@ -4,6 +4,7 @@
 
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
+#include "Utils/StopWatch.h"
 
 #ifdef _EMA_ISPC_
 #include "indicator_helper_ispc.h"
@@ -27,7 +28,7 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		//std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		//StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
@@ -49,9 +50,9 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 			itr = std::prev(itr, 1);
 			ispc_input.emplace_back((*itr).second.m_close);
 		}
-
+		
 		ispc::calculate_ema(ispc_input.data(), ispc_output.data(), count, m_length);
-
+		
 		itr = candle_data->GetData().end();
 		for (double sma : ispc_output)
 		{
@@ -94,9 +95,6 @@ std::vector<std::vector<IndicatorPoint>> EMA::Calculate()
 #endif // _EMA_ISPC_
 		
 		result.emplace_back(std::move(ema));
-
-		//std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		//std::cout << "EMA Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 
 	return result;

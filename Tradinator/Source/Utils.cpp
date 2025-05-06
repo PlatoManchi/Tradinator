@@ -20,7 +20,7 @@
 #include "Indicators/OBV.h"
 #include "Indicators/MACD.h"
 #include "Indicators/ATR.h"
-#include "Indicators/SavitzkyGolayFilter.h"
+#include "Indicators/TrendAnalysisDebug.h"
 
 #include "Components/IndicatorWrappers.h"
 
@@ -113,8 +113,8 @@ namespace TradinatorAppSpace
 			return "MACD";
 		case E_ATR:
 			return "ATR";
-		case E_SavitzkyGolayFilter:
-			return "SavitzkyGolayFilter";
+		case E_TrendAnalysisDebug:
+			return "TrendAnalysisDebug";
 		}
 
 		return "";
@@ -140,8 +140,8 @@ namespace TradinatorAppSpace
 			return EIndicatorType::E_MACD;
 		else if (type_str == "ATR")
 			return EIndicatorType::E_ATR;
-		else if (type_str == "SavitzkyGolayFilter")
-			return EIndicatorType::E_SavitzkyGolayFilter;
+		else if (type_str == "TrendAnalysisDebug")
+			return EIndicatorType::E_TrendAnalysisDebug;
 
 		return EIndicatorType::MAX;
 	}
@@ -168,8 +168,8 @@ namespace TradinatorAppSpace
 			return std::make_unique<MACD>();
 		case E_ATR:
 			return std::make_unique<ATR>();
-		case E_SavitzkyGolayFilter:
-			return std::make_unique<SavitzkyGolayFilter>();
+		case E_TrendAnalysisDebug:
+			return std::make_unique<TrendAnalysisDebug>();
 		}
 
 		return nullptr;
@@ -204,8 +204,8 @@ namespace TradinatorAppSpace
 		case E_MACD:
 			wrapper = std::move(std::make_unique<MACDIndicatorWrapper>());
 			break;
-		case E_SavitzkyGolayFilter:
-			wrapper = std::move(std::make_unique<SavitzkyGolayFilterWrapper>());
+		case E_TrendAnalysisDebug:
+			wrapper = std::move(std::make_unique<TrendAnalysisDebugWrapper>());
 		}
 
 		if (wrapper)

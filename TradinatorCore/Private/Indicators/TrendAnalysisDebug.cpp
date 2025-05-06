@@ -1,4 +1,4 @@
-#include "Indicators/SavitzkyGolayFilter.h"
+#include "Indicators/TrendAnalysisDebug.h"
 
 #include <iostream>
 
@@ -6,6 +6,8 @@
 
 #include "Data/Counter.h"
 #include "Data/AsyncData.h"
+
+#include "Utils/StopWatch.h"
 
 #include "matrix_helper_ispc.h"
 #include "indicator_helper_ispc.h"
@@ -67,7 +69,7 @@ void PrintMatrix(double* mat, uint64_t row, uint64_t col)
 	std::cout << std::endl;
 }
 
-std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
+std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 {
 	std::vector<std::vector<IndicatorPoint>> result;
 
@@ -87,13 +89,13 @@ std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
 			is_ready = candle_data->IsDataReady();
 		}
 
-		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+		StopWatch stop_watch(GetName());
 
 		size_t count = candle_data->GetData().size();
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> savitzky_golay_filter;
-		savitzky_golay_filter.reserve(count);
+		std::vector<IndicatorPoint> trend_analysis_debug;
+		trend_analysis_debug.reserve(count);
 
 		std::vector<double> highs;
 		std::vector<double> lows;
@@ -121,7 +123,7 @@ std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
 			ispc_input.emplace_back(pair.second.m_close);
 		}
 
-		ispc::calculate_savitzky_golay_filter(
+		ispc::calculate_trend_analysis_debug(
 			ispc_input.data(), 
 			count, 
 			a.data(), 
@@ -142,7 +144,7 @@ std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
 			point.date = (*itr).first;
 			point.value = sma_value;
 
-			savitzky_golay_filter.emplace_back(std::move(point));
+			trend_analysis_debug.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -243,7 +245,7 @@ std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
 			point.date = (*itr).first;
 			point.value = smoothed_value;
 
-			savitzky_golay_filter.emplace_back(std::move(point));
+			trend_analysis_debug.emplace_back(std::move(point));
 
 			std::advance(itr, 1);
 		}
@@ -281,11 +283,8 @@ std::vector<std::vector<IndicatorPoint>> SavitzkyGolayFilter::Calculate()
 #endif // _SAVITZKY_GOLAY_FILTER_ISPC_
 
 
-		result.emplace_back(std::move(savitzky_golay_filter));
+		result.emplace_back(std::move(trend_analysis_debug));
 		result.emplace_back(std::move(peak_points));
-
-		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		std::cout << "SavitzkyGolayFilter Took " << std::to_string(std::chrono::duration<double>(end - start).count()) << " sec" << std::endl;
 	}
 	
 
@@ -387,7 +386,7 @@ size_t find_next_peak(const std::vector<double>& input_data, const std::vector<s
 	return result;
 }
 
-void SavitzkyGolayFilter::FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominences, uint64_t min_distance, uint64_t min_width, double relative_height)
+void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominences, uint64_t min_distance, uint64_t min_width, double relative_height)
 {
 	output_peaks_indices.clear();
 	std::vector<size_t> all_peaks;
@@ -493,7 +492,7 @@ void SavitzkyGolayFilter::FindPeaks(const std::vector<double>& input_data, std::
 
 
 
-void SavitzkyGolayFilter::Normalize(double* input, double* output, uint64_t size)
+void TrendAnalysisDebug::Normalize(double* input, double* output, uint64_t size)
 {
 	double total = 0;
 	for (uint64_t i = 0; i < size ; ++i)
@@ -508,7 +507,7 @@ void SavitzkyGolayFilter::Normalize(double* input, double* output, uint64_t size
 	}
 }
 
-double* SavitzkyGolayFilter::Transpose(double* matrix, uint16_t row, uint16_t col)
+double* TrendAnalysisDebug::Transpose(double* matrix, uint16_t row, uint16_t col)
 {
 	double* result = new double[col * row];
 
@@ -526,7 +525,7 @@ double* SavitzkyGolayFilter::Transpose(double* matrix, uint16_t row, uint16_t co
 	return result;
 }
 
-double* SavitzkyGolayFilter::Multiply(double* matrix_1, uint16_t row_1, uint16_t col_1, double* matrix_2, uint16_t row_2, uint16_t col_2)
+double* TrendAnalysisDebug::Multiply(double* matrix_1, uint16_t row_1, uint16_t col_1, double* matrix_2, uint16_t row_2, uint16_t col_2)
 {
 	if (col_1 != row_2) return nullptr;
 	double* result = new double[row_1 * col_2];
@@ -549,7 +548,7 @@ double* SavitzkyGolayFilter::Multiply(double* matrix_1, uint16_t row_1, uint16_t
 	return result;
 }
 
-double* SavitzkyGolayFilter::VandermondeMatrix(uint16_t polynomial_order, uint16_t window_size) const
+double* TrendAnalysisDebug::VandermondeMatrix(uint16_t polynomial_order, uint16_t window_size) const
 {
 	if (polynomial_order % 2 == 0) return nullptr;
 
@@ -572,7 +571,7 @@ double* SavitzkyGolayFilter::VandermondeMatrix(uint16_t polynomial_order, uint16
 }
 
 
-double* SavitzkyGolayFilter::Inverse(double* input, uint64_t size)
+double* TrendAnalysisDebug::Inverse(double* input, uint64_t size)
 {
 	double* input_tmp = new double[size * size];
 	memcpy(input_tmp, input, sizeof(double) * size * size);

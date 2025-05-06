@@ -10,21 +10,21 @@
 // Not an actual indicator, but this way its faster to draw the values on top of price chart
 // for debugging
 
-class SavitzkyGolayFilter : public Indicator
+class TrendAnalysisDebug : public Indicator
 {
 public:
-	SavitzkyGolayFilter() : Indicator() {}
+	TrendAnalysisDebug() : Indicator() {}
 
-	SavitzkyGolayFilter(size_t length) : Indicator(length) {};
-	SavitzkyGolayFilter(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {};
+	TrendAnalysisDebug(size_t length) : Indicator(length) {};
+	TrendAnalysisDebug(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {};
 
 	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
 
-	virtual std::string GetName() const override { return std::format("Savitzky Golay Filter ({})", m_length); }
-	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_SavitzkyGolayFilter; }
+	virtual std::string GetName() const override { return std::format("Trend Analysis Debug"); }
+	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_TrendAnalysisDebug; }
 	virtual std::unique_ptr<Indicator> Clone() override
 	{
-		return std::make_unique<SavitzkyGolayFilter>(*this);
+		return std::make_unique<TrendAnalysisDebug>(*this);
 	}
 
 	inline uint16_t GetPolynomialOrder() const { return m_polynomial_order; }
