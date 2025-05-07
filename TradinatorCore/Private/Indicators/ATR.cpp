@@ -35,8 +35,8 @@ std::vector<std::vector<double>> ATR::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> true_ranges(count);
-		std::vector<double> average_true_ranges(count);
+		std::vector<double> true_ranges(count, 0.0);
+		std::vector<double> average_true_ranges(count, 0.0);
 
 #ifdef _ATR_ISPC_
 		ispc::calculate_atr(data.m_highs.data(), data.m_lows.data(), data.m_closes.data(), true_ranges.data(), average_true_ranges.data(), m_length, count);

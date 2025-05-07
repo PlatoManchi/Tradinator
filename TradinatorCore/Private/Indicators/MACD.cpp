@@ -35,12 +35,12 @@ std::vector<std::vector<double>> MACD::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> period_1_ema(count);
-		std::vector<double> period_2_ema(count);
+		std::vector<double> period_1_ema(count, 0.0);
+		std::vector<double> period_2_ema(count, 0.0);
 
-		std::vector<double> macd(count);
-		std::vector<double> signal(count);
-		std::vector<double> histogram(count);
+		std::vector<double> macd(count, 0.0);
+		std::vector<double> signal(count, 0.0);
+		std::vector<double> histogram(count, 0.0);
 		
 #ifdef _MACD_ISPC_
 		if (m_source == EIndicatorSource::E_CLOSE)

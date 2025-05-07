@@ -2,7 +2,7 @@
 
 // Because each value is dependent on previous value, calculations cannot be parallelized.
 // Which makes ISPC version is slow because of overhead of making it gather previous value
-#if 0
+#if 1
 #define _EMA_ISPC_
 #else
 #endif

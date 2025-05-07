@@ -58,9 +58,9 @@ std::vector<std::vector<double>> BollingerBand::Calculate()
 			return result;
 		}
 
-		top = std::vector<double>(count);
-		sma = std::vector<double>(count);
-		bottom = std::vector<double>(count);
+		top = std::vector<double>(count, 0.0);
+		sma = std::vector<double>(count, 0.0);
+		bottom = std::vector<double>(count, 0.0);
 
 #ifdef _BOLLINGER_BAND_ISPC_
 		if (m_source == EIndicatorSource::E_CLOSE)
@@ -121,7 +121,7 @@ void BollingerBand::CalculateRaw(const double* input, double* top, double* sma, 
 
 	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i + 1 < window_size ? 0 : i + 1 - window_size);
 
 		double mean = sma[i];
 		double cumulative_deviation_squared = 0;
@@ -132,7 +132,7 @@ void BollingerBand::CalculateRaw(const double* input, double* top, double* sma, 
 			cumulative_deviation_squared += (deviation * deviation);
 		}
 
-		double variance = cumulative_deviation_squared / (i - start);
+		double variance = cumulative_deviation_squared / (i + 1 - start);
 		double standard_deviation = sqrt(variance);
 
 		top[i] = mean + standard_deviation_multiplier * standard_deviation;

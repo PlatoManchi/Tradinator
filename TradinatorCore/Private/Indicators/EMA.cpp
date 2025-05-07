@@ -35,7 +35,7 @@ std::vector<std::vector<double>> EMA::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> ema(count);
+		std::vector<double> ema(count, 0.0);
 
 #ifdef _EMA_ISPC_
 		if (m_source == EIndicatorSource::E_CLOSE)

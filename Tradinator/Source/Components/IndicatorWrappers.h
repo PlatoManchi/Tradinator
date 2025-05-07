@@ -49,13 +49,23 @@ public:
 	inline EIndicatorType IndicatorType() const { return m_indicator->IndicatorType(); }
 	inline bool IsSingleInstanceType() const { return m_indicator->IsSingleInstanceType(); }
 	inline bool ShouldShow() const { return m_show; }
-	
-	
+	inline std::shared_ptr<Security> GetSecurity() const { return m_security; }
+	inline const std::vector<std::vector<double>>& GetPointsList() const { return m_points_list; }
+
+	struct PlotPointGetterData
+	{
+		PlotPointGetterData() : m_indicator_wrapper(nullptr), m_points_index(-1) {}
+		PlotPointGetterData(IIndicatorWrapper* wrapper, int32_t index) : m_indicator_wrapper(wrapper), m_points_index(index) {}
+
+		IIndicatorWrapper* m_indicator_wrapper;
+		int32_t m_points_index;
+	};
+
 protected:
 	std::unique_ptr<Indicator> m_indicator;
 	std::shared_ptr<Security> m_security;
 
-	std::vector<std::vector<IndicatorPoint>> m_points_list;
+	std::vector<std::vector<double>> m_points_list;
 	std::vector<ImVec4> m_colors_list;
 
 	bool m_show = true;

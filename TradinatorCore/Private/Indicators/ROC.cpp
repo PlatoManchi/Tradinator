@@ -35,7 +35,7 @@ std::vector<std::vector<double>> ROC::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> roc(count);
+		std::vector<double> roc(count, 0.0);
 
 #ifdef _ROC_ISPC_
 		if (m_source == EIndicatorSource::E_CLOSE)

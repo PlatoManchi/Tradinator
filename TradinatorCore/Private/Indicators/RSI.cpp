@@ -1,6 +1,7 @@
 #include "Indicators/RSI.h"
 
 #include <iostream>
+#include <numeric>
 
 #include "Data/Security.h"
 #include "Data/AsyncData.h"
@@ -35,7 +36,7 @@ std::vector<std::vector<double>> RSI::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> rsi(count);
+		std::vector<double> rsi(count, 0.0);
 
 
 #ifdef _RSI_ISPC_
@@ -86,7 +87,7 @@ void RSI::CalculateRaw(const double* input, double* output, uint64_t window_size
 
 	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 1 : (i + 1 < window_size ? 1 : i + 1 - window_size);
 
 		double cumulative_gain = 0;
 		double cumulative_loss = 0;
@@ -96,10 +97,10 @@ void RSI::CalculateRaw(const double* input, double* output, uint64_t window_size
 			double diff = input[j] - input[j - 1];
 
 			cumulative_gain += (diff > 0.0 ? diff : 0.0);
-			cumulative_loss += (diff < 0.0 ? diff : 0.0);
+			cumulative_loss -= (diff < 0.0 ? diff : 0.0);
 		}
 
-		double relative_strength = cumulative_gain / abs(cumulative_loss);
+		double relative_strength = cumulative_gain / cumulative_loss;
 		output[i] = 100.0 - 100.0 / (1 + relative_strength);
 	}
 }

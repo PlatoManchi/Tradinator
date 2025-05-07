@@ -39,7 +39,7 @@ std::vector<std::vector<double>> SMA::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> sma(count);
+		std::vector<double> sma(count, 0.0);
 		
 		
 #ifdef _SMA_ISPC_
@@ -90,7 +90,7 @@ void SMA::CalculateRaw(const double* input, double* output, uint64_t window_size
 	output[0] = input[0];
 	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i + 1 < window_size ? 0 : i + 1 - window_size);
 
 		double sum = 0.0f;
 		for (uint64_t j = start; j <= i; ++j)
@@ -98,6 +98,6 @@ void SMA::CalculateRaw(const double* input, double* output, uint64_t window_size
 			sum += input[j];
 		}
 
-		output[i] = sum / (i - start);
+		output[i] = sum / (i + 1 - start);
 	}
 }

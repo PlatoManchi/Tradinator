@@ -31,7 +31,7 @@ std::vector<std::vector<double>> OBV::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> obv(count);
+		std::vector<double> obv(count, 0.0);
 
 #ifdef _OBV_ISPC_
 		ispc::calculate_obv(data.m_closes.data(), data.m_volumes.data(), obv.data(), count);

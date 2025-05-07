@@ -13,7 +13,7 @@ export void calculate_sma(const uniform double* uniform input,
     uniform int64 zero = 0;
     foreach (i = 1 ... data_size) 
     {
-        int64 start = select(window_size > data_size, zero, select(i < window_size, zero, (i - window_size)));
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
 
         double sum = 0.0f;
         for (int64 j = start; j <= i; ++j) 
@@ -21,7 +21,7 @@ export void calculate_sma(const uniform double* uniform input,
             sum += input[j];
         }
 
-        output[i] = sum / (i - start);
+        output[i] = sum / (i + 1 - start);
     }
 }
 
@@ -36,7 +36,7 @@ export void calculate_wma(const uniform double* uniform input,
     uniform int64 zero = 0;
     foreach (i = 1 ... data_size) 
     {
-        int64 start = select(window_size > data_size, zero, select(i < window_size, zero, i - window_size));
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
 
         double sum = 0.0f;
         int64 count = 0;
@@ -91,7 +91,7 @@ export void calculate_bollinger_band(const uniform double* uniform input,
     uniform int64 zero = 0;
     foreach (i = 1 ... data_size) 
     {
-        int64 start = select(window_size > data_size, zero, select(i < window_size, zero, i - window_size));
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
 
         double mean = sma_output[i];
         double cumulative_deviation_squared = 0;
@@ -102,7 +102,7 @@ export void calculate_bollinger_band(const uniform double* uniform input,
             cumulative_deviation_squared += (deviation * deviation);
         }
 
-        double variance = cumulative_deviation_squared / (i - start);
+        double variance = cumulative_deviation_squared / (i + 1 - start);
         double standard_deviation = sqrt(variance);
 
         top_output[i] = mean + standard_deviation_multiplier * standard_deviation;
@@ -140,16 +140,16 @@ export void calculate_roc(const uniform double* uniform input,
 // ---------------------------------- RSI -------------------------------------------
 export void calculate_rsi(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform uint64 data_size, 
-                            uniform uint64 window_size) 
+                            uniform uint64 window_size, 
+                            uniform uint64 data_size) 
 {
     output[0] = 0;
 
     uniform double dbl_zero = 0.0;
-    uniform int64 int_zero = 0;
+    uniform int64 int_one = 1;
     foreach (i = 1 ... data_size)
     {
-        int64 start = select(window_size > data_size, int_zero, select(i < window_size, int_zero, i - window_size));
+        int64 start = select(window_size > data_size, int_one, select(i + 1 < window_size, int_one, (i + 1 - window_size)));
 
         double cumulative_gain = 0;
         double cumulative_loss = 0;
@@ -159,10 +159,10 @@ export void calculate_rsi(const uniform double* uniform input,
             double diff = input[j] - input[j - 1];
 
             cumulative_gain += select(diff > 0.0, diff, dbl_zero);
-            cumulative_loss += select(diff < 0.0, diff, dbl_zero);
+            cumulative_loss -= select(diff < 0.0, diff, dbl_zero);
         }
 
-        double relative_strength = cumulative_gain / abs(cumulative_loss);
+        double relative_strength = cumulative_gain / cumulative_loss;
         output[i] = 100.0 - 100.0 / (1 + relative_strength);
     }    
 }

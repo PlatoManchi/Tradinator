@@ -35,7 +35,7 @@ std::vector<std::vector<double>> WMA::Calculate()
 
 		if (count == 0) return result;
 
-		std::vector<double> wma(count);
+		std::vector<double> wma(count, 0.0);
 
 #ifdef _WMA_ISPC_
 		if (m_source == EIndicatorSource::E_CLOSE)
@@ -85,7 +85,7 @@ void WMA::CalculateRaw(const double* input, double* output, uint64_t window_size
 	output[0] = input[0];
 	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i + 1 < window_size ? 0 : i + 1 - window_size);
 
 		double sum = 0.0f;
 		uint64_t count = 0;
