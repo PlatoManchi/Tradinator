@@ -16,7 +16,7 @@ public:
 	ATR(std::weak_ptr<Security> security, uint64_t length) : Indicator(length, security) {};
 
 	virtual std::vector<std::vector<double>> Calculate() override;
-	void CalculateRaw(const double* highs,	const double* lows, const double* closes, double* true_range_buff, double* output, uint64_t window_size, uint64_t data_size);
+	void CalculateRaw(const double* highs,	const double* lows, const double* closes, double* output, uint64_t window_size, uint64_t data_size);
 
 	virtual std::string GetName() const override { return std::format("Average True Range ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_ATR; }

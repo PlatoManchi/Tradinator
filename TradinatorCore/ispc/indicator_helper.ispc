@@ -59,15 +59,18 @@ export void calculate_ema(const uniform double* uniform input,
                             uniform uint64 data_size) 
 {
     // since values are dependent on previous value cant do parallel execution
-    // need to loop in scalar way    
-    uniform double factor = 2.0 / ((double)window_size + 1.0);
-    uniform double prev_ema = input[0];
-    output[0] = prev_ema;
-    
-    for (uniform int64 i = 1 ; i < data_size ; ++i) 
-    {
-        prev_ema = input[i] * factor + (1.0 - factor) * prev_ema;
-        output[i] = prev_ema;
+    // need to loop in scalar way   
+    if (programIndex == 0) 
+    { 
+        uniform double factor = 2.0 / ((double)window_size + 1.0);
+        uniform double prev_ema = input[0];
+        output[0] = prev_ema;
+        
+        for (uniform int64 i = 1 ; i < data_size ; ++i) 
+        {
+            prev_ema = input[i] * factor + (1.0 - factor) * prev_ema;
+            output[i] = prev_ema;
+        }
     }
 }
 
@@ -162,8 +165,15 @@ export void calculate_rsi(const uniform double* uniform input,
             cumulative_loss -= select(diff < 0.0, diff, dbl_zero);
         }
 
-        double relative_strength = cumulative_gain / cumulative_loss;
-        output[i] = 100.0 - 100.0 / (1 + relative_strength);
+        if(cumulative_loss < 0.00000001)
+        {
+            output[i] = 100.0;
+        }
+        else
+        {
+            double relative_strength = cumulative_gain / cumulative_loss;
+            output[i] = 100.0 - 100.0 / (1 + relative_strength);
+        }
     }    
 }
 
@@ -203,12 +213,15 @@ export void calculate_obv(const uniform double* uniform closes,
                             uniform double* uniform output, 
                             uniform uint64 data_size) 
 {
-    output[0] = volumes[0];
-
-    for (uniform int64 i = 1 ; i < data_size ; ++i) 
+    if (programIndex == 0) 
     {
-        uniform double factor = select(closes[i] > closes[i - 1], 1.0, -1.0);
-        output[i] = output[i - 1] + factor * volumes[i];
+        output[0] = volumes[0];
+
+        for (uniform int64 i = 1 ; i < data_size ; ++i) 
+        {
+            uniform double factor = select(closes[i] > closes[i - 1], 1.0, -1.0);
+            output[i] = output[i - 1] + factor * volumes[i];
+        }
     }
 }
 
@@ -216,21 +229,37 @@ export void calculate_obv(const uniform double* uniform closes,
 // ---------------------------------- ATR -------------------------------------------
 export void calculate_atr(const uniform double* uniform highs, 
                             const uniform double* uniform lows,
-                            const uniform double* uniform closes,  
-                            uniform double* uniform true_range_buff, 
+                            const uniform double* uniform closes,
                             uniform double* uniform output, 
                             uniform uint64 window_size, 
                             uniform uint64 data_size) 
-{   
-    true_range_buff[0] = highs[0] - lows[0];
-    foreach(i = 1 ... data_size)
+{
+    if (programIndex == 0) 
     {
-        double diff_1 = highs[i] - lows[i];
-        double diff_2 = highs[i] - closes[i - 1];
-        double diff_3 = lows[i] - closes[i - 1];
+        output[0] = highs[0] - lows[0];
+        // for first window_size items there is no previous ATR,
+        // so assign 0 to them and calculate average true range for that period
+        uniform double true_range_sum = output[0];
+        for (uniform int64 i = 1; i < window_size; ++i)
+        {
+            uniform double diff_1 = highs[i] - lows[i];
+            uniform double diff_2 = highs[i] - closes[i - 1];
+            uniform double diff_3 = lows[i] - closes[i - 1];
 
-        true_range_buff[i] = max(max(diff_1, diff_2), diff_3);
+            true_range_sum += max(max(diff_1, diff_2), diff_3);
+
+            output[i] = true_range_sum / i;
+        }
+        for (uniform int64 i = window_size; i < data_size; ++i)
+        //foreach (i = window_size ... data_size)
+        {
+            uniform double diff_1 = highs[i] - lows[i];
+            uniform double diff_2 = highs[i] - closes[i - 1];
+            uniform double diff_3 = lows[i] - closes[i - 1];
+
+            uniform double true_range = max(max(diff_1, diff_2), diff_3);
+
+            output[i] = (output[i - 1] * (window_size - 1) + true_range) / window_size;
+        }
     }
-    
-    calculate_sma(true_range_buff, output, window_size, data_size);
 }

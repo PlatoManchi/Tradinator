@@ -40,7 +40,7 @@ namespace ispc { /* namespace */
 #if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )
 extern "C" {
 #endif // __cplusplus
-    extern void calculate_atr(const double * highs, const double * lows, const double * closes, double * true_range_buff, double * output, uint64_t window_size, uint64_t data_size);
+    extern void calculate_atr(const double * highs, const double * lows, const double * closes, double * output, uint64_t window_size, uint64_t data_size);
     extern void calculate_bollinger_band(const double * input, double * top_output, double * sma_output, double * bottom_output, uint64_t window_size, double standard_deviation_multiplier, uint64_t data_size);
     extern void calculate_ema(const double * input, double * output, uint64_t window_size, uint64_t data_size);
     extern void calculate_macd(const double * input, double * ema_period_1_buffer, double * ema_period_2_buffer, double * mcda_output, double * signal_output, double * histogram_output, uint64_t period_1, uint64_t period_2, uint64_t signal_period, uint64_t data_size);
