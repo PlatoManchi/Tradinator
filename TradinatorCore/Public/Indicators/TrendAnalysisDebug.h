@@ -16,9 +16,9 @@ public:
 	TrendAnalysisDebug() : Indicator() {}
 
 	TrendAnalysisDebug(size_t length) : Indicator(length) {};
-	TrendAnalysisDebug(std::weak_ptr<Security> security, size_t length) : Indicator(security, length) {};
+	TrendAnalysisDebug(std::weak_ptr<Security> security, size_t length) : Indicator(length, security) {};
 
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
+	virtual std::vector<std::vector<double>> Calculate() override;
 
 	virtual std::string GetName() const override { return std::format("Trend Analysis Debug"); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_TrendAnalysisDebug; }

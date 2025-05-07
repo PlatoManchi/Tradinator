@@ -69,15 +69,15 @@ void PrintMatrix(double* mat, uint64_t row, uint64_t col)
 	std::cout << std::endl;
 }
 
-std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
+std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 
 	if (m_length <= 0 || m_polynomial_order % 2 == 0 || m_distance_btw_peaks == 0 || m_width_for_peaks == 0 || m_relative_height == 0)
 	{
 		return result;
 	}
-	
+#ifdef _DISABLE_
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
@@ -124,17 +124,17 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 		}
 
 		ispc::calculate_trend_analysis_debug(
-			ispc_input.data(), 
-			count, 
-			a.data(), 
-			at.data(), 
-			ata.data(), 
-			ata_inv.data(), 
-			ata_inv_at.data(), 
-			convolution_coefficient.data(), 
-			convolution_coefficient_tmp.data(), 
-			m_polynomial_order, 
-			m_length, 
+			ispc_input.data(),
+			count,
+			a.data(),
+			at.data(),
+			ata.data(),
+			ata_inv.data(),
+			ata_inv_at.data(),
+			convolution_coefficient.data(),
+			convolution_coefficient_tmp.data(),
+			m_polynomial_order,
+			m_length,
 			ispc_output.data());
 
 		auto itr = candle_data->GetData().begin();
@@ -303,7 +303,7 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 		//std::reverse(troughs.begin(), troughs.end());
 		std::vector<IndicatorPoint> trend_points;
 		trend_points.reserve(count);
-		
+
 		itr = candle_data->GetData().begin();
 		for (size_t i = 0; i < count; ++i)
 		{
@@ -348,7 +348,7 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 					{
 						peaks_up_count++;
 					}
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
 						smoothed_values[peaks[j]] < smoothed_values[peaks[j + 1]])
 					{
 						peaks_down_count++;
@@ -356,12 +356,12 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 				}
 				for (int j = trough_index; j < trough_index + history_length; ++j)
 				{
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
 						smoothed_values[troughs[j]] > smoothed_values[troughs[j + 1]])
 					{
 						troughs_up_count++;
 					}
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold || 
+					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
 						smoothed_values[troughs[j]] < smoothed_values[troughs[j + 1]])
 					{
 						troughs_down_count++;
@@ -395,6 +395,8 @@ std::vector<std::vector<IndicatorPoint>> TrendAnalysisDebug::Calculate()
 		result.emplace_back(std::move(trough_points));
 		result.emplace_back(std::move(trend_points));
 	}
+#endif // _DISABLE_
+	
 	
 
 	return result;

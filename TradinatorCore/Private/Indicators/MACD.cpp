@@ -12,142 +12,70 @@
 #endif // _MACD_ISPC_
 
 
-std::vector<std::vector<IndicatorPoint>> MACD::Calculate()
+std::vector<std::vector<double>> MACD::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_period_1 == 0 || m_period_2 == 0 || m_signal_period == 0) return result;
 
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		uint64_t count = data.m_dates.size();
+
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> macd;
-		macd.reserve(count);
-		std::vector<double> macd_raw;
+		std::vector<double> period_1_ema(count);
+		std::vector<double> period_2_ema(count);
+
+		std::vector<double> macd(count);
+		std::vector<double> signal(count);
+		std::vector<double> histogram(count);
 		
-
-		std::vector<IndicatorPoint> signal;
-		signal.reserve(count);
-		std::vector<double> signal_raw(count);
-		
-
-		std::vector<IndicatorPoint> histogram;
-		histogram.reserve(count);
-
 #ifdef _MACD_ISPC_
-		macd_raw = std::vector<double>(count);
-
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		ispc_input.reserve(count);
-
-		// ISPC doesn't like reading from back to front because it will become non-contiguous memory. 
-		// So reverse the array here and unreverse the output
-		auto reverse_itr = candle_data->GetData().end();
-		for (size_t i = 0; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			reverse_itr = std::prev(reverse_itr, 1);
-			ispc_input.emplace_back((*reverse_itr).second.m_close);
+			ispc::calculate_macd(data.m_closes.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
 		}
-
-		std::vector<double> period_1_ema(count);
-		std::vector<double> period_2_ema(count);
-		std::vector<double> histogram_raw(count);
-
-		ispc::calculate_mcda(ispc_input.data(), period_1_ema.data(), period_2_ema.data(), 
-			macd_raw.data(), signal_raw.data(), histogram_raw.data(), 
-			m_period_1, m_period_2, m_signal_period, count);
-
-		auto itr = candle_data->GetData().begin();
-		for (int64_t i = count - 1; i >= 0; --i)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint macd_point;
-			macd_point.date = (*itr).first;
-			macd_point.value = macd_raw[i];
-
-			IndicatorPoint signal_point;
-			signal_point.date = (*itr).first;
-			signal_point.value = signal_raw[i];
-
-			IndicatorPoint histogram_point;
-			histogram_point.date = (*itr).first;
-			histogram_point.value = histogram_raw[i];
-
-			macd.emplace_back(std::move(macd_point));
-			signal.emplace_back(std::move(signal_point));
-			histogram.emplace_back(std::move(histogram_point));
-
-			std::advance(itr, 1);
+			ispc::calculate_macd(data.m_highs.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
 		}
-
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_macd(data.m_opens.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_macd(data.m_lows.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
+		}
 #else
-		macd_raw.reserve(count);
-
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> price_data;
-		price_data.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			price_data.emplace_back(pair.second.m_close);
+			CalculateRaw(data.m_closes.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
 		}
-
-		std::vector<double> period_1_ema(count);
-		std::vector<double> period_2_ema(count);
-
-		EMA::CalculateRaw(price_data.data(), period_1_ema.data(), count, m_period_1);
-		EMA::CalculateRaw(price_data.data(), period_2_ema.data(), count, m_period_2);
-
-		auto itr = candle_data->GetData().begin();
-		for (int i = 0; i < count; ++i)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			double macd_value = period_1_ema[i] - period_2_ema[i];
-
-			macd_raw.push_back(macd_value);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = macd_value;
-
-			macd.emplace_back(std::move(point));
-			std::advance(itr, 1);
+			CalculateRaw(data.m_highs.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
 		}
-
-		EMA::CalculateRaw(macd_raw.data(), signal_raw.data(), count, m_signal_period);
-
-		itr = candle_data->GetData().begin();
-		for (int i = 0; i < count; ++i)
+		else if (m_source == EIndicatorSource::E_OPEN)
 		{
-			// signal
-			IndicatorPoint signal_point;
-			signal_point.date = (*itr).first;
-			signal_point.value = signal_raw[i];
-
-			signal.emplace_back(std::move(signal_point));
-
-			// histogram
-			IndicatorPoint histogram_point;
-			histogram_point.date = (*itr).first;
-			histogram_point.value = macd_raw[i] - signal_raw[i];
-
-			histogram.emplace_back(std::move(histogram_point));
-
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_opens.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
 		}
-
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), period_1_ema.data(), period_2_ema.data(), macd.data(), signal.data(), histogram.data(), m_period_1, m_period_2, m_signal_period, count);
+		}
 #endif // _MACD_ISPC_
 
 		result.emplace_back(std::move(macd));
@@ -156,4 +84,26 @@ std::vector<std::vector<IndicatorPoint>> MACD::Calculate()
 	}
 
 	return result;
+}
+
+
+
+void MACD::CalculateRaw(const double* input, double* ema_period_1_buffer, double* ema_period_2_buffer, double* macd_output, double* signal_output, double* histogram_output, uint64_t period_1, uint64_t period_2, uint64_t signal_period, uint64_t data_size)
+{
+	EMA ema;
+
+	ema.CalculateRaw(input, ema_period_1_buffer, period_1, data_size);
+	ema.CalculateRaw(input, ema_period_2_buffer, period_2, data_size);
+
+	for (uint64_t i = 0; i < data_size; ++i)
+	{
+		macd_output[i] = ema_period_1_buffer[i] - ema_period_2_buffer[i];
+	}
+
+	ema.CalculateRaw(macd_output, signal_output, signal_period, data_size);
+
+	for (uint64_t i = 0; i < data_size; ++i)
+	{
+		histogram_output[i] = macd_output[i] - signal_output[i];
+	}
 }

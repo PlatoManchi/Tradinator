@@ -98,6 +98,6 @@ public:
 	std::vector<double> m_highs;
 	std::vector<double> m_lows;
 	std::vector<double> m_closes;
-	std::vector<size_t> m_volumes;
-	std::vector<size_t> m_open_interests;
+	std::vector<uint64_t> m_volumes;
+	std::vector<uint64_t> m_open_interests;
 };

@@ -31,7 +31,7 @@ std::vector<std::vector<double>> EMA::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0) return result;
 
@@ -79,14 +79,14 @@ std::vector<std::vector<double>> EMA::Calculate()
 	return result;
 }
 
-void EMA::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+void EMA::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
 {
-	double factor = 2.0 / ((double)window_size + 1.0);
+	const double factor = 2.0 / ((double)window_size + 1.0);
+
 	double prev_ema = input[0];
 	output[0] = prev_ema;
 
-	const double factor = 2.0 / (window_size + 1.0);
-	for (int64_t i = 1; i < data_size; ++i)
+	for (uint64_t i = 1; i < data_size; ++i)
 	{
 		prev_ema = input[i] * factor + (1.0 - factor) * prev_ema;
 		output[i] = prev_ema;

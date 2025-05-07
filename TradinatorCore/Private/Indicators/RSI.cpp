@@ -31,7 +31,7 @@ std::vector<std::vector<double>> RSI::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0) return result;
 
@@ -80,18 +80,18 @@ std::vector<std::vector<double>> RSI::Calculate()
 	return result;
 }
 
-void RSI::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+void RSI::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
 {
 	output[0] = 0;
 
-	for (size_t i = 1; i < data_size; ++i)
+	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
 		double cumulative_gain = 0;
 		double cumulative_loss = 0;
 
-		for (size_t j = start; j <= i; ++j)
+		for (uint64_t j = start; j <= i; ++j)
 		{
 			double diff = input[j] - input[j - 1];
 

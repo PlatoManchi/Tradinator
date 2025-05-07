@@ -31,7 +31,7 @@ std::vector<std::vector<double>> ROC::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0) return result;
 
@@ -80,11 +80,11 @@ std::vector<std::vector<double>> ROC::Calculate()
 }
 
 
-void ROC::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+void ROC::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
 {
-	for (size_t i = 0; i < data_size; ++i)
+	for (uint64_t i = 0; i < data_size; ++i)
 	{
-		size_t compare_with_index = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t compare_with_index = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
 		double current = input[i];
 		double compare_with = input[compare_with_index];

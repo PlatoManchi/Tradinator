@@ -31,7 +31,7 @@ std::vector<std::vector<double>> WMA::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0) return result;
 
@@ -80,22 +80,22 @@ std::vector<std::vector<double>> WMA::Calculate()
 }
 
 
-void WMA::CalculateRaw(const double* input, double* output, int64_t window_size, int64_t data_size)
+void WMA::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
 {
 	output[0] = input[0];
-	for (size_t i = 1; i < data_size; ++i)
+	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
 		double sum = 0.0f;
-		size_t count = 0;
-		for (size_t j = start; j <= i; ++j)
+		uint64_t count = 0;
+		for (uint64_t j = start; j <= i; ++j)
 		{
 			count = count + 1;
 			sum += (count * input[j]);
 		}
 
-		size_t sum_count = (count * (count + 1)) / 2; // Sum of n numbers is N(N+1)/2
+		uint64_t sum_count = (count * (count + 1)) / 2; // Sum of n numbers is N(N+1)/2
 		output[i] = sum / sum_count;
 	}
 }

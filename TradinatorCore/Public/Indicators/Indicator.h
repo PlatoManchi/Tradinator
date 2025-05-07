@@ -53,10 +53,10 @@ class Indicator
 public:
 	Indicator();
 	Indicator(EIndicatorSource source);
-	Indicator(size_t length);
-	Indicator(EIndicatorSource source, size_t length);
-	Indicator(size_t length, std::weak_ptr<Security> security);
-	Indicator(EIndicatorSource source, size_t length, std::weak_ptr<Security> security);
+	Indicator(uint64_t length);
+	Indicator(EIndicatorSource source, uint64_t length);
+	Indicator(uint64_t length, std::weak_ptr<Security> security);
+	Indicator(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security);
 
 	virtual std::vector<std::vector<double>> Calculate() = 0;
 	virtual std::string GetName() const = 0;
@@ -67,12 +67,12 @@ public:
 	virtual bool IsSingleInstanceType() const { return false; }
 	
 	void SetSecurity(std::weak_ptr<Security> security) { m_security = security; }
-	void SetLength(size_t length) { m_length = length; }
-	size_t& GetLength() { return m_length; }
+	void SetLength(uint64_t length) { m_length = length; }
+	uint64_t& GetLength() { return m_length; }
 
 protected:
 	EIndicatorSource m_source;
-	size_t m_length;
+	uint64_t m_length;
 	std::weak_ptr<Security> m_security;
 };
 

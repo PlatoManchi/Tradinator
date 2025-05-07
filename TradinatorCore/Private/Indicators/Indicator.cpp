@@ -14,21 +14,21 @@ Indicator::Indicator(EIndicatorSource source)
 
 }
 
-Indicator::Indicator(size_t length)
+Indicator::Indicator(uint64_t length)
 	: m_source(EIndicatorSource::E_CLOSE)
 	, m_length(length)
 {
 
 }
 
-Indicator::Indicator(EIndicatorSource source, size_t length)
+Indicator::Indicator(EIndicatorSource source, uint64_t length)
 	: m_source(source)
 	, m_length(length)
 {
 
 }
 
-Indicator::Indicator(size_t length, std::weak_ptr<Security> security)
+Indicator::Indicator(uint64_t length, std::weak_ptr<Security> security)
 	: m_source(EIndicatorSource::E_CLOSE)
 	, m_length(length)
 	, m_security(security)
@@ -36,7 +36,7 @@ Indicator::Indicator(size_t length, std::weak_ptr<Security> security)
 	
 }
 
-Indicator::Indicator(EIndicatorSource source, size_t length, std::weak_ptr<Security> security)
+Indicator::Indicator(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security)
 	: m_source(source)
 	, m_length(length)
 	, m_security(security)

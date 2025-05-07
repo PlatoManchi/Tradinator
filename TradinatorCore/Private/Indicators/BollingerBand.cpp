@@ -47,7 +47,7 @@ std::vector<std::vector<double>> BollingerBand::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0)
 		{
@@ -110,23 +110,23 @@ std::vector<std::vector<double>> BollingerBand::Calculate()
 }
 
 
-void BollingerBand::CalculateRaw(const double* input, double* top, double* sma, double* bottom, size_t window_size, double standard_deviation_multiplier, size_t data_size)
+void BollingerBand::CalculateRaw(const double* input, double* top, double* sma, double* bottom, uint64_t window_size, double standard_deviation_multiplier, uint64_t data_size)
 {
 	SMA sma_indicator;
-	sma_indicator.CalculateRaw(input, sma, window_size, standard_deviation_multiplier);
+	sma_indicator.CalculateRaw(input, sma, window_size, data_size);
 
 	top[0] = input[0];
 	sma[0] = input[0];
 	bottom[0] = input[0];
 
-	for (size_t i = 1; i < data_size; ++i)
+	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
 		double mean = sma[i];
 		double cumulative_deviation_squared = 0;
 
-		for (size_t j = start; j <= i; ++j)
+		for (uint64_t j = start; j <= i; ++j)
 		{
 			double deviation = input[j] - mean;
 			cumulative_deviation_squared += (deviation * deviation);

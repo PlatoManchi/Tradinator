@@ -22,17 +22,6 @@ class DownloadTask;
 class Indicator;
 
 
-/*
-Candle data is stored in this format
-Candles in ascending order
-
-size_t - number of candles
-1-1-2001 open high low close volume open_interest   
-2-1-2001 open high low close volume open_interest
-3-1-2001 open high low close volume open_interest
-....
-
-*/
 
 class Security : public Company, public std::enable_shared_from_this<Security>
 {

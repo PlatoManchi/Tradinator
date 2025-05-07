@@ -18,7 +18,6 @@
 
 std::vector<std::vector<double>> SMA::Calculate()
 {
-	
 	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
@@ -36,7 +35,7 @@ std::vector<std::vector<double>> SMA::Calculate()
 		StopWatch stop_watch(GetName());
 
 		const CandlesData& data = candles_data->GetData();
-		size_t count = data.m_dates.size();
+		uint64_t count = data.m_dates.size();
 
 		if (count == 0) return result;
 
@@ -86,15 +85,15 @@ std::vector<std::vector<double>> SMA::Calculate()
 }
 
 
-void SMA::CalculateRaw(const double* input, double* output, size_t window_size, size_t data_size)
+void SMA::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
 {
 	output[0] = input[0];
-	for (size_t i = 1; i < data_size; ++i)
+	for (uint64_t i = 1; i < data_size; ++i)
 	{
-		size_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
+		uint64_t start = window_size > data_size ? 0 : (i < window_size ? 0 : i - window_size);
 
 		double sum = 0.0f;
-		for (size_t j = start; j <= i; ++j)
+		for (uint64_t j = start; j <= i; ++j)
 		{
 			sum += input[j];
 		}

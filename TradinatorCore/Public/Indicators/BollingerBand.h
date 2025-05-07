@@ -21,32 +21,32 @@ public:
 		m_standard_deviation_multiplier = 2.0;
 	}
 
-	BollingerBand(size_t length, double standard_deviation_multiplier) 
+	BollingerBand(uint64_t length, double standard_deviation_multiplier) 
 		: Indicator(length)
 	{
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
-	BollingerBand(EIndicatorSource source, size_t length, double standard_deviation_multiplier)
+	BollingerBand(EIndicatorSource source, uint64_t length, double standard_deviation_multiplier)
 		: Indicator(source, length)
 	{
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
-	BollingerBand(size_t length, std::weak_ptr<Security> security, double standard_deviation_multiplier)
+	BollingerBand(uint64_t length, std::weak_ptr<Security> security, double standard_deviation_multiplier)
 		: Indicator(length, security)
 	{
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
-	BollingerBand(EIndicatorSource source, size_t length, std::weak_ptr<Security> security, double standard_deviation_multiplier)
+	BollingerBand(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security, double standard_deviation_multiplier)
 		: Indicator(source, length, security)
 	{
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
 	virtual std::vector<std::vector<double>> Calculate() override;
-	void CalculateRaw(const double* input, double* top, double* sma, double* bottom, size_t window_size, double standard_deviation_multiplier, size_t data_size);
+	void CalculateRaw(const double* input, double* top, double* sma, double* bottom, uint64_t window_size, double standard_deviation_multiplier, uint64_t data_size);
 
 	double GetStandardDeviationMultiplier() const { return m_standard_deviation_multiplier; }
 	void SetStandardDeviationMultiplier(double multiplier)
