@@ -33,7 +33,7 @@ std::vector<std::vector<double>> ROC::Calculate()
 		const CandlesData& data = candles_data->GetData();
 		uint64_t count = data.m_dates.size();
 
-		if (count == 0) return result;
+		if (count == 0 || m_length > count) return result;
 
 		std::vector<double> roc(count, 0.0);
 

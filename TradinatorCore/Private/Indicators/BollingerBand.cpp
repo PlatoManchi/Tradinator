@@ -49,7 +49,7 @@ std::vector<std::vector<double>> BollingerBand::Calculate()
 		const CandlesData& data = candles_data->GetData();
 		uint64_t count = data.m_dates.size();
 
-		if (count == 0)
+		if (count == 0 || m_length > count)
 		{
 			result.emplace_back(std::move(top));
 			result.emplace_back(std::move(sma));

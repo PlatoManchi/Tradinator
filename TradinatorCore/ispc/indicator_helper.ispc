@@ -146,35 +146,45 @@ export void calculate_rsi(const uniform double* uniform input,
                             uniform uint64 window_size, 
                             uniform uint64 data_size) 
 {
-    output[0] = 0;
-
-    uniform double dbl_zero = 0.0;
-    uniform int64 int_one = 1;
-    foreach (i = 1 ... data_size)
+    if(programIndex == 0)
     {
-        int64 start = select(window_size > data_size, int_one, select(i + 1 < window_size, int_one, (i + 1 - window_size)));
+        output[0] = 0;
 
-        double cumulative_gain = 0;
-        double cumulative_loss = 0;
-
-        for (int64 j = start; j <= i; ++j) 
+        uniform double prev_gain_avg = 0;
+        uniform double prev_loss_avg = 0;
+        for (uniform int64 i = 1; i < window_size + 1; ++i)
         {
-            double diff = input[j] - input[j - 1];
+            uniform double diff = input[i] - input[i - 1];
+            prev_gain_avg += (diff > 0.0 ? diff : 0.0);
+            prev_loss_avg -= (diff < 0.0 ? diff : 0.0);
 
-            cumulative_gain += select(diff > 0.0, diff, dbl_zero);
-            cumulative_loss -= select(diff < 0.0, diff, dbl_zero);
+            output[i] = 0;
         }
 
-        if(cumulative_loss < 0.00000001)
+        prev_gain_avg = prev_gain_avg / window_size;
+        prev_loss_avg = prev_loss_avg / window_size;
+
+        for (uniform int64 i = window_size + 1; i < data_size; ++i)
         {
-            output[i] = 100.0;
-        }
-        else
-        {
-            double relative_strength = cumulative_gain / cumulative_loss;
-            output[i] = 100.0 - 100.0 / (1 + relative_strength);
-        }
-    }    
+            uniform double diff = input[i] - input[i - 1];
+
+            uniform double gain = (diff > 0.0 ? diff : 0.0);
+            uniform double loss = -(diff < 0.0 ? diff : 0.0);
+
+            prev_gain_avg = (prev_gain_avg * (window_size - 1) + gain) / window_size;
+            prev_loss_avg = (prev_loss_avg * (window_size - 1) + loss) / window_size;
+
+            if (prev_loss_avg < 0.0000000001)
+            {
+                output[i] = 100.0;
+            }
+            else
+            {
+                uniform double relative_strength = prev_gain_avg / prev_loss_avg;
+                output[i] = 100.0 - 100.0 / (1 + relative_strength);
+            }
+        }  
+    }
 }
 
 

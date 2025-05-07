@@ -34,7 +34,7 @@ std::vector<std::vector<double>> RSI::Calculate()
 		const CandlesData& data = candles_data->GetData();
 		uint64_t count = data.m_dates.size();
 
-		if (count == 0) return result;
+		if (count == 0 || m_length > count) return result;
 
 		std::vector<double> rsi(count, 0.0);
 
@@ -85,22 +85,38 @@ void RSI::CalculateRaw(const double* input, double* output, uint64_t window_size
 {
 	output[0] = 0;
 
-	for (uint64_t i = 1; i < data_size; ++i)
+	double prev_gain_avg = 0;
+	double prev_loss_avg = 0;
+	for (uint64_t i = 1; i < window_size + 1; ++i)
 	{
-		uint64_t start = window_size > data_size ? 1 : (i + 1 < window_size ? 1 : i + 1 - window_size);
+		double diff = input[i] - input[i - 1];
+		prev_gain_avg += (diff > 0.0 ? diff : 0.0);
+		prev_loss_avg -= (diff < 0.0 ? diff : 0.0);
 
-		double cumulative_gain = 0;
-		double cumulative_loss = 0;
+		output[i] = 0;
+	}
 
-		for (uint64_t j = start; j <= i; ++j)
+	prev_gain_avg = prev_gain_avg / window_size;
+	prev_loss_avg = prev_loss_avg / window_size;
+
+	for (uint64_t i = window_size + 1; i < data_size; ++i)
+	{
+		double diff = input[i] - input[i - 1];
+
+		double gain = (diff > 0.0 ? diff : 0.0);
+		double loss = -(diff < 0.0 ? diff : 0.0);
+
+		prev_gain_avg = (prev_gain_avg * (window_size - 1) + gain) / window_size;
+		prev_loss_avg = (prev_loss_avg * (window_size - 1) + loss) / window_size;
+
+		if (prev_loss_avg < 0.0000000001) // e-10 is enough to be considered as zero
 		{
-			double diff = input[j] - input[j - 1];
-
-			cumulative_gain += (diff > 0.0 ? diff : 0.0);
-			cumulative_loss -= (diff < 0.0 ? diff : 0.0);
+			output[i] = 100.0;
 		}
-
-		double relative_strength = cumulative_gain / cumulative_loss;
-		output[i] = 100.0 - 100.0 / (1 + relative_strength);
+		else
+		{
+			double relative_strength = prev_gain_avg / prev_loss_avg;
+			output[i] = 100.0 - 100.0 / (1 + relative_strength);
+		}
 	}
 }

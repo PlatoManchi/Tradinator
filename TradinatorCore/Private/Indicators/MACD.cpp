@@ -33,7 +33,7 @@ std::vector<std::vector<double>> MACD::Calculate()
 		const CandlesData& data = candles_data->GetData();
 		uint64_t count = data.m_dates.size();
 
-		if (count == 0) return result;
+		if (count == 0 || m_period_1 > count || m_period_2 > count || m_signal_period > count) return result;
 
 		std::vector<double> period_1_ema(count, 0.0);
 		std::vector<double> period_2_ema(count, 0.0);
