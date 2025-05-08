@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 #include "Utils/StopWatch.h"
 
@@ -12,78 +12,64 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> WMA::Calculate()
+std::vector<std::vector<double>> WMA::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
-	std::shared_ptr<Counter> counter = m_counter.lock();
+	std::shared_ptr<Security> security = m_security.lock();
 
-	if (counter)
+	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
-		if (count == 0) return result;
+		const CandlesData& data = candles_data->GetData();
+		uint64_t count = data.m_dates.size();
 
-		std::vector<IndicatorPoint> wma;
-		wma.reserve(count);
+		if (count == 0 || m_length > count) return result;
+
+		std::vector<double> wma(count, 0.0);
 
 #ifdef _WMA_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_wma(data.m_closes.data(), wma.data(), m_length, count);
 		}
-
-		ispc::calculate_wma(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		auto itr = candle_data->GetData().begin();
-		for (double wma_value : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = wma_value;
-
-			wma.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			ispc::calculate_wma(data.m_highs.data(), wma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_wma(data.m_opens.data(), wma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_wma(data.m_lows.data(), wma.data(), m_length, count);
 		}
 #else
-		auto itr = candle_data->GetData().begin();
-		for (size_t i = 0; i < count; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_size = i + m_length < count ? m_length : count - i;
-			auto tmp_itr = itr;
-			double cumulative_closing_price = 0;
-			double weighted_count = 0;
-
-			for (size_t j = 0; j < window_size; ++j)
-			{
-				cumulative_closing_price += ((window_size - j) * (*tmp_itr).second.m_close);
-				weighted_count += (window_size - j);
-
-				std::advance(tmp_itr, 1);
-			}
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = cumulative_closing_price / weighted_count;
-
-			wma.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), wma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), wma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), wma.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), wma.data(), m_length, count);
 		}
 #endif // _WMA_ISPC_
 
@@ -91,4 +77,25 @@ std::vector<std::vector<IndicatorPoint>> WMA::Calculate()
 	}
 
 	return result;
+}
+
+
+void WMA::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
+{
+	output[0] = input[0];
+	for (uint64_t i = 1; i < data_size; ++i)
+	{
+		uint64_t start = window_size > data_size ? 0 : (i + 1 < window_size ? 0 : i + 1 - window_size);
+
+		double sum = 0.0f;
+		uint64_t count = 0;
+		for (uint64_t j = start; j <= i; ++j)
+		{
+			count = count + 1;
+			sum += (count * input[j]);
+		}
+
+		uint64_t sum_count = (count * (count + 1)) / 2; // Sum of n numbers is N(N+1)/2
+		output[i] = sum / sum_count;
+	}
 }

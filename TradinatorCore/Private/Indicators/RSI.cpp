@@ -1,8 +1,9 @@
 #include "Indicators/RSI.h"
 
 #include <iostream>
+#include <numeric>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 #include "Utils/StopWatch.h"
 
@@ -12,102 +13,110 @@
 
 
 
-std::vector<std::vector<IndicatorPoint>> RSI::Calculate()
+std::vector<std::vector<double>> RSI::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
-	std::shared_ptr<Counter> counter = m_counter.lock();
+	std::shared_ptr<Security> security = m_security.lock();
 
-	if (counter)
+	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
-		if (count == 0) return result;
+		const CandlesData& data = candles_data->GetData();
+		uint64_t count = data.m_dates.size();
 
-		std::vector<IndicatorPoint> rsi;
-		rsi.reserve(count);
+		if (count == 0 || m_length > count) return result;
+
+		std::vector<double> rsi(count, 0.0);
 
 
 #ifdef _RSI_ISPC_
-		const CandleDataMapType& data = candle_data->GetData();
-		std::vector<double> ispc_input;
-		std::vector<double> ispc_output(count);
-		ispc_input.reserve(count);
-
-		for (auto& pair : data)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			ispc_input.emplace_back(pair.second.m_close);
+			ispc::calculate_rsi(data.m_closes.data(), rsi.data(), m_length, count);
 		}
-
-		ispc::calculate_rsi(ispc_input.data(), ispc_output.data(), count, m_length);
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma : ispc_output)
+		else if (m_source == EIndicatorSource::E_HIGH)
 		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma;
-
-			rsi.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			ispc::calculate_rsi(data.m_highs.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			ispc::calculate_rsi(data.m_opens.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			ispc::calculate_rsi(data.m_lows.data(), rsi.data(), m_length, count);
 		}
 #else
-		auto itr = candle_data->GetData().begin();
-		auto end_itr = candle_data->GetData().end();
-
-		for (size_t i = 0; i < count-1; ++i)
+		if (m_source == EIndicatorSource::E_CLOSE)
 		{
-			size_t window_size = i + m_length < count - 1 ? m_length : count - i - 1;
-			auto tmp_itr = itr;
-			
-			double cumulative_gain = 0;
-			double cumulative_loss = 0;
-
-			for (size_t j = 0; j < window_size; ++j)
-			{
-				double current = (*tmp_itr).second.m_close;
-
-				std::advance(tmp_itr, 1);
-				
-				double prev = (*tmp_itr).second.m_close;
-
-				double diff = current - prev;
-				if (diff > 0)
-					cumulative_gain += diff;
-				else if (diff < 0)
-					cumulative_loss += diff;
-			}
-			double relative_strength = cumulative_gain / fabs(cumulative_loss);
-			double relative_strength_index = 100.0 - 100.0 / (1 + relative_strength);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = relative_strength_index;
-
-			rsi.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
+			CalculateRaw(data.m_closes.data(), rsi.data(), m_length, count);
 		}
-
-		IndicatorPoint point;
-		point.date = (*itr).first;
-		point.value = 0;
-
-		rsi.emplace_back(std::move(point));
+		else if (m_source == EIndicatorSource::E_HIGH)
+		{
+			CalculateRaw(data.m_highs.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_OPEN)
+		{
+			CalculateRaw(data.m_opens.data(), rsi.data(), m_length, count);
+		}
+		else if (m_source == EIndicatorSource::E_LOW)
+		{
+			CalculateRaw(data.m_lows.data(), rsi.data(), m_length, count);
+		}
 #endif // _RSI_ISPC_
 
 		result.emplace_back(std::move(rsi));
 	}
 
 	return result;
+}
+
+void RSI::CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size)
+{
+	output[0] = 0;
+
+	double prev_gain_avg = 0;
+	double prev_loss_avg = 0;
+	for (uint64_t i = 1; i < window_size + 1; ++i)
+	{
+		double diff = input[i] - input[i - 1];
+		prev_gain_avg += (diff > 0.0 ? diff : 0.0);
+		prev_loss_avg -= (diff < 0.0 ? diff : 0.0);
+
+		output[i] = 0;
+	}
+
+	prev_gain_avg = prev_gain_avg / window_size;
+	prev_loss_avg = prev_loss_avg / window_size;
+
+	for (uint64_t i = window_size + 1; i < data_size; ++i)
+	{
+		double diff = input[i] - input[i - 1];
+
+		double gain = (diff > 0.0 ? diff : 0.0);
+		double loss = -(diff < 0.0 ? diff : 0.0);
+
+		prev_gain_avg = (prev_gain_avg * (window_size - 1) + gain) / window_size;
+		prev_loss_avg = (prev_loss_avg * (window_size - 1) + loss) / window_size;
+
+		if (prev_loss_avg < 0.0000000001) // e-10 is enough to be considered as zero
+		{
+			output[i] = 100.0;
+		}
+		else
+		{
+			double relative_strength = prev_gain_avg / prev_loss_avg;
+			output[i] = 100.0 - 100.0 / (1 + relative_strength);
+		}
+	}
 }

@@ -12,10 +12,11 @@ class ATR : public Indicator
 public:
 	ATR() : Indicator() {}
 
-	ATR(size_t length) : Indicator(length) {};
-	ATR(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {};
+	ATR(uint64_t length) : Indicator(length) {};
+	ATR(std::weak_ptr<Security> security, uint64_t length) : Indicator(length, security) {};
 
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
+	virtual std::vector<std::vector<double>> Calculate() override;
+	void CalculateRaw(const double* highs,	const double* lows, const double* closes, double* output, uint64_t window_size, uint64_t data_size);
 
 	virtual std::string GetName() const override { return std::format("Average True Range ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_ATR; }

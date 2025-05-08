@@ -3,103 +3,109 @@
 
 
 // ---------------------------------- SMA -------------------------------------------
-export void calculate_sma(uniform double* uniform input, 
+export void calculate_sma(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform uint64 window_size,
+                            uniform uint64 data_size) 
 {
-    
-    foreach (i = 0 ... data_size) 
-    {
-        double sum = 0.0f;
-        
-        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
+    output[0] = input[0];
 
-        for (int j = 0; j < essential_window_size; ++j) 
+    uniform int64 zero = 0;
+    foreach (i = 1 ... data_size) 
+    {
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
+
+        double sum = 0.0f;
+        for (int64 j = start; j <= i; ++j) 
         {
-            int idx = i + j;
-            sum += input[idx];
+            sum += input[j];
         }
 
-        output[i] = sum / essential_window_size;
+        output[i] = sum / (i + 1 - start);
     }
 }
 
 
 // ---------------------------------- WMA -------------------------------------------
-export void calculate_wma(uniform double* uniform input, 
+export void calculate_wma(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform uint64 window_size,
+                            uniform uint64 data_size) 
 {
-    
-    foreach (i = 0 ... data_size) 
+    output[0] = input[0];
+    uniform int64 zero = 0;
+    foreach (i = 1 ... data_size) 
     {
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
+
         double sum = 0.0f;
-        int count = 0;
-
-        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
-
-        for (int j = 0; j < essential_window_size; ++j) 
+        int64 count = 0;
+        for (int64 j = start; j <= i; ++j) 
         {
-            int idx = i + j;
-            
-            sum += (essential_window_size - j) * input[idx];
-            count += (essential_window_size - j);
+            count = count + 1;
+            sum += (count * input[j]);
         }
 
-        output[i] = sum / count;
+        int64 sum_count = (count * (count + 1)) / 2; // Sum of n numbers is N(N+1)/2
+        output[i] = sum / sum_count;
     }
 }
 
 
 // ---------------------------------- EMA -------------------------------------------
-// Because of the scalar way the loop runs, its faster and cheaper to run this in vanilla C++
-// than wasting time to launch a SPMD
-export void calculate_ema(uniform double* uniform input, 
+export void calculate_ema(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform uint64 window_size, 
+                            uniform uint64 data_size) 
 {
-    output[0] = input[0];
-    uniform double factor = 2.0 / ((double)window_size + 1.0);
-
     // since values are dependent on previous value cant do parallel execution
-    // need to loop in scalar way
-    for (uint64 i = 1 ; i < data_size ; ++i) 
-    {
-        output[i] = input[i] * factor + output[i - 1] * (1.0 - factor);
+    // need to loop in scalar way   
+    if (programIndex == 0) 
+    { 
+        uniform double factor = 2.0 / ((double)window_size + 1.0);
+        uniform double prev_ema = input[0];
+        output[0] = prev_ema;
+        
+        for (uniform int64 i = 1 ; i < data_size ; ++i) 
+        {
+            prev_ema = input[i] * factor + (1.0 - factor) * prev_ema;
+            output[i] = prev_ema;
+        }
     }
 }
 
 
 
 // ---------------------------------- Bollinger Band -------------------------------------------
-export void calculate_bollinger_band(uniform double* uniform input,
+export void calculate_bollinger_band(const uniform double* uniform input,
                                         uniform double* uniform top_output,
                                         uniform double* uniform sma_output,
                                         uniform double* uniform bottom_output,
-                                        uniform unsigned int64 data_size,
-                                        uniform unsigned int64 window_size,
-                                        uniform double standard_deviation_multiplier)
+                                        uniform uint64 window_size,
+                                        uniform double standard_deviation_multiplier,
+                                        uniform uint64 data_size)
 {
-    calculate_sma(input, sma_output, data_size, window_size);
+    calculate_sma(input, sma_output, window_size, data_size);
 
-    foreach (i = 0 ... data_size) 
+    top_output[0] = input[0];
+    sma_output[0] = input[0];
+    bottom_output[0] = input[0];
+
+    uniform int64 zero = 0;
+    foreach (i = 1 ... data_size) 
     {
-        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
+        int64 start = select(window_size > data_size, zero, select(i + 1 < window_size, zero, (i + 1 - window_size)));
 
         double mean = sma_output[i];
         double cumulative_deviation_squared = 0;
 
-        for (int j = 0; j < essential_window_size; ++j) 
+        for (int64 j = start; j <= i; ++j)
         {
-            int idx = i + j;
-            double deviation = input[idx] - mean;
+            double deviation = input[j] - mean;
             cumulative_deviation_squared += (deviation * deviation);
         }
 
-        double variance = cumulative_deviation_squared / essential_window_size;
+        double variance = cumulative_deviation_squared / (i + 1 - start);
         double standard_deviation = sqrt(variance);
 
         top_output[i] = mean + standard_deviation_multiplier * standard_deviation;
@@ -109,76 +115,95 @@ export void calculate_bollinger_band(uniform double* uniform input,
 
 
 // ---------------------------------- ROC -------------------------------------------
-export void calculate_roc(uniform double* uniform input, 
+export void calculate_roc(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform unsigned int64 window_size, 
+                            uniform unsigned int64 data_size) 
 {
+    uniform int64 zero = 0;
     foreach (i = 0 ... data_size) 
     {
-        int64 essential_window_size = select(i + window_size < data_size, window_size, data_size - i);
+        int64 compare_with_index = select(window_size > data_size, zero, select(i < window_size, zero, i - window_size));
 
         double current = input[i];
-        double compare_with = select(i + essential_window_size < data_size, input[i + essential_window_size], input[data_size - 1]);
+        double compare_with = input[compare_with_index];
 
-        output[i] = ((current - compare_with) / compare_with) * 100.0;
+        if(compare_with != 0.0)
+        {
+            output[i] = ((current - compare_with) / compare_with) * 100.0;
+        }
+        else
+        {
+            output[i] = 0.0;
+        }
     }
 }
 
 
 // ---------------------------------- RSI -------------------------------------------
-export void calculate_rsi(uniform double* uniform input, 
+export void calculate_rsi(const uniform double* uniform input, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform uint64 window_size, 
+                            uniform uint64 data_size) 
 {
-    uniform double zero = 0.0;
-    foreach (i = 0 ... data_size - 1)
+    uniform double VERY_LARGE = 9999999999.0;
+    uniform double VERY_SMALL = 0.0000000001;
+    if(programIndex == 0)
     {
-        int64 essential_window_size = select(i + window_size < data_size - 1, window_size, data_size - i - 1);
+        output[0] = 0;
 
-        double cumulative_gain = 0;
-        double cumulative_loss = 0;
-
-        for (int j = 0; j < essential_window_size; ++j) 
+        uniform double prev_gain_avg = 0;
+        uniform double prev_loss_avg = 0;
+        for (uniform int64 i = 1; i < window_size + 1; ++i)
         {
-            int idx = i + j;
-            
-            double diff = input[idx] - input[idx + 1];
+            uniform double diff = input[i] - input[i - 1];
+            prev_gain_avg += (diff > 0.0 ? diff : 0.0);
+            prev_loss_avg -= (diff < 0.0 ? diff : 0.0);
 
-            cumulative_gain += select(diff > 0.0, diff, zero);
-            cumulative_loss += select(diff < 0.0, diff, zero);
+            output[i] = 0;
         }
 
-        double relative_strength = cumulative_gain / abs(cumulative_loss);
-        output[i] = 100.0 - 100.0 / (1 + relative_strength);
-    }
+        prev_gain_avg = prev_gain_avg / window_size;
+        prev_loss_avg = prev_loss_avg / window_size;
 
-    output[data_size - 1] = 0;
+        for (uniform int64 i = window_size + 1; i < data_size; ++i)
+        {
+            uniform double diff = input[i] - input[i - 1];
+
+            uniform double gain = (diff > 0.0 ? diff : 0.0);
+            uniform double loss = -(diff < 0.0 ? diff : 0.0);
+
+            prev_gain_avg = (prev_gain_avg * (window_size - 1) + gain) / window_size;
+            prev_loss_avg = (prev_loss_avg * (window_size - 1) + loss) / window_size;
+
+            uniform double relative_strength = select (prev_loss_avg < VERY_SMALL, VERY_LARGE, prev_gain_avg / prev_loss_avg);
+            output[i] = 100.0 - 100.0 / (1 + relative_strength);
+        }  
+    }
 }
 
 
 // ---------------------------------- MACD -------------------------------------------
-export void calculate_mcda(uniform double* uniform input, 
+export void calculate_macd(const uniform double* uniform input, 
                             uniform double* uniform ema_period_1_buffer,
                             uniform double* uniform ema_period_2_buffer,
                             uniform double* uniform mcda_output, 
                             uniform double* uniform signal_output, 
                             uniform double* uniform histogram_output,  
-                            uniform unsigned int64 period_1,
-                            uniform unsigned int64 period_2,
-                            uniform unsigned int64 signal_period,
-                            uniform unsigned int64 data_size) 
+                            uniform uint64 period_1,
+                            uniform uint64 period_2,
+                            uniform uint64 signal_period,
+                            uniform uint64 data_size) 
 {
-    calculate_ema(input, ema_period_1_buffer, data_size, period_1);
-    calculate_ema(input, ema_period_2_buffer, data_size, period_2);
+    calculate_ema(input, ema_period_1_buffer, period_1, data_size);
+    calculate_ema(input, ema_period_2_buffer, period_2, data_size);
 
     foreach(i = 0 ... data_size)
     {
         mcda_output[i] = ema_period_1_buffer[i] - ema_period_2_buffer[i];
     }
 
-    calculate_ema(mcda_output, signal_output, data_size, signal_period);
+    calculate_ema(mcda_output, signal_output, signal_period, data_size);
 
     foreach(i = 0 ... data_size)
     {
@@ -187,29 +212,59 @@ export void calculate_mcda(uniform double* uniform input,
 }
 
 
-// ---------------------------------- ATR -------------------------------------------
-export void calculate_atr(uniform double* uniform input_high, 
-                            uniform double* uniform input_low,
-                            uniform double* uniform input_close,  
-                            uniform double* uniform true_range_buff, 
+// ---------------------------------- OBV -------------------------------------------
+export void calculate_obv(const uniform double* uniform closes, 
+                            const uniform uint64* uniform volumes, 
                             uniform double* uniform output, 
-                            uniform unsigned int64 data_size, 
-                            uniform unsigned int64 window_size) 
+                            uniform uint64 data_size) 
 {
-    
-    foreach(i = 0 ... data_size)
+    if (programIndex == 0) 
     {
-        double diff_1 = input_high[i] - input_low[i];
-        double diff_2 = 0;
-        double diff_3 = 0;
+        output[0] = volumes[0];
 
-        if(i < data_size - 1)
+        for (uniform int64 i = 1 ; i < data_size ; ++i) 
         {
-            diff_2 = input_high[i] - input_close[i+1];
-            diff_3 = input_low[i] - input_close[i+1];
+            uniform double factor = select(closes[i] > closes[i - 1], 1.0, -1.0);
+            output[i] = output[i - 1] + factor * volumes[i];
         }
-        true_range_buff[i] = max(max(diff_1, diff_2), diff_3);
     }
+}
 
-    calculate_sma(true_range_buff, output, data_size, window_size);
+
+// ---------------------------------- ATR -------------------------------------------
+export void calculate_atr(const uniform double* uniform highs, 
+                            const uniform double* uniform lows,
+                            const uniform double* uniform closes,
+                            uniform double* uniform output, 
+                            uniform uint64 window_size, 
+                            uniform uint64 data_size) 
+{
+    if (programIndex == 0) 
+    {
+        output[0] = highs[0] - lows[0];
+        // for first window_size items there is no previous ATR,
+        // so assign 0 to them and calculate average true range for that period
+        uniform double true_range_sum = output[0];
+        for (uniform int64 i = 1; i < window_size; ++i)
+        {
+            uniform double diff_1 = highs[i] - lows[i];
+            uniform double diff_2 = highs[i] - closes[i - 1];
+            uniform double diff_3 = lows[i] - closes[i - 1];
+
+            true_range_sum += max(max(diff_1, diff_2), diff_3);
+
+            output[i] = true_range_sum / i;
+        }
+        for (uniform int64 i = window_size; i < data_size; ++i)
+        //foreach (i = window_size ... data_size)
+        {
+            uniform double diff_1 = highs[i] - lows[i];
+            uniform double diff_2 = highs[i] - closes[i - 1];
+            uniform double diff_3 = lows[i] - closes[i - 1];
+
+            uniform double true_range = max(max(diff_1, diff_2), diff_3);
+
+            output[i] = (output[i - 1] * (window_size - 1) + true_range) / window_size;
+        }
+    }
 }

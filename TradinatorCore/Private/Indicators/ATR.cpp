@@ -1,7 +1,7 @@
 #include "Indicators/ATR.h"
 #include <iostream>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 
 #include "Utils/StopWatch.h"
@@ -12,108 +12,71 @@
 #include "indicator_helper_ispc.h"
 #endif // _ATR_ISPC_
 
-std::vector<std::vector<IndicatorPoint>> ATR::Calculate()
+std::vector<std::vector<double>> ATR::Calculate()
 {
-	std::vector<std::vector<IndicatorPoint>> result;
+	std::vector<std::vector<double>> result;
 	if (m_length == 0) return result;
 
-	std::shared_ptr<Counter> counter = m_counter.lock();
+	std::shared_ptr<Security> security = m_security.lock();
 
-	if (counter)
+	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = counter->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
-		//StopWatch stop_watch(GetName());
+		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
-		if (count == 0) return result;
+		const CandlesData& data = candles_data->GetData();
+		uint64_t count = data.m_dates.size();
 
-		std::vector<double> true_ranges;
-		std::vector<double> average_true_ranges(count);
-		std::vector<IndicatorPoint> average_true_ranges_result;
-		average_true_ranges_result.reserve(count);
+		if (count == 0 || m_length > count) return result;
+
+		std::vector<double> average_true_ranges(count, 0.0);
 
 #ifdef _ATR_ISPC_
-		true_ranges = std::vector<double>(count);
-
-		std::vector<double> highs;
-		std::vector<double> lows;
-		std::vector<double> closes;
-		highs.reserve(count);
-		lows.reserve(count);
-		closes.reserve(count);
-
-		const CandleDataMapType& candle_data_map = candle_data->GetData();
-
-		for (const auto& itr : candle_data_map)
-		{
-			highs.push_back(itr.second.m_high);
-			lows.push_back(itr.second.m_low);
-			closes.push_back(itr.second.m_close);
-		}
-		
-		ispc::calculate_atr(highs.data(), lows.data(), closes.data(), true_ranges.data(), average_true_ranges.data(), count, m_length);
-		
-		auto itr = candle_data->GetData().begin();
-		for (double sma_value : average_true_ranges)
-		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma_value;
-
-			average_true_ranges_result.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
-		}
-		
+		ispc::calculate_atr(data.m_highs.data(), data.m_lows.data(), data.m_closes.data(), average_true_ranges.data(), m_length, count);
 #else
-		true_ranges.reserve(count);
-
-		auto itr = candle_data->GetData().begin();
-		auto end = candle_data->GetData().end();
-		while (itr != end)
-		{
-			const Candle& curr_candle = (*itr).second;
-			
-			double diff_1 = curr_candle.m_high - curr_candle.m_low;
-			double diff_2 = 0;
-			double diff_3 = 0;
-
-			std::advance(itr, 1);
-
-			if (itr != end)
-			{
-				const Candle& prev_candle = (*itr).second;
-				diff_2 = fabs(curr_candle.m_high - prev_candle.m_close);
-				diff_3 = fabs(curr_candle.m_low - prev_candle.m_close);
-			}
-
-			double true_range = std::max({ diff_1, diff_2, diff_3 });
-			true_ranges.push_back(true_range);
-		}
-
-		SMA::CalculateRaw(true_ranges.data(), average_true_ranges.data(), count, m_length);
-
-		itr = candle_data->GetData().begin();
-		for (double sma_value : average_true_ranges)
-		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma_value;
-
-			average_true_ranges_result.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
-		}
+		CalculateRaw(data.m_highs.data(), data.m_lows.data(), data.m_closes.data(), average_true_ranges.data(), m_length, count);
 #endif // _ATR_ISPC_
 
-		result.emplace_back(std::move(average_true_ranges_result));
+		result.emplace_back(std::move(average_true_ranges));
 	}
 
 	return result;
+}
+
+
+
+void ATR::CalculateRaw(const double* highs, const double* lows, const double* closes, double* output, uint64_t window_size, uint64_t data_size)
+{
+	output[0] = highs[0] - lows[0];
+
+	// for first window_size items there is no previous ATR,
+	// so assign 0 to them and calculate average true range for that period
+	double true_range_sum = output[0];
+	for (uint64_t i = 1; i < window_size; ++i)
+	{
+		double diff_1 = highs[i] - lows[i];
+		double diff_2 = highs[i] - closes[i - 1];
+		double diff_3 = lows[i] - closes[i - 1];
+
+		true_range_sum += std::max({ diff_1, diff_2, diff_3 });
+
+		output[i] = true_range_sum / (i + 1);
+	}
+
+	for (uint64_t i = window_size; i < data_size; ++i)
+	{
+		double diff_1 = highs[i] - lows[i];
+		double diff_2 = highs[i] - closes[i - 1];
+		double diff_3 = lows[i] - closes[i - 1];
+
+		double true_range = std::max({ diff_1, diff_2, diff_3 });
+
+		output[i] = (output[i - 1] * (window_size - 1) + true_range) / window_size;
+	}
 }

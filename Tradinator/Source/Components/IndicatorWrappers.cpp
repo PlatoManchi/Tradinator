@@ -3,7 +3,7 @@
 #include "implot.h"
 #include "implot_internal.h"
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Indicators/BollingerBand.h"
 #include "Indicators/MACD.h"
 #include "Indicators/TrendAnalysisDebug.h"
@@ -13,11 +13,26 @@
 size_t IIndicatorWrapper::_INCREMENTAL_WRAPPER_ID_ = 0;
 
 // Getter for IndicatorPoint to draw the plot
-ImPlotPoint indicator_plot_point_getter(int idx, void* data) {
-    std::vector<IndicatorPoint>* point_data = (std::vector<IndicatorPoint>*)(data);
-    const IndicatorPoint& point = (*point_data)[idx];
+ImPlotPoint generic_plot_point_getter(int idx, void* data) {
+    IIndicatorWrapper::PlotPointGetterData* getter_data = reinterpret_cast<IIndicatorWrapper::PlotPointGetterData*>(data);
+    IIndicatorWrapper* indicator_wrapper = getter_data->m_indicator_wrapper;
 
-    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(point.date.time_since_epoch()).count(), point.value);
+    std::chrono::system_clock::time_point date = indicator_wrapper->GetSecurity()->GetCandlesData()->GetData().m_dates[idx];
+    double value = indicator_wrapper->GetPointsList()[getter_data->m_points_index][idx];
+
+    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(date.time_since_epoch()).count(), value);
+}
+
+ImPlotPoint plot_point_from_index_getter(int idx, void* data) {
+    IIndicatorWrapper::PlotPointGetterData* getter_data = reinterpret_cast<IIndicatorWrapper::PlotPointGetterData*>(data);
+    IIndicatorWrapper* indicator_wrapper = getter_data->m_indicator_wrapper;
+
+    uint64_t index = (uint64_t)indicator_wrapper->GetPointsList()[getter_data->m_points_index][idx];
+
+    std::chrono::system_clock::time_point date = indicator_wrapper->GetSecurity()->GetCandlesData()->GetData().m_dates[index];
+    double value = indicator_wrapper->GetPointsList()[0][index];
+
+    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(date.time_since_epoch()).count(), value);
 }
 
 IIndicatorWrapper::IIndicatorWrapper()
@@ -26,15 +41,15 @@ IIndicatorWrapper::IIndicatorWrapper()
 }
 
 IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator)
-    : m_indicator(std::move(indicator)), m_counter(nullptr)
+    : m_indicator(std::move(indicator)), m_security(nullptr)
 {
     m_id = _INCREMENTAL_WRAPPER_ID_++;
 
     m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(m_indicator->IndicatorType()));
 }
 
-IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-    : m_indicator(std::move(indicator)), m_counter(counter)
+IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+    : m_indicator(std::move(indicator)), m_security(security)
 {
     m_id = _INCREMENTAL_WRAPPER_ID_++;
 
@@ -43,7 +58,7 @@ IIndicatorWrapper::IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::
 
 IIndicatorWrapper::IIndicatorWrapper(const IIndicatorWrapper& other)
     : m_indicator(std::move(other.m_indicator->Clone()))
-    , m_counter(other.m_counter)
+    , m_security(other.m_security)
     , m_points_list(other.m_points_list)
     , m_colors_list(other.m_colors_list)
     , m_show(other.m_show)
@@ -55,7 +70,7 @@ IIndicatorWrapper::IIndicatorWrapper(const IIndicatorWrapper& other)
 IIndicatorWrapper& IIndicatorWrapper::operator=(const IIndicatorWrapper& other)
 {
     m_indicator = std::move(other.m_indicator->Clone());
-    m_counter = other.m_counter;
+    m_security = other.m_security;
 
     m_points_list = other.m_points_list;
     m_colors_list = other.m_colors_list;
@@ -75,12 +90,12 @@ void IIndicatorWrapper::SetIndicator(std::unique_ptr<Indicator> indicator)
     m_colors_list.push_back(TradinatorAppSpace::Utils::GetIndicatorColor(m_indicator->IndicatorType()));
 }
 
-void IIndicatorWrapper::SetCounter(std::shared_ptr<Counter> counter)
+void IIndicatorWrapper::SetSecurity(std::shared_ptr<Security> security)
 {
-    m_counter = counter;
+    m_security = security;
     if (m_indicator)
     {
-        m_indicator->SetCounter(counter);
+        m_indicator->SetSecurity(security);
     }
 }
 
@@ -120,7 +135,7 @@ bool GenericIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -184,7 +199,7 @@ bool GenericIndicatorWrapper::DrawAsAppliedIndicator()
 
 void GenericIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
     m_points_list.clear();
     m_points_list = std::move(m_indicator->Calculate());
@@ -197,13 +212,18 @@ void GenericIndicatorWrapper::PlotPreCandle(ImVec4 bull_color, ImVec4 bear_color
 
 void GenericIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_color)
 {
-    if (m_points_list.size() == 0) return;
+    if (m_security->GetCandlesData()->IsDataReady())
+    {
+        if (m_points_list.size() == 0) return;
 
-    size_t count = m_points_list[0].size();
-    if (count == 0) return;
+        size_t count = m_points_list[0].size();
+        if (count == 0) return;
 
-    ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-    ImPlot::PlotLineG(std::format("{}", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[0], count);
+
+        PlotPointGetterData data(this, 0);
+        ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
+        ImPlot::PlotLineG(std::format("{}", m_indicator->GetName()).c_str(), generic_plot_point_getter, (void*)&data, count);
+    }
 }
 
 std::string GenericIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
@@ -212,7 +232,7 @@ std::string GenericIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
     {
         return std::format("{}({}) :   {}",
             TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
-            m_points_list[0][index].value);
+            m_points_list[0][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",
@@ -274,21 +294,16 @@ void GenericChartIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear
 
 void GenericChartIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
-    GenericIndicatorWrapper::Calculate();
-
-    for (const std::vector<IndicatorPoint>& points : m_points_list)
+    if (m_security->GetCandlesData()->IsDataReady())
     {
-        if (points.size() > 0)
+        GenericIndicatorWrapper::Calculate();
+        uint64_t count = m_security->GetCandlesData()->GetData().m_dates.size();
+        if (count > 0)
         {
-            std::chrono::system_clock::rep latest_date = std::chrono::duration_cast<std::chrono::seconds>(points[0].date.time_since_epoch()).count();
-            std::chrono::system_clock::rep oldest_date = std::chrono::duration_cast<std::chrono::seconds>(points[points.size() - 1].date.time_since_epoch()).count();
-
-            if (m_x_axis_min > oldest_date)
-                m_x_axis_min = oldest_date;
-            if (m_x_axis_max < latest_date)
-                m_x_axis_max = latest_date;
+            m_x_axis_min = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[0].time_since_epoch()).count();
+            m_x_axis_max = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[count - 1].time_since_epoch()).count();
         }
     }
 }
@@ -302,12 +317,12 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
 
 void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color)
 {
-    assert(m_counter);
+    assert(m_security);
     assert(!IsIndicatorOverlayable());
     
     
 
-    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
+    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
     {
         ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags | ImPlotAxisFlags_NoGridLines, y_axis_flags);
 
@@ -363,19 +378,23 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
 
 void GenericChartIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
-    for (int i = 0; i < m_points_list.size(); ++i)
+    if (m_security->GetCandlesData()->IsDataReady())
     {
-        ImVec4 color = m_colors_list[0];
-        if (i < m_colors_list.size())
+        for (int i = 0; i < m_points_list.size(); ++i)
         {
-            color = m_colors_list[i];
-        }
+            ImVec4 color = m_colors_list[0];
+            if (i < m_colors_list.size())
+            {
+                color = m_colors_list[i];
+            }
 
-        ImPlot::SetNextLineStyle(color, color.w);
-        ImPlot::PlotLineG(std::format("{}##Chart{}_{}{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id, i).c_str()
-            , indicator_plot_point_getter
-            , (void*)&m_points_list[i]
-            , m_points_list[i].size());
+            PlotPointGetterData data(this, i);
+            ImPlot::SetNextLineStyle(color, color.w);
+            ImPlot::PlotLineG(std::format("{}##Chart{}_{}{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id, i).c_str()
+                , generic_plot_point_getter
+                , (void*)&data
+                , m_points_list[i].size());
+        }
     }
 }
 
@@ -437,7 +456,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -527,7 +546,7 @@ bool BollingerBandIndicatorWrapper::DrawAsAppliedIndicator()
 
 void BollingerBandIndicatorWrapper::Calculate()
 {
-    assert(m_counter);
+    assert(m_security);
 
     BollingerBand* bollinger_band = dynamic_cast<BollingerBand*>(m_indicator.get());
     assert(bollinger_band);
@@ -542,11 +561,15 @@ void BollingerBandIndicatorWrapper::PlotPreCandle(ImVec4 bull_color, ImVec4 bear
 
     if (count != 0)
     {
+        std::shared_ptr<PlotPointGetterData> data = std::make_shared<PlotPointGetterData>(this, 0);
+
         // 10% of alpha of original color for filling
         ImPlot::SetNextFillStyle(m_colors_list[0], m_colors_list[0].w * 0.1f);
 
-        ImPlot::PlotShadedG("BollingerBand", indicator_plot_point_getter, (void*)&m_points_list[0],
-            indicator_plot_point_getter, (void*)&m_points_list[2], count);
+        PlotPointGetterData data_0(this, 0);
+        PlotPointGetterData data_2(this, 2);
+        ImPlot::PlotShadedG(std::format("{}", m_indicator->GetName()).c_str(), generic_plot_point_getter, (void*)&data_0,
+            generic_plot_point_getter, (void*)&data_2, count);
     }
 }
 
@@ -556,14 +579,17 @@ void BollingerBandIndicatorWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bea
 
     if (count != 0)
     {
+        PlotPointGetterData data_0(this, 0);
         ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-        ImPlot::PlotLineG("Top", indicator_plot_point_getter, (void*)&m_points_list[0], m_points_list[0].size());
+        ImPlot::PlotLineG("Top", generic_plot_point_getter, (void*)&data_0, m_points_list[0].size());
 
+        PlotPointGetterData data_1(this, 1);
         ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-        ImPlot::PlotLineG("SMA", indicator_plot_point_getter, (void*)&m_points_list[1], m_points_list[1].size());
+        ImPlot::PlotLineG("SMA", generic_plot_point_getter, (void*)&data_1, m_points_list[1].size());
 
+        PlotPointGetterData data_2(this, 2);
         ImPlot::SetNextLineStyle(m_colors_list[0], m_colors_list[0].w);
-        ImPlot::PlotLineG("Bottom", indicator_plot_point_getter, (void*)&m_points_list[2], m_points_list[2].size());
+        ImPlot::PlotLineG("Bottom", generic_plot_point_getter, (void*)&data_2, m_points_list[2].size());
     }
 }
 
@@ -573,9 +599,9 @@ std::string BollingerBandIndicatorWrapper::GetHumanReadableValueAt(size_t index)
     {
         return std::format("{}({}) :   {}, {}, {}",
             TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
-            m_points_list[0][index].value,
-            m_points_list[1][index].value,
-            m_points_list[2][index].value);
+            m_points_list[0][index],
+            m_points_list[1][index],
+            m_points_list[2][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",
@@ -609,23 +635,29 @@ Json::Value BollingerBandIndicatorWrapper::ToJson() const
 **********************************************************************************/
 void ROCIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
-    if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
+    if (m_security->GetCandlesData()->IsDataReady())
     {
-        if (ImPlot::BeginItem("Zero Line"))
+        uint64_t count = m_security->GetCandlesData()->GetData().m_dates.size();
+
+        if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
         {
-            ImDrawList* draw_list = ImPlot::GetPlotDrawList();    
-            ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-            double left = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][m_points_list[0].size() - 1].date.time_since_epoch()).count();
-            double right = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][0].date.time_since_epoch()).count();
-            
-            ImVec2 left_point = ImPlot::PlotToPixels(left, 0);
-            ImVec2 right_point = ImPlot::PlotToPixels(right, 0);
+            if (ImPlot::BeginItem("Zero Line"))
+            {
+                ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+                ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
+                double left = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[0].time_since_epoch()).count();
+                double right = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[count - 1].time_since_epoch()).count();
 
-            draw_list->AddLine(left_point, right_point, color);
+                ImVec2 left_point = ImPlot::PlotToPixels(left, 0);
+                ImVec2 right_point = ImPlot::PlotToPixels(right, 0);
 
-            ImPlot::EndItem();
+                draw_list->AddLine(left_point, right_point, color);
+
+                ImPlot::EndItem();
+            }
         }
     }
+    
     
     GenericChartIndicatorWrapper::PlotItems(bull_color, bear_color);
 }
@@ -635,38 +667,42 @@ void ROCIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 **********************************************************************************/
 void RSIIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
-    if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
+    if (m_security->GetCandlesData()->IsDataReady())
     {
-        if (ImPlot::BeginItem("50 Line and Zones"))
+        uint64_t count = m_security->GetCandlesData()->GetData().m_dates.size();
+        if (m_points_list.size() > 0 && m_points_list[0].size() > 0)
         {
-            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
-            ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-            double left = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][m_points_list[0].size() - 1].date.time_since_epoch()).count();
-            double right = std::chrono::duration_cast<std::chrono::seconds>(m_points_list[0][0].date.time_since_epoch()).count();
+            if (ImPlot::BeginItem("50 Line and Zones"))
+            {
+                ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+                ImU32 color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
+                double left = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[0].time_since_epoch()).count();
+                double right = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[count - 1].time_since_epoch()).count();
 
-            ImVec2 left_point = ImPlot::PlotToPixels(left, 50);
-            ImVec2 right_point = ImPlot::PlotToPixels(right, 50);
+                ImVec2 left_point = ImPlot::PlotToPixels(left, 50);
+                ImVec2 right_point = ImPlot::PlotToPixels(right, 50);
 
-            // 50 line
-            draw_list->AddLine(left_point, right_point, color);
+                // 50 line
+                draw_list->AddLine(left_point, right_point, color);
 
-            // Over Bought Zone
-            ImVec2 over_bought_top_left = ImPlot::PlotToPixels(left, 100);
-            ImVec2 over_bought_bottom_right = ImPlot::PlotToPixels(right, 70);
+                // Over Bought Zone
+                ImVec2 over_bought_top_left = ImPlot::PlotToPixels(left, 100);
+                ImVec2 over_bought_bottom_right = ImPlot::PlotToPixels(right, 70);
 
-            ImVec4 tmp_bear_color = bear_color;
-            tmp_bear_color.w = 0.1;
-            draw_list->AddRectFilled(over_bought_top_left, over_bought_bottom_right, ImGui::GetColorU32(tmp_bear_color));
+                ImVec4 tmp_bear_color = bear_color;
+                tmp_bear_color.w = 0.1;
+                draw_list->AddRectFilled(over_bought_top_left, over_bought_bottom_right, ImGui::GetColorU32(tmp_bear_color));
 
-            // Over Sold Zone
-            ImVec2 over_sold_top_left = ImPlot::PlotToPixels(left, 30);
-            ImVec2 over_sold_bottom_right = ImPlot::PlotToPixels(right, 0);
+                // Over Sold Zone
+                ImVec2 over_sold_top_left = ImPlot::PlotToPixels(left, 30);
+                ImVec2 over_sold_bottom_right = ImPlot::PlotToPixels(right, 0);
 
-            ImVec4 tmp_bull_color = bull_color;
-            tmp_bull_color.w = 0.1;
-            draw_list->AddRectFilled(over_sold_top_left, over_sold_bottom_right, ImGui::GetColorU32(tmp_bull_color));
+                ImVec4 tmp_bull_color = bull_color;
+                tmp_bull_color.w = 0.1;
+                draw_list->AddRectFilled(over_sold_top_left, over_sold_bottom_right, ImGui::GetColorU32(tmp_bull_color));
 
-            ImPlot::EndItem();
+                ImPlot::EndItem();
+            }
         }
     }
 
@@ -692,7 +728,7 @@ bool OBVIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -821,7 +857,7 @@ bool MACDIndicatorWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -924,7 +960,7 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
 
 
 
-    ::ImGui::SameLine();
+    ImGui::SameLine();
     /// @begin Button
     ImGui::SetNextItemWidth(50);
     if (ImGui::Button(std::format(" x ##remove indicator{}", m_id).c_str(), { 0, 0 }))
@@ -940,30 +976,36 @@ bool MACDIndicatorWrapper::DrawAsAppliedIndicator()
 
 void MACDIndicatorWrapper::PlotItems(ImVec4 bull_color, ImVec4 bear_color)
 {
-    if (m_points_list.size() == 3)
+    if (m_security->GetCandlesData()->IsDataReady())
     {
-        ImVec4 macd_color = m_colors_list[0];
-        ImPlot::SetNextLineStyle(macd_color, macd_color.w);
-        ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_counter->ISIN_Number(), m_id).c_str()
-            , indicator_plot_point_getter
-            , (void*)&m_points_list[0]
-            , m_points_list[0].size());
+        if (m_points_list.size() == 3)
+        {
+            PlotPointGetterData data_0(this, 0);
+            ImVec4 macd_color = m_colors_list[0];
+            ImPlot::SetNextLineStyle(macd_color, macd_color.w);
+            ImPlot::PlotLineG(std::format("{}##Chart{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str()
+                , generic_plot_point_getter
+                , (void*)&data_0
+                , m_points_list[0].size());
 
-        ImVec4 signal_color = m_colors_list[1];
-        ImPlot::SetNextLineStyle(signal_color, signal_color.w);
-        ImPlot::PlotLineG(std::format("Signal##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
-            , indicator_plot_point_getter
-            , (void*)&m_points_list[1]
-            , m_points_list[1].size());
+            PlotPointGetterData data_1(this, 1);
+            ImVec4 signal_color = m_colors_list[1];
+            ImPlot::SetNextLineStyle(signal_color, signal_color.w);
+            ImPlot::PlotLineG(std::format("Signal##Chart{}_{}", m_security->ISIN_Number(), m_id).c_str()
+                , generic_plot_point_getter
+                , (void*)&data_1
+                , m_points_list[1].size());
 
-        ImVec4 histogram_color = m_colors_list[2];
-        ImPlot::SetNextLineStyle(histogram_color, histogram_color.w);
-        ImPlot::SetNextFillStyle(histogram_color, histogram_color.w);
-        ImPlot::PlotBarsG(std::format("Histogram##Chart{}_{}", m_counter->ISIN_Number(), m_id).c_str()
-            , indicator_plot_point_getter
-            , (void*)&m_points_list[2]
-            , m_points_list[2].size()
-            , 60 * 60 * 12);
+            PlotPointGetterData data_2(this, 2);
+            ImVec4 histogram_color = m_colors_list[2];
+            ImPlot::SetNextLineStyle(histogram_color, histogram_color.w);
+            ImPlot::SetNextFillStyle(histogram_color, histogram_color.w);
+            ImPlot::PlotBarsG(std::format("Histogram##Chart{}_{}", m_security->ISIN_Number(), m_id).c_str()
+                , generic_plot_point_getter
+                , (void*)&data_2
+                , m_points_list[2].size()
+                , 60 * 60 * 12);
+        }
     }
 }
 
@@ -974,9 +1016,9 @@ std::string MACDIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
         return std::format("{}({}) :   {}, {}, {}",
             TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), 
             index,
-            m_points_list[0][index].value,
-            m_points_list[1][index].value,
-            m_points_list[2][index].value);
+            m_points_list[0][index],
+            m_points_list[1][index],
+            m_points_list[2][index]);
     }
     
     return std::format("{}({}) :   Invalid Input",
@@ -1150,7 +1192,7 @@ bool TrendAnalysisDebugWrapper::DrawAsAvailableIndicator()
     if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
     {
         std::shared_ptr<Indicator> new_indicator = m_indicator->Clone();
-        new_indicator->SetCounter(m_counter);
+        new_indicator->SetSecurity(m_security);
 
         is_pressed = true;
     }
@@ -1307,12 +1349,12 @@ bool TrendAnalysisDebugWrapper::DrawAsAppliedIndicator()
 
     /// @begin Button
     ImGui::SetNextItemWidth(50);
-    if (ImGui::Button(std::format(" + ##{}", m_id).c_str(), { 0, 0 }))
+    if (ImGui::Button(std::format(" x ##remove indicator{}", m_id).c_str(), { 0, 0 }))
     {
         is_pressed = true;
     }
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip(std::format("Apply {}", m_indicator->GetName()).c_str());
+        ImGui::SetTooltip(std::format("Remove {}", m_indicator->GetName()).c_str());
     }
 
     return is_pressed;
@@ -1322,31 +1364,36 @@ void TrendAnalysisDebugWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_co
 {
     GenericIndicatorWrapper::PlotPostCandle(bull_color, bear_color);
 
-    if (m_points_list.size() < 1) return;
+    if (m_security->GetCandlesData()->IsDataReady())
+    {
+        if (m_points_list.size() < 2) return;
 
-    size_t count = m_points_list[1].size();
-    if (count == 0) return;
+        size_t count = m_points_list[1].size();
+        if (count == 0) return;
 
-    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bear_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-    ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[1], count);
+        PlotPointGetterData data_1(this, 1);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bear_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), plot_point_from_index_getter, (void*)&data_1, count);
 
 
 
 
-    if (m_points_list.size() < 2) return;
+        if (m_points_list.size() < 3) return;
 
-    count = m_points_list[2].size();
-    if (count == 0) return;
+        count = m_points_list[2].size();
+        if (count == 0) return;
 
-    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bull_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-    ImPlot::PlotScatterG(std::format("{}##trough", m_indicator->GetName()).c_str(), indicator_plot_point_getter, (void*)&m_points_list[2], count);
+        PlotPointGetterData data_2(this, 2);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bull_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        ImPlot::PlotScatterG(std::format("{}##trough", m_indicator->GetName()).c_str(), plot_point_from_index_getter, (void*)&data_2, count);
+    }
 }
 
 std::string TrendAnalysisDebugWrapper::GetHumanReadableValueAt(size_t index) const
 {
     if (m_points_list.size() >= 4)
     {
-        double trend = m_points_list[3][index].value;
+        double trend = m_points_list[3][index];
         std::string trend_str = "None";
         if (trend > 0.9)
         {

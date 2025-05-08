@@ -7,21 +7,21 @@
 
 
 
-class Counter;
+class Security;
 
 class NewsPoint
 {
 public:
 	NewsPoint();
-	NewsPoint(std::shared_ptr<Counter> counter);
+	NewsPoint(std::shared_ptr<Security> security);
 
 	NewsPoint(const NewsPoint& other) = default;
 	NewsPoint(NewsPoint&& other) = default;
 	NewsPoint& operator=(const NewsPoint& other) = default;
 	NewsPoint& operator=(NewsPoint&& other) = default;
 
-	// Which counter this news belongs to
-	std::shared_ptr<Counter> m_counter;
+	// Which security this news belongs to
+	std::shared_ptr<Security> m_security;
 
 	// Most patterns/strategirs happen over a range of candles. This will hold the start and end of the range.
 	std::vector<std::chrono::system_clock::time_point> m_date_range;

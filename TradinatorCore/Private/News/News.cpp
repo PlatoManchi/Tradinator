@@ -2,14 +2,14 @@
 
 
 NewsPoint::NewsPoint()
-	: m_counter(nullptr)
+	: m_security(nullptr)
 	, m_date_range()
 	, m_pattern()
 { }
 
 
-NewsPoint::NewsPoint(std::shared_ptr<Counter> counter)
-	: m_counter(counter)
+NewsPoint::NewsPoint(std::shared_ptr<Security> security)
+	: m_security(security)
 	, m_date_range()
 	, m_pattern()
 {

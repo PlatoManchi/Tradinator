@@ -1,5 +1,10 @@
 #pragma once
 
+#if 1
+#define _OBV_ISPC_
+#else
+#endif
+
 #include "Indicator.h"
 
 // it will be extreme inefficient to do this in ispc since current value is dependent on previous value
@@ -8,10 +13,10 @@ class OBV : public Indicator
 {
 public:
 	OBV() : Indicator() {}
+	OBV(std::weak_ptr<Security> security) : Indicator(0, security) {};
 
-	OBV(std::weak_ptr<Counter> counter) : Indicator(counter, 0) {};
-
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
+	virtual std::vector<std::vector<double>> Calculate() override;
+	void CalculateRaw(const double* closes, const uint64_t* volumes, double* output, uint64_t data_size);
 
 	virtual std::string GetName() const override { return std::format("On Balance Volume"); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_OBV; }

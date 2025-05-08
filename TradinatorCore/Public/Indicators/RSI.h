@@ -6,15 +6,21 @@
 #endif
 
 
-#include "Indicator.h"
+#include "Indicators/Indicator.h"
+
+
 class RSI : public Indicator
 {
 public:
 	RSI() : Indicator() {}
-	RSI(size_t length) : Indicator(length) {}
-	RSI(std::weak_ptr<Counter> counter, size_t length) : Indicator(counter, length) {}
+	RSI(EIndicatorSource source) : Indicator(source) {}
+	RSI(uint64_t length) : Indicator(length) {}
+	RSI(EIndicatorSource source, uint64_t length) : Indicator(source, length) {}
+	RSI(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
+	RSI(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() override;
+	virtual std::vector<std::vector<double>> Calculate() override;
+	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 
 	virtual std::string GetName() const override { return std::format("Relative Strength Index ({})", m_length); }
 	virtual EIndicatorType IndicatorType() const override { return EIndicatorType::E_RSI; }

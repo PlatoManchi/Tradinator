@@ -56,21 +56,21 @@ namespace TradinatorAppSpace
 
 		switch (type)
 		{
-		case E_SMA:
+		case EIndicatorType::E_SMA:
 			return ImVec4(0.01f, 0.49f, 1.0f, 1.0f);
-		case E_WMA:
+		case EIndicatorType::E_WMA:
 			return ImVec4(0.298f, 0.458f, 0.678f, 1.0f);
-		case E_EMA:
+		case EIndicatorType::E_EMA:
 			return ImVec4(0.4f, 1.0f, 0.2f, 1.0f);
-		case E_BOLLINGER_BAND:
+		case EIndicatorType::E_BOLLINGER_BAND:
 			return ImVec4(0.368f, 0.368f, 0.972f, 1.0f);
-		case E_ROC:
+		case EIndicatorType::E_ROC:
 			return ImVec4(1.0f, 0.501f, 0.0f, 1.0f);
-		case E_RSI:
+		case EIndicatorType::E_RSI:
 			return ImVec4(0.870f, 0.0f, 0.870f, 1.0f);
-		case E_OBV:
+		case EIndicatorType::E_OBV:
 			return ImVec4(0.298f, 0.686f, 0.314f, 1.0f);
-		case E_MACD:
+		case EIndicatorType::E_MACD:
 			if (index == 0)
 			{
 				return ImVec4(0.0f, 0.5f, 1.0f, 1.0f);
@@ -84,7 +84,7 @@ namespace TradinatorAppSpace
 				return ImVec4(1.0f, 0.349f, 0.349f, 1.0f);
 			}
 			break;
-		case E_ATR:
+		case EIndicatorType::E_ATR:
 			return ImVec4(0.8f, 0.0f, 0.0f, 1.0f);
 		}
 
@@ -95,25 +95,25 @@ namespace TradinatorAppSpace
 	{
 		switch (type)
 		{
-		case E_SMA:
+		case EIndicatorType::E_SMA:
 			return "SMA";
-		case E_WMA:
+		case EIndicatorType::E_WMA:
 			return "WMA";
-		case E_EMA:
+		case EIndicatorType::E_EMA:
 			return "EMA";
-		case E_BOLLINGER_BAND:
+		case EIndicatorType::E_BOLLINGER_BAND:
 			return "Boolinger Band";
-		case E_ROC:
+		case EIndicatorType::E_ROC:
 			return "ROC";
-		case E_RSI:
+		case EIndicatorType::E_RSI:
 			return "RSI";
-		case E_OBV:
+		case EIndicatorType::E_OBV:
 			return "OBV";
-		case E_MACD:
+		case EIndicatorType::E_MACD:
 			return "MACD";
-		case E_ATR:
+		case EIndicatorType::E_ATR:
 			return "ATR";
-		case E_TrendAnalysisDebug:
+		case EIndicatorType::E_TrendAnalysisDebug:
 			return "Trend Analysis Debug";
 		}
 
@@ -150,25 +150,25 @@ namespace TradinatorAppSpace
 	{
 		switch (type)
 		{
-		case E_SMA:
+		case EIndicatorType::E_SMA:
 			return std::make_unique<SMA>();
-		case E_WMA:
+		case EIndicatorType::E_WMA:
 			return std::make_unique<WMA>();
-		case E_EMA:
+		case EIndicatorType::E_EMA:
 			return std::make_unique<EMA>();
-		case E_BOLLINGER_BAND:
+		case EIndicatorType::E_BOLLINGER_BAND:
 			return std::make_unique<BollingerBand>();
-		case E_ROC:
+		case EIndicatorType::E_ROC:
 			return std::make_unique<ROC>();
-		case E_RSI:
+		case EIndicatorType::E_RSI:
 			return std::make_unique<RSI>();
-		case E_OBV:
+		case EIndicatorType::E_OBV:
 			return std::make_unique<OBV>();
-		case E_MACD:
+		case EIndicatorType::E_MACD:
 			return std::make_unique<MACD>();
-		case E_ATR:
+		case EIndicatorType::E_ATR:
 			return std::make_unique<ATR>();
-		case E_TrendAnalysisDebug:
+		case EIndicatorType::E_TrendAnalysisDebug:
 			return std::make_unique<TrendAnalysisDebug>();
 		}
 
@@ -180,31 +180,31 @@ namespace TradinatorAppSpace
 		std::unique_ptr<IIndicatorWrapper> wrapper = nullptr;
 		switch (type)
 		{
-		case E_SMA:
-		case E_WMA:
-		case E_EMA:
+		case EIndicatorType::E_SMA:
+		case EIndicatorType::E_WMA:
+		case EIndicatorType::E_EMA:
 			wrapper = std::move(std::make_unique<GenericIndicatorWrapper>());
 			break;
 
-		case E_ATR:
+		case EIndicatorType::E_ATR:
 			wrapper = std::move(std::make_unique<GenericChartIndicatorWrapper>());
 			break;
-		case E_ROC:
+		case EIndicatorType::E_ROC:
 			wrapper = std::move(std::make_unique<ROCIndicatorWrapper>());
 			break; 
-		case E_RSI:
+		case EIndicatorType::E_RSI:
 			wrapper = std::move(std::make_unique<RSIIndicatorWrapper>());
 			break;
-		case E_BOLLINGER_BAND:
+		case EIndicatorType::E_BOLLINGER_BAND:
 			wrapper = std::move(std::make_unique<BollingerBandIndicatorWrapper>());
 			break;
-		case E_OBV:
+		case EIndicatorType::E_OBV:
 			wrapper = std::move(std::make_unique<OBVIndicatorWrapper>());
 			break;
-		case E_MACD:
+		case EIndicatorType::E_MACD:
 			wrapper = std::move(std::make_unique<MACDIndicatorWrapper>());
 			break;
-		case E_TrendAnalysisDebug:
+		case EIndicatorType::E_TrendAnalysisDebug:
 			wrapper = std::move(std::make_unique<TrendAnalysisDebugWrapper>());
 		}
 
@@ -216,13 +216,13 @@ namespace TradinatorAppSpace
 		return wrapper;
 	}
 
-	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
+	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
 	{
 		std::unique_ptr<IIndicatorWrapper> wrapper = std::move(GetIndicatorWrapper(indicator->IndicatorType()));
 		if (wrapper)
 		{
 			wrapper->SetIndicator(std::move(indicator));
-			wrapper->SetCounter(counter);
+			wrapper->SetSecurity(security);
 
 
 			return wrapper;

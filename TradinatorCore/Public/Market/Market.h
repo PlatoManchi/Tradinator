@@ -4,7 +4,7 @@
 #include <memory>
 #include <map>
 
-#include "Data/Counter.h"
+#include "Data/Security.h"
 #include "Data/AsyncData.h"
 
 class TradinatorCoreThread;
@@ -22,14 +22,14 @@ public:
 
 
 
-	virtual std::string GetCounterListRawDataFileName() const = 0;
-	virtual std::string GetCounterListProcessedDataFileName() const = 0;
+	virtual std::string GetSecurityListRawDataFileName() const = 0;
+	virtual std::string GetSecurityListProcessedDataFileName() const = 0;
 	
 	std::string GetRawDataFolderPath() const;
 	std::string GetProcessedDataFolderPath() const;
 
-	std::string GetCounterListRawDataFilePath() const;
-	std::string GetCounterListProcessedDataFilePath() const;
+	std::string GetSecurityListRawDataFilePath() const;
+	std::string GetSecurityListProcessedDataFilePath() const;
 
 	std::unique_ptr<AsyncTask> GetGatherSecuritiesTask();
 	std::unique_ptr<AsyncTask> GetParallelDownloadTask();
@@ -38,23 +38,23 @@ public:
 
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }
-	inline bool IsCounterDataAvailable() const { return m_securities_async_data.IsDataReady(); }
-	inline const AsyncData<std::map<std::string, std::shared_ptr<Counter>>>& GetCounterAsyncData() const { return m_securities_async_data; }
-	inline const AsyncData<std::vector<std::weak_ptr<Counter>>>& GetTenNewestIPOs() const { return m_ten_newest_counters; }
+	inline bool IsSecurityDataAvailable() const { return m_securities_async_data.IsDataReady(); }
+	inline const AsyncData<std::map<std::string, std::shared_ptr<Security>>>& GetSecurityAsyncData() const { return m_securities_async_data; }
+	inline const AsyncData<std::vector<std::weak_ptr<Security>>>& GetTenNewestIPOs() const { return m_ten_newest_securities; }
 
 protected:
 	// Each market will have different ways of organizing and acquiring data.
-	virtual void ParseCounterListData() = 0;
+	virtual void ParseSecurityListData() = 0;
 	void FindTenNewestIPOs();
 	void CreateFolderStructure() const;
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
 
 
-	AsyncData<std::vector<std::weak_ptr<Counter>>> m_ten_newest_counters;
+	AsyncData<std::vector<std::weak_ptr<Security>>> m_ten_newest_securities;
 	
 	
 	//
-	AsyncData<std::map<std::string, std::shared_ptr<Counter>>> m_securities_async_data;
+	AsyncData<std::map<std::string, std::shared_ptr<Security>>> m_securities_async_data;
 };
 

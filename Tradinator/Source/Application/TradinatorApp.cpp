@@ -9,7 +9,7 @@
 #include "Market/NSE_Market.h"
 #include "TradinatorSettings.h"
 
-#include "Windows/CounterWindow.h"
+#include "Windows/SecurityWindow.h"
 
 
 TradinatorApp::TradinatorApp()
@@ -82,7 +82,7 @@ bool TradinatorApp::ShowMainWindow()
 {
     bool should_exit = !m_main_windows.Show();
 
-    for (std::pair<std::string, std::shared_ptr<CounterWindow>> pair : m_counter_windows)
+    for (std::pair<std::string, std::shared_ptr<SecurityWindow>> pair : m_security_windows)
     {
         ImGui::SetNextWindowSize(ImVec2(1280, 1368), ImGuiCond_FirstUseEver);
         if (pair.second->m_maximize)
@@ -97,7 +97,7 @@ bool TradinatorApp::ShowMainWindow()
         pair.second->Show();
     }
 
-    std::erase_if(m_counter_windows, [](const std::pair<std::string, std::shared_ptr<CounterWindow>>& item) {
+    std::erase_if(m_security_windows, [](const std::pair<std::string, std::shared_ptr<SecurityWindow>>& item) {
         return item.second->m_close;
         });
 
@@ -105,11 +105,11 @@ bool TradinatorApp::ShowMainWindow()
 }
 
 
-void TradinatorApp::ShowCounterWindow(std::shared_ptr<Counter> counter)
+void TradinatorApp::ShowSecurityWindow(std::shared_ptr<Security> security)
 {
-    if (!m_counter_windows.contains(counter->ISIN_Number()))
+    if (!m_security_windows.contains(security->ISIN_Number()))
     {
-        m_counter_windows[counter->ISIN_Number()] = std::make_shared<CounterWindow>(counter);
+        m_security_windows[security->ISIN_Number()] = std::make_shared<SecurityWindow>(security);
     }
     else
     {
@@ -140,12 +140,12 @@ void TradinatorApp::LoadWindowsState()
         are_all_markets_ready = true;
         for (const std::shared_ptr<Market>& market : markets)
         {
-            are_all_markets_ready = are_all_markets_ready && market->IsCounterDataAvailable();
+            are_all_markets_ready = are_all_markets_ready && market->IsSecurityDataAvailable();
             if (!are_all_markets_ready)
                 break;
         }
 
-        // wait till the counter data for all markets is available
+        // wait till the security data for all markets is available
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
@@ -156,27 +156,27 @@ void TradinatorApp::LoadWindowsState()
     for (Json::Value::ArrayIndex i = 0; i < count; ++i)
     {
         Json::Value window_details = status[i];
-        std::shared_ptr<Counter> counter = nullptr;
+        std::shared_ptr<Security> security = nullptr;
 
         std::string symbol_str = window_details["Symbol"].asString();
         for (const std::shared_ptr<Market>& market : markets)
         {
-            const std::map<std::string, std::shared_ptr<Counter>>& data = market->GetCounterAsyncData().GetData();
+            const std::map<std::string, std::shared_ptr<Security>>& data = market->GetSecurityAsyncData().GetData();
             if (data.find(symbol_str) != data.end())
             {
-                const std::shared_ptr<Counter>& tmp_counter = data.at(symbol_str);
-                if (tmp_counter && tmp_counter->ISIN_Number() == window_details["ISIN"].asString())
+                const std::shared_ptr<Security>& tmp_security = data.at(symbol_str);
+                if (tmp_security && tmp_security->ISIN_Number() == window_details["ISIN"].asString())
                 {
-                    counter = tmp_counter;
+                    security = tmp_security;
                     break;
                 }
             }
         }
 
-        if (counter)
+        if (security)
         {
-            ShowCounterWindow(counter);
-            m_counter_windows[counter->ISIN_Number()]->SetCounterStatus(window_details);
+            ShowSecurityWindow(security);
+            m_security_windows[security->ISIN_Number()]->SetSecurityStatus(window_details);
         }
     }
 }
@@ -185,9 +185,9 @@ void TradinatorApp::SaveWindowsState()
 {
     Json::Value result(Json::arrayValue);
 
-    for (auto& pair : m_counter_windows)
+    for (auto& pair : m_security_windows)
     {
-        result.append(pair.second->GetCounterStatus());
+        result.append(pair.second->GetSecurityStatus());
     }
     
     TradinatorSettings::Get().SetAllOpenedWindowsStatus(result);

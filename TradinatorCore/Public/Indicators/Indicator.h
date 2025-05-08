@@ -5,7 +5,7 @@
 #include <vector>
 
 
-class Counter;
+class Security;
 
 struct IndicatorPoint
 {
@@ -21,7 +21,16 @@ struct IndicatorPoint
 	IndicatorPoint& operator = (IndicatorPoint&& other) noexcept = default;
 };
 
-enum EIndicatorType {
+enum class EIndicatorSource
+{
+	E_HIGH,
+	E_OPEN,
+	E_LOW,
+	E_CLOSE	
+};
+
+enum class EIndicatorType 
+{
 	MIN,
 
 	E_SMA,
@@ -43,23 +52,30 @@ class Indicator
 {
 public:
 	Indicator();
-	Indicator(size_t length);
-	Indicator(std::weak_ptr<Counter> counter, size_t length);
+	Indicator(EIndicatorSource source);
+	Indicator(uint64_t length);
+	Indicator(EIndicatorSource source, uint64_t length);
+	Indicator(uint64_t length, std::weak_ptr<Security> security);
+	Indicator(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security);
 
-	virtual std::vector<std::vector<IndicatorPoint>> Calculate() = 0;
+	virtual std::vector<std::vector<double>> Calculate() = 0;
 	virtual std::string GetName() const = 0;
 	virtual EIndicatorType IndicatorType() const = 0;
 	virtual std::unique_ptr<Indicator> Clone() = 0;
 
-	// If true: only one instance of this indicator can be applied to a counter
+	// If true: only one instance of this indicator can be applied to a security
 	virtual bool IsSingleInstanceType() const { return false; }
 	
-	void SetCounter(std::weak_ptr<Counter> counter) { m_counter = counter; }
-	void SetLength(size_t length) { m_length = length; }
-	size_t& GetLength() { return m_length; }
+	void SetSecurity(std::weak_ptr<Security> security) { m_security = security; }
+	void SetLength(uint64_t length) 
+	{ 
+		m_length = length; 
+	}
+	uint64_t& GetLength() { return m_length; }
 
 protected:
-	std::weak_ptr<Counter> m_counter;
-	size_t m_length;
+	EIndicatorSource m_source;
+	uint64_t m_length;
+	std::weak_ptr<Security> m_security;
 };
 

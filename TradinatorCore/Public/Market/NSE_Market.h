@@ -16,11 +16,11 @@ public:
 
 	
 protected:
-	virtual void ParseCounterListData() override;
+	virtual void ParseSecurityListData() override;
 
 private:
-	std::string GetCounterListRawDataFileName() const;
-	std::string GetCounterListProcessedDataFileName() const;
+	std::string GetSecurityListRawDataFileName() const;
+	std::string GetSecurityListProcessedDataFileName() const;
 
 	bool IsRawFileExist() const;
 	bool IsProcessedFileExist() const;

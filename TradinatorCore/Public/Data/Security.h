@@ -22,28 +22,17 @@ class DownloadTask;
 class Indicator;
 
 
-/*
-Candle data is stored in this format
-Candles in ascending order
 
-size_t - number of candles
-1-1-2001 open high low close volume open_interest   
-2-1-2001 open high low close volume open_interest
-3-1-2001 open high low close volume open_interest
-....
-
-*/
-
-class Counter : public Company, public std::enable_shared_from_this<Counter>
+class Security : public Company, public std::enable_shared_from_this<Security>
 {
 public:
-	Counter();
+	Security();
 
 	// copy and move sementics
-	Counter(const Counter& other) = default;
-	Counter(Counter&& other) noexcept = default;
-	Counter& operator = (const Counter& other) = default;
-	Counter& operator = (Counter&& other) noexcept = default;
+	Security(const Security& other) = default;
+	Security(Security&& other) noexcept = default;
+	Security& operator = (const Security& other) = default;
+	Security& operator = (Security&& other) noexcept = default;
 
 	bool IsHistoricalCandleDataOutDated() const;
 	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask();
@@ -62,6 +51,7 @@ public:
 	inline uint32_t FaceValue() const { return m_face_value; }
 
 	inline std::shared_ptr<const AsyncData<CandleDataMapType>> GetCandleData() const { return m_candle_data; }
+	inline std::shared_ptr<const AsyncData<CandlesData>> GetCandlesData() const { return m_candles_data; }
 	inline std::shared_ptr<const AsyncData<NewsPointMapType>> GetNewsPointsData() const { return m_news_points_data; }
 
 	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
@@ -85,6 +75,10 @@ public:
 		m_is_latest_date_dirty = false;
 	}
 	
+	void SetCandleCount(size_t candle_count)
+	{
+		m_candle_count = candle_count;
+	}
 
 protected:
 	// -----------------------------------------------
@@ -93,7 +87,7 @@ protected:
 	
 	std::chrono::system_clock::time_point GetLastCandleDataDate() const;
 
-	void UpdateLatestCandleDataDate();
+	void UpdateSecuritySkeletonData();
 	void LoadCandleDataToMemory();
 	std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
@@ -104,11 +98,14 @@ protected:
 	uint32_t m_paid_up_value;
 	uint32_t m_market_lot;
 	uint32_t m_face_value;
-	
+
+	// Used to pre reserve memory when needed
+	size_t m_candle_count;
+
 	// Raw json from reading the downloaded data
 	Json::Value m_raw_downloaded_data;
 
-	// market this counter belongs to
+	// market this security belongs to
 	std::weak_ptr<Market> m_owning_market;
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
@@ -119,6 +116,8 @@ protected:
 
 	// Candle data sorted from latest to oldest
 	std::shared_ptr<AsyncData<CandleDataMapType>> m_candle_data;
+
+	std::shared_ptr<AsyncData<CandlesData>> m_candles_data;
 
 	// News points sorted from latest to oldest
 	std::shared_ptr<AsyncData<NewsPointMapType>> m_news_points_data;
@@ -137,7 +136,7 @@ protected:
 	// Check to make sure there are no double update tasks.
 	// we want to be able to acecss previous historical data that is stored locally while
 	// new data is being downloaded in parallel. 
-	std::mutex m_counter_mutex;
+	std::mutex m_security_mutex;
 	bool m_is_downloading = false;
 	bool m_is_inserting = false;
 };

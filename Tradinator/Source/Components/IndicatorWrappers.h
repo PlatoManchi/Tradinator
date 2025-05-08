@@ -15,7 +15,7 @@ public:
 	IIndicatorWrapper();
 
 	IIndicatorWrapper(std::unique_ptr<Indicator> indicator);
-	IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter);
+	IIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security);
 	
 	IIndicatorWrapper(const IIndicatorWrapper& other);
 	IIndicatorWrapper& operator=(const IIndicatorWrapper& other);
@@ -23,7 +23,7 @@ public:
 	IIndicatorWrapper& operator=(IIndicatorWrapper&& other) noexcept = default;
 
 	virtual void SetIndicator(std::unique_ptr<Indicator> indicator);
-	virtual void SetCounter(std::shared_ptr<Counter> counter);
+	virtual void SetSecurity(std::shared_ptr<Security> security);
 	
 
 	virtual bool DrawAsAvailableIndicator() = 0;
@@ -49,13 +49,23 @@ public:
 	inline EIndicatorType IndicatorType() const { return m_indicator->IndicatorType(); }
 	inline bool IsSingleInstanceType() const { return m_indicator->IsSingleInstanceType(); }
 	inline bool ShouldShow() const { return m_show; }
-	
-	
+	inline std::shared_ptr<Security> GetSecurity() const { return m_security; }
+	inline const std::vector<std::vector<double>>& GetPointsList() const { return m_points_list; }
+
+	struct PlotPointGetterData
+	{
+		PlotPointGetterData() : m_indicator_wrapper(nullptr), m_points_index(-1) {}
+		PlotPointGetterData(IIndicatorWrapper* wrapper, int32_t index) : m_indicator_wrapper(wrapper), m_points_index(index) {}
+
+		IIndicatorWrapper* m_indicator_wrapper;
+		int32_t m_points_index;
+	};
+
 protected:
 	std::unique_ptr<Indicator> m_indicator;
-	std::shared_ptr<Counter> m_counter;
+	std::shared_ptr<Security> m_security;
 
-	std::vector<std::vector<IndicatorPoint>> m_points_list;
+	std::vector<std::vector<double>> m_points_list;
 	std::vector<ImVec4> m_colors_list;
 
 	bool m_show = true;
@@ -76,8 +86,8 @@ public:
 	GenericIndicatorWrapper(std::unique_ptr<Indicator> indicator)
 		: IIndicatorWrapper(std::move(indicator)) { }
 
-	GenericIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: IIndicatorWrapper(std::move(indicator), counter) { }
+	GenericIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: IIndicatorWrapper(std::move(indicator), security) { }
 
 	GenericIndicatorWrapper(const GenericIndicatorWrapper& other) = default;
 	GenericIndicatorWrapper& operator=(const GenericIndicatorWrapper& other) = default;
@@ -116,8 +126,8 @@ public:
 	GenericChartIndicatorWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericIndicatorWrapper(std::move(indicator)) { }
 
-	GenericChartIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericIndicatorWrapper(std::move(indicator), counter) { }
+	GenericChartIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericIndicatorWrapper(std::move(indicator), security) { }
 
 	GenericChartIndicatorWrapper(const GenericChartIndicatorWrapper& other) = default;
 	GenericChartIndicatorWrapper& operator=(const GenericChartIndicatorWrapper& other) = default;
@@ -164,8 +174,8 @@ public:
 	BollingerBandIndicatorWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericIndicatorWrapper(std::move(indicator)) { }
 
-	BollingerBandIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericIndicatorWrapper(std::move(indicator), counter) { }
+	BollingerBandIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericIndicatorWrapper(std::move(indicator), security) { }
 
 	BollingerBandIndicatorWrapper(const BollingerBandIndicatorWrapper& other) = default;
 	BollingerBandIndicatorWrapper& operator=(const BollingerBandIndicatorWrapper& other) = default;
@@ -202,8 +212,8 @@ public:
 		: GenericChartIndicatorWrapper(std::move(indicator)) {
 	}
 
-	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) {
+	ROCIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericChartIndicatorWrapper(std::move(indicator), security) {
 	}
 
 	ROCIndicatorWrapper(const ROCIndicatorWrapper& other) = default;
@@ -233,8 +243,8 @@ public:
 		: GenericChartIndicatorWrapper(std::move(indicator)) {
 	}
 
-	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) {
+	RSIIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericChartIndicatorWrapper(std::move(indicator), security) {
 	}
 
 	RSIIndicatorWrapper(const RSIIndicatorWrapper& other) = default;
@@ -266,8 +276,8 @@ public:
 	OBVIndicatorWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericChartIndicatorWrapper(std::move(indicator)) { }
 
-	OBVIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) { }
+	OBVIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericChartIndicatorWrapper(std::move(indicator), security) { }
 
 	OBVIndicatorWrapper(const OBVIndicatorWrapper& other) = default;
 	OBVIndicatorWrapper& operator=(const OBVIndicatorWrapper& other) = default;
@@ -297,8 +307,8 @@ public:
 	MACDIndicatorWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericChartIndicatorWrapper(std::move(indicator)) { }
 
-	MACDIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericChartIndicatorWrapper(std::move(indicator), counter) {	}
+	MACDIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericChartIndicatorWrapper(std::move(indicator), security) {	}
 
 	MACDIndicatorWrapper(const MACDIndicatorWrapper& other) = default;
 	MACDIndicatorWrapper& operator=(const MACDIndicatorWrapper& other) = default;
@@ -337,8 +347,8 @@ public:
 	TrendAnalysisDebugWrapper(std::unique_ptr<Indicator> indicator)
 		: GenericIndicatorWrapper(std::move(indicator)) {}
 
-	TrendAnalysisDebugWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Counter> counter)
-		: GenericIndicatorWrapper(std::move(indicator), counter) {}
+	TrendAnalysisDebugWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security)
+		: GenericIndicatorWrapper(std::move(indicator), security) {}
 
 	TrendAnalysisDebugWrapper(const TrendAnalysisDebugWrapper& other) = default;
 	TrendAnalysisDebugWrapper& operator=(const TrendAnalysisDebugWrapper& other) = default;
