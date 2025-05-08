@@ -23,6 +23,18 @@ ImPlotPoint generic_plot_point_getter(int idx, void* data) {
     return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(date.time_since_epoch()).count(), value);
 }
 
+ImPlotPoint plot_point_from_index_getter(int idx, void* data) {
+    IIndicatorWrapper::PlotPointGetterData* getter_data = reinterpret_cast<IIndicatorWrapper::PlotPointGetterData*>(data);
+    IIndicatorWrapper* indicator_wrapper = getter_data->m_indicator_wrapper;
+
+    uint64_t index = (uint64_t)indicator_wrapper->GetPointsList()[getter_data->m_points_index][idx];
+
+    std::chrono::system_clock::time_point date = indicator_wrapper->GetSecurity()->GetCandlesData()->GetData().m_dates[index];
+    double value = indicator_wrapper->GetPointsList()[0][index];
+
+    return ImPlotPoint(std::chrono::duration_cast<std::chrono::seconds>(date.time_since_epoch()).count(), value);
+}
+
 IIndicatorWrapper::IIndicatorWrapper()
 {
     m_id = _INCREMENTAL_WRAPPER_ID_++;
@@ -1354,26 +1366,26 @@ void TrendAnalysisDebugWrapper::PlotPostCandle(ImVec4 bull_color, ImVec4 bear_co
 
     if (m_security->GetCandlesData()->IsDataReady())
     {
-        if (m_points_list.size() < 1) return;
+        if (m_points_list.size() < 2) return;
 
         size_t count = m_points_list[1].size();
         if (count == 0) return;
 
         PlotPointGetterData data_1(this, 1);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bear_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-        ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), generic_plot_point_getter, (void*)&data_1, count);
+        ImPlot::PlotScatterG(std::format("{}##peaks", m_indicator->GetName()).c_str(), plot_point_from_index_getter, (void*)&data_1, count);
 
 
 
 
-        if (m_points_list.size() < 2) return;
+        if (m_points_list.size() < 3) return;
 
         count = m_points_list[2].size();
         if (count == 0) return;
 
         PlotPointGetterData data_2(this, 2);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10.0f, bull_color, 1.0f, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-        ImPlot::PlotScatterG(std::format("{}##trough", m_indicator->GetName()).c_str(), generic_plot_point_getter, (void*)&data_2, count);
+        ImPlot::PlotScatterG(std::format("{}##trough", m_indicator->GetName()).c_str(), plot_point_from_index_getter, (void*)&data_2, count);
     }
 }
 

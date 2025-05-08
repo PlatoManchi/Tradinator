@@ -67,7 +67,10 @@ public:
 	virtual bool IsSingleInstanceType() const { return false; }
 	
 	void SetSecurity(std::weak_ptr<Security> security) { m_security = security; }
-	void SetLength(uint64_t length) { m_length = length; }
+	void SetLength(uint64_t length) 
+	{ 
+		m_length = length; 
+	}
 	uint64_t& GetLength() { return m_length; }
 
 protected:

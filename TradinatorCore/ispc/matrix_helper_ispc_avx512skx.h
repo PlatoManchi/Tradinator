@@ -40,8 +40,9 @@ namespace ispc { /* namespace */
 #if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )
 extern "C" {
 #endif // __cplusplus
-    extern void calculate_savitzky_golay_filter(double * input, uint64_t count, double * a_buff, double * at_buff, double * ata_buff, double * ata_inv_buff, double * ata_inv_at_buff, double * convolution_coefficient, double * convolution_coefficient_buff, uint64_t polynomial_order, uint64_t window_size, double * output);
-    extern void calculate_vandermonde_matrix(double * output, uint64_t polynomial_order, uint64_t window_size);
+    extern void calculate_savitzky_golay_filter(double * input, uint64_t count, double * a_buff, double * at_buff, double * ata_buff, double * ata_inv_buff, double * ata_inv_at_buff, double * convolution_coefficient, double * convolution_coefficient_buff, uint64_t width, uint64_t window_size, double * output);
+    extern void calculate_trend_analysis_debug(double * input, uint64_t count, double * a_buff, double * at_buff, double * ata_buff, double * ata_inv_buff, double * ata_inv_at_buff, double * convolution_coefficient, double * convolution_coefficient_buff, uint64_t width, uint64_t window_size, double * output);
+    extern void calculate_vandermonde_matrix(double * output, uint64_t width, uint64_t window_size);
     extern void inverse_matrix(double * input_mat, double * output_mat, uint64_t size);
     extern void multiply_matrix(double * mat_1, uint64_t rows_1, uint64_t cols_1, double * mat_2, uint64_t rows_2, uint64_t cols_2, double * mat_output);
     extern void transpose_matrix(double * input, double * output, uint64_t rows, uint64_t cols);

@@ -7,10 +7,14 @@
 #include "Data/Security.h"
 #include "Data/AsyncData.h"
 
+#include  "Indicators/ATR.h"
 #include "Utils/StopWatch.h"
 
+#ifdef _SAVITZKY_GOLAY_FILTER_ISPC_
 #include "matrix_helper_ispc.h"
 #include "indicator_helper_ispc.h"
+#endif // _SAVITZKY_GOLAY_FILTER_ISPC_
+
 
 void PrintMatrix(int64_t* mat, uint64_t row, uint64_t col) 
 {
@@ -77,42 +81,49 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 	{
 		return result;
 	}
-#ifdef _DISABLE_
+
 	std::shared_ptr<Security> security = m_security.lock();
 
 	if (security)
 	{
-		const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = security->GetCandleData();
-		bool is_ready = candle_data->IsDataReady();
+		const std::shared_ptr<const AsyncData<CandlesData>>& candles_data = security->GetCandlesData();
+		bool is_ready = candles_data->IsDataReady();
 		while (!is_ready)
 		{
-			is_ready = candle_data->IsDataReady();
+			is_ready = candles_data->IsDataReady();
 		}
 
 		StopWatch stop_watch(GetName());
 
-		size_t count = candle_data->GetData().size();
+		const CandlesData& data = candles_data->GetData();
+		uint64_t count = data.m_dates.size();
+
 		if (count == 0) return result;
 
-		std::vector<IndicatorPoint> trend_analysis_debug;
-		trend_analysis_debug.reserve(count);
+		std::vector<double> a(m_polynomial_order * m_length, 0.0);
+		std::vector<double> at(m_polynomial_order * m_length, 0.0);
+		std::vector<double> ata(m_length * m_length, 0.0);
+		std::vector<double> ata_inv(m_length * m_length, 0.0);
+		std::vector<double> ata_inv_tmp(m_length * m_length, 0.0);// buffer to calculate inverse
+		std::vector<double> ata_inv_at(m_length * m_polynomial_order, 0.0);
+		std::vector<double> convolution_coefficient(m_polynomial_order, 0.0);
+		std::vector<double> convolution_coefficient_tmp(m_polynomial_order, 0.0);
 
-		std::vector<double> highs;
-		std::vector<double> lows;
-		std::vector<double> closes;
-		highs.reserve(count);
-		lows.reserve(count);
-		closes.reserve(count);
+		std::vector<double> savitzky_golay_output(count, 0.0);
+
+		std::vector<double> average_true_ranges(count, 0.0);
+
+		// max number of peaks possible will be count / m_distance_btw_peaks
+		std::vector<double> peaks(count / m_distance_btw_peaks, 0.0);
+		std::vector<double> troughs(count / m_distance_btw_peaks, 0.0);
+
+		uint64_t peaks_count = 0;
+		uint64_t troughs_count = 0;
+
+		std::vector<double> trend_points(count, 0.0);
 
 #ifdef _SAVITZKY_GOLAY_FILTER_ISPC_
-		std::vector<double> a(m_polynomial_order * m_length);
-		std::vector<double> at(m_polynomial_order * m_length);
-		std::vector<double> ata(m_length * m_length);
-		std::vector<double> ata_inv(m_length * m_length);
-		std::vector<double> ata_inv_at(m_length * m_polynomial_order);
-		std::vector<double> convolution_coefficient(m_polynomial_order);
-		std::vector<double> convolution_coefficient_tmp(m_polynomial_order);
-
+		
 		std::vector<double> ispc_input;
 		ispc_input.reserve(count);
 		std::vector<double> ispc_output(count);
@@ -150,256 +161,179 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 		}
 
 #else
-		double* a = VandermondeMatrix(m_polynomial_order, m_length);
-		//PrintMatrix(a, m_polynomial_order, m_length);
-		double* at = Transpose(a, m_polynomial_order, m_length);
-		double* ata = Multiply(at, m_length, m_polynomial_order, a, m_polynomial_order, m_length);
-		double* ata_inv = Inverse(ata, m_length);
-		double* ata_inv_at = Multiply(ata_inv, m_length, m_length, at, m_length, m_polynomial_order);
-
-		/*std::cout << "Convultion Coefficients: " << std::endl;
-		for (int i = 0; i < m_length; ++i)
-		{
-			for (int j = 0; j < m_polynomial_order; ++j)
-			{
-				std::cout << ata_inv_at[i * m_polynomial_order + j] << ",  ";
-			}
-
-			std::cout << std::endl;
-		}*/
-
-		double* coefficients = new double[m_polynomial_order];
-		for (uint64_t i = 0; i < m_polynomial_order; ++i)
-		{
-			coefficients[i] = ata_inv_at[i];
-		}
-
-		// will use this in boundry conditions
-		double* coefficients_tmp = new double[m_polynomial_order];
-		for (uint64_t i = 0; i < m_polynomial_order; ++i)
-		{
-			coefficients_tmp[i] = coefficients[i];
-		}
-
-		uint16_t half_poly = m_polynomial_order / 2;
-		std::vector<double> smoothed_values;
-		smoothed_values.reserve(count);
-
-		auto itr = candle_data->GetData().begin();
-		for (uint64_t i = 0; i < count; ++i)
-		{
-			size_t effective_window_size = m_polynomial_order;
-			double* coefficients_to_use = coefficients;
-			size_t left = i - half_poly;
-			size_t right = i + half_poly;
-
-			// At boundary conditions, normalize only th epart of coefficients that we use.
-			if (i < half_poly)
-			{
-				left = 0;
-				right = i + half_poly;
-
-				effective_window_size = half_poly + i + 1;
-
-				for (uint64_t j = 0; j < m_polynomial_order; ++j)
-				{
-					coefficients_tmp[j] = coefficients[j];
-				}
-				coefficients_to_use = coefficients_tmp + half_poly - i;
-				Normalize(coefficients + half_poly - i, coefficients_to_use, effective_window_size);
-			}
-			if (i >= count - half_poly - 1)
-			{
-				left = i - half_poly;
-				right = count - 1;
-
-				effective_window_size = half_poly + 1 + ((count - 1) - i);
-
-				for (uint64_t j = 0; j < m_polynomial_order; ++j)
-				{
-					coefficients_tmp[j] = coefficients[j];
-				}
-				coefficients_to_use = coefficients_tmp;
-				Normalize(coefficients, coefficients_to_use, effective_window_size);
-			}
-
-			double smoothed_value = 0;
-			size_t coefficient_index = 0;
-
-			auto itr_tmp = std::prev(itr, i - left);
-			for (size_t j = left; j <= right; ++j)
-			{
-				double coeff = coefficients_to_use[coefficient_index];
-				smoothed_value += (coeff * (*itr_tmp).second.m_close);
-
-				std::advance(itr_tmp, 1);
-				coefficient_index++;
-			}
-
-			smoothed_values.push_back(smoothed_value);
-			highs.push_back((*itr).second.m_high);
-			lows.push_back((*itr).second.m_low);
-			closes.push_back((*itr).second.m_close);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = smoothed_value;
-
-			trend_analysis_debug.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
-		}
-
-		delete[] a;
-		delete[] at;
-		delete[] ata;
-		delete[] ata_inv;
-		delete[] ata_inv_at;
-		delete[] coefficients;
-		delete[] coefficients_tmp;
-
-
-		std::vector<double> true_ranges(count);
-		std::vector<double> average_true_ranges(count);
-		ispc::calculate_atr(highs.data(), lows.data(), closes.data(), true_ranges.data(), average_true_ranges.data(), count, 30);
-
-		std::vector<size_t> peaks;
-		std::vector<size_t> troughs;
-
-		FindPeaks(smoothed_values, peaks, average_true_ranges, m_distance_btw_peaks, m_width_for_peaks, m_relative_height);
-		FindPeaks(smoothed_values, troughs, average_true_ranges, m_distance_btw_peaks, m_width_for_peaks, m_relative_height, -1);
-
-		std::vector<IndicatorPoint> peak_points;
-		peak_points.reserve(count);
-		std::vector<IndicatorPoint> trough_points;
-		trough_points.reserve(count);
-
-		for (size_t peak : peaks)
-		{
-			auto itr = candle_data->GetData().begin();
-			std::advance(itr, peak);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = smoothed_values[peak];
-
-			peak_points.emplace_back(std::move(point));
-		}
-
-		for (size_t trough : troughs)
-		{
-			auto itr = candle_data->GetData().begin();
-			std::advance(itr, trough);
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = smoothed_values[trough];
-
-			trough_points.emplace_back(std::move(point));
-		}
-
-		// Reversing becuase fuck my decision to have data in ascending order
-		//std::reverse(peaks.begin(), peaks.end());
-		//std::reverse(troughs.begin(), troughs.end());
-		std::vector<IndicatorPoint> trend_points;
-		trend_points.reserve(count);
-
-		itr = candle_data->GetData().begin();
-		for (size_t i = 0; i < count; ++i)
-		{
-			size_t peak_index = 0;
-			for (size_t j = 0; j < peaks.size(); ++j)
-			{
-				if (peaks[j] > i)
-				{
-					peak_index = j;
-					break;
-				}
-			}
-
-			size_t trough_index = 0;
-			for (size_t j = 0; j < troughs.size(); ++j)
-			{
-				if (troughs[j] > i)
-				{
-					trough_index = j;
-					break;
-				}
-			}
-
-			//  0 - none
-			//  1 - up trend
-			// -1 - down trend
-			double trend = 0;
-			size_t history_length = 2;
-			if (peak_index + history_length < peaks.size() &&
-				trough_index + history_length < troughs.size())
-			{
-				size_t peaks_up_count = 0;
-				size_t troughs_up_count = 0;
-				size_t peaks_down_count = 0;
-				size_t troughs_down_count = 0;
-
-				double threshold = 0.001;
-				for (int j = peak_index; j < peak_index + history_length; ++j)
-				{
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
-						smoothed_values[peaks[j]] > smoothed_values[peaks[j + 1]])
-					{
-						peaks_up_count++;
-					}
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
-						smoothed_values[peaks[j]] < smoothed_values[peaks[j + 1]])
-					{
-						peaks_down_count++;
-					}
-				}
-				for (int j = trough_index; j < trough_index + history_length; ++j)
-				{
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
-						smoothed_values[troughs[j]] > smoothed_values[troughs[j + 1]])
-					{
-						troughs_up_count++;
-					}
-					if (fabs(smoothed_values[peaks[j]] - smoothed_values[peaks[j + 1]]) < smoothed_values[peaks[j + 1]] * threshold ||
-						smoothed_values[troughs[j]] < smoothed_values[troughs[j + 1]])
-					{
-						troughs_down_count++;
-					}
-				}
-
-				if (peaks_up_count == history_length && troughs_up_count == history_length)
-				{
-					trend = 1.0f;
-				}
-				else if (peaks_down_count == history_length && troughs_down_count == history_length)
-				{
-					trend = -1.0f;
-				}
-			}
-
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = trend;
-
-			trend_points.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
-		}
-
+		CalculateRaw(
+			data.m_highs.data(),
+			data.m_lows.data(),
+			data.m_closes.data(),
+			a.data(),
+			at.data(),
+			ata.data(),
+			ata_inv.data(),
+			ata_inv_tmp.data(),
+			ata_inv_at.data(),
+			convolution_coefficient.data(),
+			convolution_coefficient_tmp.data(),
+			savitzky_golay_output.data(),
+			average_true_ranges.data(),
+			peaks.data(),
+			troughs.data(),
+			trend_points.data(),
+			&peaks_count,
+			&troughs_count,
+			m_length,
+			m_polynomial_order,
+			m_distance_btw_peaks,
+			m_width_for_peaks,
+			m_relative_height,
+			count
+		);
 #endif // _SAVITZKY_GOLAY_FILTER_ISPC_
 
 
-		result.emplace_back(std::move(trend_analysis_debug));
-		result.emplace_back(std::move(peak_points));
-		result.emplace_back(std::move(trough_points));
+		peaks.resize(peaks_count);
+		troughs.resize(troughs_count);
+
+		result.emplace_back(std::move(savitzky_golay_output));
+		result.emplace_back(std::move(peaks));
+		result.emplace_back(std::move(troughs));
 		result.emplace_back(std::move(trend_points));
 	}
-#endif // _DISABLE_
+
 	
 	
 
 	return result;
+}
+
+void TrendAnalysisDebug::CalculateRaw(
+	const double* highs,
+	const double* lows,
+	const double* closes,
+	double* a_buff,
+	double* at_buff,
+	double* ata_buff,
+	double* ata_inv_buff,
+	double* ata_inv_tmp_buff,
+	double* ata_inv_at_buff,
+	double* convolution_coefficient,
+	double* convolution_coefficient_buff,
+	double* savitzky_golay_output,
+	double* atr_output,
+	double* peaks_output,
+	double* troughs_output,
+	double* trend_output,
+	uint64_t* peaks_count,
+	uint64_t* troughs_count,
+	uint64_t window_size,
+	uint64_t polynomial_order,
+	uint64_t distance_btw_peaks,
+	uint64_t width_for_peaks,
+	double relative_height_for_peaks,
+	uint64_t count)
+{
+	VandermondeMatrix(a_buff, polynomial_order, window_size);
+	Transpose(a_buff, at_buff, polynomial_order, window_size);
+	Multiply(at_buff, window_size, polynomial_order, a_buff, polynomial_order, window_size, ata_buff);
+	Inverse(ata_buff, ata_inv_tmp_buff, ata_inv_buff, window_size);
+	Multiply(ata_inv_buff, window_size, window_size, at_buff, window_size, polynomial_order, ata_inv_at_buff);
+
+	// first row will become the convolution coefficient
+	for (uint64_t i = 0; i < polynomial_order; ++i)
+	{
+		convolution_coefficient[i] = ata_inv_at_buff[i];
+	}
+
+
+	SavitzkyGolayFilterRaw(closes, convolution_coefficient, convolution_coefficient_buff, savitzky_golay_output, window_size, polynomial_order, count);
+
+	ATR atr;
+	atr.CalculateRaw(highs, lows, closes, atr_output, 30, count);
+
+
+
+	FindPeaks(savitzky_golay_output, count, peaks_output, peaks_count, atr_output, distance_btw_peaks, width_for_peaks, relative_height_for_peaks);
+	FindPeaks(savitzky_golay_output, count, troughs_output, troughs_count, atr_output, distance_btw_peaks, width_for_peaks, relative_height_for_peaks, -1);
+
+	for (uint64_t i = 0; i < count; ++i)
+	{
+		uint64_t peak_index = 0;
+		for (int64_t j = *peaks_count - 1; j >= 0; --j)
+		{
+			if (peaks_output[j] < i)
+			{
+				peak_index = j;
+				break;
+			}
+		}
+
+		uint64_t trough_index = 0;
+		for (int64_t j = *troughs_count - 1; j >= 0; --j)
+		{
+			if (troughs_output[j] < i)
+			{
+				trough_index = j;
+				break;
+			}
+		}
+
+		//  0 - none
+		//  1 - up trend
+		// -1 - down trend
+		double trend = 0;
+		uint64_t history_length = 2;
+
+		if (peak_index - history_length >= 0 &&
+			trough_index - history_length >= 0)
+		{
+			uint64_t peaks_up_count = 0;
+			uint64_t troughs_up_count = 0;
+			uint64_t peaks_down_count = 0;
+			uint64_t troughs_down_count = 0;
+
+			double threshold = 0.01;
+			for (int64_t j = peak_index; j > peak_index - history_length && j >= 0; --j)
+			{
+				uint64_t curr_peak_index = (uint64_t)peaks_output[j];
+				uint64_t prev_peak_index = (uint64_t)peaks_output[j - 1];
+				if (fabs(savitzky_golay_output[curr_peak_index] - savitzky_golay_output[prev_peak_index]) < savitzky_golay_output[prev_peak_index] * threshold ||
+					savitzky_golay_output[curr_peak_index] > savitzky_golay_output[prev_peak_index])
+				{
+					peaks_up_count++;
+				}
+				if (fabs(savitzky_golay_output[curr_peak_index] - savitzky_golay_output[prev_peak_index]) < savitzky_golay_output[prev_peak_index] * threshold ||
+					savitzky_golay_output[curr_peak_index] < savitzky_golay_output[prev_peak_index])
+				{
+					peaks_down_count++;
+				}
+			}
+			for (int j = trough_index; j > trough_index - history_length && j >= 0; --j)
+			{
+				uint64_t curr_trough_index = (uint64_t)troughs_output[j];
+				uint64_t prev_trough_index = (uint64_t)troughs_output[j - 1];
+				if (fabs(savitzky_golay_output[curr_trough_index] - savitzky_golay_output[prev_trough_index]) < savitzky_golay_output[prev_trough_index] * threshold ||
+					savitzky_golay_output[curr_trough_index] > savitzky_golay_output[prev_trough_index])
+				{
+					troughs_up_count++;
+				}
+				if (fabs(savitzky_golay_output[curr_trough_index] - savitzky_golay_output[prev_trough_index]) < savitzky_golay_output[prev_trough_index] * threshold ||
+					savitzky_golay_output[curr_trough_index] < savitzky_golay_output[prev_trough_index])
+				{
+					troughs_down_count++;
+				}
+			}
+
+			if (peaks_up_count == history_length && troughs_up_count == history_length)
+			{
+				trend = 1.0f;
+			}
+			else if (peaks_down_count == history_length && troughs_down_count == history_length)
+			{
+				trend = -1.0f;
+			}
+		}
+
+		trend_output[i] = trend;
+	}
 }
 
 
@@ -407,7 +341,108 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 
 
 
-double find_local_min_left(const std::vector<double>& input_data, size_t at_index, int modifier)
+
+
+
+
+
+
+
+
+
+
+
+void TrendAnalysisDebug::SavitzkyGolayFilterRaw(
+	const double* input,
+	double* convolution_coefficient,
+	double* convolution_coefficient_buff,
+	double* output,
+	uint64_t window_size,
+	uint64_t polynomial_order,
+	uint64_t count)
+{
+	/*VandermondeMatrix(a_buff, polynomial_order, window_size);
+	Transpose(a_buff, at_buff, polynomial_order, window_size);
+	Multiply(at_buff, window_size, polynomial_order, a_buff, polynomial_order, window_size, ata_buff);
+	Inverse(ata_buff, ata_inv_tmp_buff, ata_inv_buff, window_size);
+	Multiply(ata_inv_buff, window_size, window_size, at_buff, window_size, polynomial_order, ata_inv_at_buff);*/
+
+	/*std::cout << "Convultion Coefficients: " << std::endl;
+	for (int i = 0; i < m_length; ++i)
+	{
+		for (int j = 0; j < m_polynomial_order; ++j)
+		{
+			std::cout << ata_inv_at[i * m_polynomial_order + j] << ",  ";
+		}
+
+		std::cout << std::endl;
+	}*/
+
+	// will use this in boundry conditions to renormalize based on the windows
+	for (uint64_t i = 0; i < polynomial_order; ++i)
+	{
+		convolution_coefficient_buff[i] = convolution_coefficient[i];
+	}
+
+	uint16_t half_poly = polynomial_order / 2;
+	std::vector<double> smoothed_values;
+	smoothed_values.reserve(count);
+
+	for (uint64_t i = 0; i < count; ++i)
+	{
+		size_t effective_window_size = polynomial_order;
+		double* coefficients_to_use = convolution_coefficient;
+		size_t left = i - half_poly;
+		size_t right = i + half_poly;
+
+		// At boundary conditions, normalize only th epart of coefficients that we use.
+		if (i < half_poly)
+		{
+			left = 0;
+			right = i + half_poly;
+
+			effective_window_size = half_poly + i + 1;
+
+			for (uint64_t j = 0; j < polynomial_order; ++j)
+			{
+				convolution_coefficient_buff[j] = convolution_coefficient[j];
+			}
+			coefficients_to_use = convolution_coefficient_buff + half_poly - i;
+			Normalize(convolution_coefficient + half_poly - i, coefficients_to_use, effective_window_size);
+		}
+		if (i >= count - half_poly - 1)
+		{
+			left = i - half_poly;
+			right = count - 1;
+
+			effective_window_size = half_poly + 1 + ((count - 1) - i);
+
+			for (uint64_t j = 0; j < polynomial_order; ++j)
+			{
+				convolution_coefficient_buff[j] = convolution_coefficient[j];
+			}
+			coefficients_to_use = convolution_coefficient_buff;
+			Normalize(convolution_coefficient, coefficients_to_use, effective_window_size);
+		}
+
+		double smoothed_value = 0;
+		size_t coefficient_index = 0;
+
+		for (size_t j = left; j <= right; ++j)
+		{
+			double coeff = coefficients_to_use[coefficient_index];
+			smoothed_value += (coeff * input[j]);
+			coefficient_index++;
+		}
+
+		output[i] = smoothed_value;
+	}
+}
+
+
+
+
+double find_local_min_left(const double* input_data, uint64_t at_index, uint64_t count, int modifier)
 {
 	for (size_t i = at_index; i > 0; --i)
 	{
@@ -418,9 +453,8 @@ double find_local_min_left(const std::vector<double>& input_data, size_t at_inde
 	return input_data[0] * modifier;
 }
 	
-double find_local_min_right(const std::vector<double>& input_data, size_t at_index, int modifier)
+double find_local_min_right(const double* input_data, uint64_t at_index, uint64_t count, int modifier)
 {
-	size_t count = input_data.size();
 	for (size_t i = at_index; i < count - 1; ++i)
 	{
 		if (input_data[i] * modifier < input_data[i + 1] * modifier)
@@ -432,7 +466,7 @@ double find_local_min_right(const std::vector<double>& input_data, size_t at_ind
 	return input_data[count - 1] * modifier;
 }
 
-size_t find_crossing_left(const std::vector<double>& input_data, size_t at_index, double height, int modifier)
+size_t find_crossing_left(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
 {
 	for (int64_t i = at_index; i >= 0; --i)
 	{
@@ -449,9 +483,8 @@ size_t find_crossing_left(const std::vector<double>& input_data, size_t at_index
 	return 0;
 }
 
-size_t find_crossing_right(const std::vector<double>& input_data, size_t at_index, double height, int modifier)
+size_t find_crossing_right(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
 {
-	size_t count = input_data.size();
 	for (size_t i = at_index; i < count; ++i)
 	{
 		if (input_data[i] * modifier < height)
@@ -467,26 +500,25 @@ size_t find_crossing_right(const std::vector<double>& input_data, size_t at_inde
 	return count - 1;
 }
 
-size_t find_next_peak(const std::vector<double>& input_data, const std::vector<size_t>& all_peaks, size_t start, uint64_t min_distance, int modifier)
+size_t find_next_peak(const double* input_data, const double* all_peaks, uint64_t start, uint64_t peaks_count, uint64_t min_distance, int modifier)
 {
-	size_t count = all_peaks.size();
-	if (start >= count)
+	if (start >= peaks_count)
 	{
 		return -1;
 	}
 
-	if (start == count - 1 ||
+	if (start == peaks_count - 1 ||
 		all_peaks[start + 1] - all_peaks[start] > min_distance)
 	{
 		return start;
 	}
 
 	size_t result = start;
-	for (size_t i = start; i < count - 1; ++i)
+	for (size_t i = start; i < peaks_count - 1; ++i)
 	{
 		if (all_peaks[i] - all_peaks[start] <= min_distance)
 		{
-			if (input_data[all_peaks[i]] * modifier > input_data[all_peaks[result]] * modifier)
+			if (input_data[(uint64_t)all_peaks[i]] * modifier > input_data[(uint64_t)all_peaks[result]] * modifier)
 			{
 				result = i;
 			}
@@ -500,13 +532,11 @@ size_t find_next_peak(const std::vector<double>& input_data, const std::vector<s
 	return result;
 }
 
-void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::vector<size_t>& output_peaks_indices, std::vector<double> prominences, uint64_t min_distance, uint64_t min_width, double relative_height, int input_modifier)
+void TrendAnalysisDebug::FindPeaks(const double* input_data, uint64_t count, double* output_peaks_indices, uint64_t* peaks_count, double* prominences, uint64_t min_distance, uint64_t min_width, double relative_height, int input_modifier)
 {
-	output_peaks_indices.clear();
-	std::vector<size_t> all_peaks;
+	std::vector<double> all_peaks;
 
-	size_t count = input_data.size();
-
+	
 	for (size_t i = 1; i < count - 2; ++i)
 	{
 		if (input_data[i] * input_modifier > input_data[i - 1] * input_modifier && input_data[i] * input_modifier > input_data[i + 1] * input_modifier)
@@ -515,15 +545,15 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 
 			// Step 1: Estimate prominence
 			double prominence = 0;
-			if (prominences.size() >= count)
+			if (prominences)
 			{
 				prominence = prominences[i];
 			}
 			else
 			{
 				// Estimate prominence
-				double left_min = find_local_min_left(input_data, i, input_modifier);
-				double right_min = find_local_min_right(input_data, i, input_modifier);
+				double left_min = find_local_min_left(input_data, i, count, input_modifier);
+				double right_min = find_local_min_right(input_data, i, count, input_modifier);
 				double base_height = std::max(left_min, right_min);
 				prominence = peak_height - base_height;
 			}
@@ -532,8 +562,8 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 			double height_at_width = peak_height - (prominence * relative_height);
 
 			// Step 3: Walk left and right from peak to find crossing points
-			size_t left_index = find_crossing_left(input_data, i, height_at_width, input_modifier);
-			size_t right_index = find_crossing_right(input_data, i, height_at_width, input_modifier);
+			size_t left_index = find_crossing_left(input_data, i, count, height_at_width, input_modifier);
+			size_t right_index = find_crossing_right(input_data, i, count, height_at_width, input_modifier);
 
 			// Step 4: Measure width
 			size_t width = right_index - left_index;
@@ -553,16 +583,19 @@ void TrendAnalysisDebug::FindPeaks(const std::vector<double>& input_data, std::v
 
 	bool is_done = false;
 	size_t start = 0;
+	*peaks_count = 0;
+
 	while (!is_done)
 	{
-		size_t index = find_next_peak(input_data, all_peaks, start, min_distance, input_modifier);
+		size_t index = find_next_peak(input_data, all_peaks.data(), start, all_peaks.size(), min_distance, input_modifier);
 		if (index == -1)
 		{
 			is_done = true;
 			break;
 		}
 
-		output_peaks_indices.push_back(all_peaks[index]);
+		output_peaks_indices[*peaks_count] = all_peaks[index];
+		(*peaks_count)++;
 
 		if (index == all_peaks.size() - 1)
 		{
@@ -621,10 +654,8 @@ void TrendAnalysisDebug::Normalize(double* input, double* output, uint64_t size)
 	}
 }
 
-double* TrendAnalysisDebug::Transpose(double* matrix, uint16_t row, uint16_t col)
+void TrendAnalysisDebug::Transpose(double* matrix, double* output, uint16_t row, uint16_t col)
 {
-	double* result = new double[col * row];
-
 	for (uint16_t y = 0; y < row; ++y)
 	{
 		for (uint16_t x = 0; x < col; ++x)
@@ -632,19 +663,16 @@ double* TrendAnalysisDebug::Transpose(double* matrix, uint16_t row, uint16_t col
 			uint32_t index_1 = y * col + x;
 			uint32_t index_2 = x * row + y;
 
-			result[index_2] = matrix[index_1];
+			output[index_2] = matrix[index_1];
 		}
 	}
-
-	return result;
 }
 
-double* TrendAnalysisDebug::Multiply(double* matrix_1, uint16_t row_1, uint16_t col_1, double* matrix_2, uint16_t row_2, uint16_t col_2)
+void TrendAnalysisDebug::Multiply(double* matrix_1, uint16_t row_1, uint16_t col_1, double* matrix_2, uint16_t row_2, uint16_t col_2, double* output)
 {
-	if (col_1 != row_2) return nullptr;
-	double* result = new double[row_1 * col_2];
-
-	memset(result, 0, sizeof(double) * row_1 * col_2);
+	if (col_1 != row_2) return;
+	
+	memset(output, 0, sizeof(double) * row_1 * col_2);
 
 
 	for (int i = 0; i < row_1; i++) {
@@ -654,42 +682,17 @@ double* TrendAnalysisDebug::Multiply(double* matrix_1, uint16_t row_1, uint16_t 
 				uint16_t mat_1_index = i * col_1 + k;
 				uint16_t mat_2_index = k * col_2 + j;
 
-				result[result_index] += matrix_1[mat_1_index] * matrix_2[mat_2_index];
+				output[result_index] += matrix_1[mat_1_index] * matrix_2[mat_2_index];
 			}
 		}
 	}
-
-	return result;
-}
-
-double* TrendAnalysisDebug::VandermondeMatrix(uint16_t polynomial_order, uint16_t window_size) const
-{
-	if (polynomial_order % 2 == 0) return nullptr;
-
-	double* result = new double[window_size * polynomial_order];
-	int16_t half_poly = polynomial_order / 2;
-	
-	uint16_t row = 0;
-	for (int poly = -half_poly; poly <= half_poly; ++poly)
-	{
-		for (int16_t x = 0; x < window_size; x++)
-		{
-			uint32_t index = row * window_size + x;
-			result[index] = pow(poly, x);
-		}
-		row++;
-	}
-	
-
-	return result;
 }
 
 
-double* TrendAnalysisDebug::Inverse(double* input, uint64_t size)
+
+void TrendAnalysisDebug::Inverse(const double* matrix, double* tmp_buffer, double* output, uint64_t size)
 {
-	double* input_tmp = new double[size * size];
-	memcpy(input_tmp, input, sizeof(double) * size * size);
-	double* output = new double[size * size];
+	memcpy(tmp_buffer, matrix, sizeof(double) * size * size);
 	
 	// make it a identity matrix
 	for (uint64_t i = 0; i < size; ++i)
@@ -705,15 +708,15 @@ double* TrendAnalysisDebug::Inverse(double* input, uint64_t size)
 
 	for (uint64_t i = 0; i < size; ++i)
 	{
-		int64_t pivot = input_tmp[i * size + i];
+		int64_t pivot = tmp_buffer[i * size + i];
 		for (uint64_t row = 0; row < size; ++row)
 		{
 			if (row != i)
 			{
-				double multiplier = -((double)input_tmp[row * size + i]/(double)pivot);
+				double multiplier = -((double)tmp_buffer[row * size + i]/(double)pivot);
 				for (uint64_t col = 0; col < size; ++col)
 				{
-					input_tmp[row * size + col] = input_tmp[row * size + col] + input_tmp[i * size + col] * multiplier;
+					tmp_buffer[row * size + col] = tmp_buffer[row * size + col] + tmp_buffer[i * size + col] * multiplier;
 					output[row * size + col] = output[row * size + col] + output[i * size + col] * multiplier;
 				}
 			}
@@ -723,14 +726,31 @@ double* TrendAnalysisDebug::Inverse(double* input, uint64_t size)
 
 	for (uint64_t row = 0; row < size; ++row)
 	{
-		int64_t pivot = input_tmp[row * size + row];
+		int64_t pivot = tmp_buffer[row * size + row];
 		for (uint64_t col = 0; col < size; ++col)
 		{
 			output[row * size + col] = output[row * size + col] / pivot;
 		}
 	}
+}
 
-	delete[] input_tmp;
 
-	return output;
+
+
+void TrendAnalysisDebug::VandermondeMatrix(double* output, uint16_t polynomial_order, uint16_t window_size) const
+{
+	if (polynomial_order % 2 == 0) return;
+
+	int16_t half_poly = polynomial_order / 2;
+
+	uint16_t row = 0;
+	for (int poly = -half_poly; poly <= half_poly; ++poly)
+	{
+		for (int16_t x = 0; x < window_size; x++)
+		{
+			uint32_t index = row * window_size + x;
+			output[index] = pow(poly, x);
+		}
+		row++;
+	}
 }

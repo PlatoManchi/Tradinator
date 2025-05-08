@@ -716,7 +716,7 @@ void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, con
                 if (wrapper->ShouldShow())
                 {
                     string_stream << "\n\n";
-                    string_stream << wrapper->GetHumanReadableValueAt(count - 1 - idx);
+                    string_stream << wrapper->GetHumanReadableValueAt(idx);
                 }
             }
 

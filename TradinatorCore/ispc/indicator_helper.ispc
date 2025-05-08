@@ -146,6 +146,8 @@ export void calculate_rsi(const uniform double* uniform input,
                             uniform uint64 window_size, 
                             uniform uint64 data_size) 
 {
+    uniform double VERY_LARGE = 9999999999.0;
+    uniform double VERY_SMALL = 0.0000000001;
     if(programIndex == 0)
     {
         output[0] = 0;
@@ -174,15 +176,8 @@ export void calculate_rsi(const uniform double* uniform input,
             prev_gain_avg = (prev_gain_avg * (window_size - 1) + gain) / window_size;
             prev_loss_avg = (prev_loss_avg * (window_size - 1) + loss) / window_size;
 
-            if (prev_loss_avg < 0.0000000001)
-            {
-                output[i] = 100.0;
-            }
-            else
-            {
-                uniform double relative_strength = prev_gain_avg / prev_loss_avg;
-                output[i] = 100.0 - 100.0 / (1 + relative_strength);
-            }
+            uniform double relative_strength = select (prev_loss_avg < VERY_SMALL, VERY_LARGE, prev_gain_avg / prev_loss_avg);
+            output[i] = 100.0 - 100.0 / (1 + relative_strength);
         }  
     }
 }

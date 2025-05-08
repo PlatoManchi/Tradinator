@@ -35,7 +35,7 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
     result.emplace_back(std::make_unique<OBV>());
     result.emplace_back(std::make_unique<MACD>(12, 26, 9));
     result.emplace_back(std::make_unique<ATR>(14));
-    result.emplace_back(std::make_unique<TrendAnalysisDebug>(14));
+    result.emplace_back(std::make_unique<TrendAnalysisDebug>());
 
     // arrange them alphabet wise
     std::sort(result.begin(), result.end(),
