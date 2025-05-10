@@ -1,6 +1,6 @@
 #pragma once
 
-#if 1
+#if 0
 #define _SAVITZKY_GOLAY_FILTER_ISPC_
 #else
 #endif

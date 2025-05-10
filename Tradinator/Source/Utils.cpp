@@ -234,11 +234,11 @@ namespace TradinatorAppSpace
 
 	EPatternNatureType Utils::GetPatternNatureType(EPatternType pattern)
 	{
-		if ((pattern & Bullish_Pattern_Type).any())
+		if ((pattern & Bullish_Pattern_Type) != EPatternType::None)
 		{
 			return EPatternNatureType::BULL;
 		}
-		else if ((pattern & Bearish_Pattern_Type).any())
+		else if ((pattern & Bearish_Pattern_Type) != EPatternType::None)
 		{
 			return EPatternNatureType::BEAR;
 		}

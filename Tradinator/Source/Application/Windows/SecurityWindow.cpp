@@ -747,7 +747,15 @@ void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, con
             ImVec2 high_pos = ImPlot::PlotToPixels(xs[i], highs[i]);
             ImU32 color = ImGui::GetColorU32(opens[i] > closes[i] ? bearCol : bullCol);
             draw_list->AddLine(low_pos, high_pos, color);
-            draw_list->AddRectFilled(open_pos, close_pos, color);
+            
+            if (fabs(opens[i] - closes[i]) < LDBL_EPSILON)
+            {
+                draw_list->AddLine(open_pos, close_pos, color);
+            }
+            else
+            {
+                draw_list->AddRectFilled(open_pos, close_pos, color);
+            }
         }
 
         for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
@@ -862,7 +870,7 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                                 m_tooltip_override = true;
                                 is_annotation_hovered = true;
                                 ImGui::BeginTooltip();
-                                ImGui::Text(TradinatorCoreSpace::Utils::GetPatternDescription(news_points[i].m_pattern).c_str());
+                                ImGui::Text(TradinatorCoreSpace::Utils::GetPatternShortDescription(news_points[i].m_pattern).c_str());
                                 ImGui::EndTooltip();
                             }
                             else

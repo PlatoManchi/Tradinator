@@ -48,17 +48,7 @@ std::vector<std::unique_ptr<Indicator>> TradinatorCoreSpace::Utils::GetAvailable
 }
 
 
-std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePatterns()
-{
-    std::vector<std::unique_ptr<Pattern>> result;
 
-    // Order is important, priority patterns should be first
-    result.emplace_back(std::make_unique<BullishHaramiCrossPattern>());
-    result.emplace_back(std::make_unique<BullishHaramiPattern>());
-    
-
-    return result;
-}
 
 
 void TradinatorCoreSpace::Utils::SetTradinatorWorkingFolderPath(std::string path)
@@ -138,10 +128,27 @@ void TradinatorCoreSpace::Utils::SetReadWriteBatchSize(size_t read_write_batch_s
 
 
 
-
-std::string TradinatorCoreSpace::Utils::GetPatternDescription(EPatternType pattern)
+std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePatterns()
 {
-    if ((pattern & Bullish_Harami).any())
+    std::vector<std::unique_ptr<Pattern>> result;
+
+    // Order is important, priority patterns should be first
+    result.emplace_back(std::make_unique<BullishHaramiCrossPattern>());
+    result.emplace_back(std::make_unique<BullishHaramiPattern>());
+    result.emplace_back(std::make_unique<BullishPiercingPattern>());
+    result.emplace_back(std::make_unique<BullishEngulfingPattern>());
+
+
+    result.emplace_back(std::make_unique<DragonFlyDojiPattern>());
+    result.emplace_back(std::make_unique<GraveStonrDojiPattern>());
+    result.emplace_back(std::make_unique<LongLegDojiPattern>());
+
+    return result;
+}
+
+/*std::string TradinatorCoreSpace::Utils::GetPatternDescription(EPatternType pattern)
+{
+    if (pattern & Bullish_Harami)
     {
         return "Bullish Harami";
     }
@@ -151,14 +158,61 @@ std::string TradinatorCoreSpace::Utils::GetPatternDescription(EPatternType patte
     }
 
     return "Fill out details at TradinatorCoreSpace::Utils::GetPatternDescription";
-}
+}*/
 
 std::string TradinatorCoreSpace::Utils::GetPatternShortDescription(EPatternType pattern)
 {
     static std::unordered_map<EPatternType, std::string> s_pattern_to_string
     {
-        { Bullish_Harami, "BullishHarami" },
-        { Bullish_Harami_Cross, "BullishHaramiCross" }
+        // Bullish patterns with Doji
+        { EPatternType::Bullish_Long_Legged_Doji, "Bullish Log Legged Doji" },
+        { EPatternType::Bullish_Tri_Star, "Bullish Tri Star" },
+        { EPatternType::Bullish_Abandoned_Baby, "Bullish Abandoned Baby" },
+        { EPatternType::Bullish_Morning_Star_Doji, "Bullish Morning Star Doji" },
+        { EPatternType::Bullish_Grave_Stone_Doji, "Bullish Grave Stone Doji" },
+        { EPatternType::Bullish_Harami_Cross, "Bullish Harami Cross" },
+
+        // Bullish patterns without Doji
+        { EPatternType::Bullish_Three_Outside_Up, "Bullish Three Outside Up" },
+        { EPatternType::Bullish_Three_Inside_Up, "Bullish Three Inside Up" },
+        { EPatternType::Bullish_Matching_Low, "Bullish Matching Low" },
+        { EPatternType::Bullish_Kicking, "Bullish Kicking" },
+        { EPatternType::Bullish_Three_White_Soldiers, "Bullish Three White Soldiers" },
+        { EPatternType::Bullish_Meeting_Lines, "Bullish Meeting Lines" },
+        { EPatternType::Bullish_Morning_Star, "Bullish Morning Star" },
+        { EPatternType::Bullish_Inverted_Hammer, "Bullish Inverted Hammer" },
+        { EPatternType::Bullish_Harami, "Bullish Harami" },
+        { EPatternType::Bullish_Piercing, "Bullish Piercing" },
+        { EPatternType::Bullish_Engulfing, "Bullish Engulfing" },
+        { EPatternType::Bullish_Hammer, "Bullish Hammer" },
+
+        // Bearish patterns with Doji
+        { EPatternType::Bearish_Long_Legged_Doji, "Bearish Long Legged Doji" },
+        { EPatternType::Bearish_Tri_Star, "Bearish Tri Star" },
+        { EPatternType::Bearish_Abandoned_Baby, "Bearish Abandoned Baby" },
+        { EPatternType::Bearish_Evening_Star_Doji, "Bearish Evening Star Doji" },
+        { EPatternType::Bearish_Bear_Stone_Doji, "Bearish Bear Stone Doji" },
+        { EPatternType::Bearish_Harami_Cross, "Bearish Harami Cross" },
+
+        // Bullish pattern without Doji
+        { EPatternType::Bearish_Three_Outside_Down, "Bearish Three Outside Down" },
+        { EPatternType::Bearish_Three_Inside_Down, "Bearish Three Inside Down" },
+        { EPatternType::Bearish_Matching_High, "Bearish Matching High" },
+        { EPatternType::Bearish_Kicking, "Bearish Kicking" },
+        { EPatternType::Bearish_Three_Black_Crow, "Bearish Three Black Crow" },
+        { EPatternType::Bearish_Meeting_Line, "Bearish Meeting Line" },
+        { EPatternType::Bearish_Evening_Star, "Bearish Evening Star" },
+        { EPatternType::Bullish_Shooting_Star, "Bullish Shooting Star" },
+        { EPatternType::Bearish_Harami, "Bearish Harami" },
+        { EPatternType::Bearish_Piercing, "Bearish Piercing" },
+        { EPatternType::Bearish_Engulfing, "Bearish Engulfing" },
+        { EPatternType::Bearish_Hanging_Man, "Bearish Hanging Man" },
+
+
+        // Generic Patterns
+        { EPatternType::Dragon_Fly_Doji, "Dragon Fly Doji" },
+        { EPatternType::Grave_Stone_Doji, "Grave Stone Doji" },
+        { EPatternType::Long_Leg_Doji, "Long Leg Doji" },
     };
 
     auto itr = s_pattern_to_string.find(pattern);
@@ -172,12 +226,60 @@ std::string TradinatorCoreSpace::Utils::GetPatternShortDescription(EPatternType 
 
 EPatternType TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const std::string& short_description)
 {
-    EPatternType result(0);
+    EPatternType result = EPatternType::None;
 
     static std::unordered_map<std::string, EPatternType> s_string_to_pattern
     {
-        { "BullishHarami", Bullish_Harami },
-        { "BullishHaramiCross", Bullish_Harami_Cross }
+        // Bullish patterns with Doji
+        { "Bullish Log Legged Doji", EPatternType::Bullish_Long_Legged_Doji },
+        { "Bullish Tri Star", EPatternType::Bullish_Tri_Star },
+        { "Bullish Abandoned Baby", EPatternType::Bullish_Abandoned_Baby},
+        { "Bullish Morning Star Doji", EPatternType::Bullish_Morning_Star_Doji },
+        { "Bullish Grave Stone Doji", EPatternType::Bullish_Grave_Stone_Doji },
+        { "Bullish Harami Cross", EPatternType::Bullish_Harami_Cross },
+
+        // Bullish patterns without Doji
+        { "Bullish Three Outside Up", EPatternType::Bullish_Three_Outside_Up },
+        { "Bullish Three Inside Up", EPatternType::Bullish_Three_Inside_Up },
+        { "Bullish Matching Low", EPatternType::Bullish_Matching_Low },
+        { "Bullish Kicking", EPatternType::Bullish_Kicking },
+        { "Bullish Three White Soldiers", EPatternType::Bullish_Three_White_Soldiers },
+        { "Bullish Meeting Lines", EPatternType::Bullish_Meeting_Lines },
+        { "Bullish Morning Star", EPatternType::Bullish_Morning_Star },
+        { "Bullish Inverted Hammer", EPatternType::Bullish_Inverted_Hammer },
+        { "Bullish Harami", EPatternType::Bullish_Harami },
+        { "Bullish Piercing", EPatternType::Bullish_Piercing },
+        { "Bullish Engulfing", EPatternType::Bullish_Engulfing},
+        { "Bullish Hammer", EPatternType::Bullish_Hammer},
+
+
+        // Bearish patterns with Doji
+        { "Bearish Long Legged Doji", EPatternType::Bearish_Long_Legged_Doji },
+        { "Bearish Tri Star", EPatternType::Bearish_Tri_Star },
+        { "Bearish Abandoned Baby", EPatternType::Bearish_Abandoned_Baby },
+        { "Bearish Evening Star Doji", EPatternType::Bearish_Evening_Star_Doji },
+        { "Bearish Bear Stone Doji", EPatternType::Bearish_Bear_Stone_Doji },
+        { "Bearish Harami Cross", EPatternType::Bearish_Harami_Cross },
+
+        // Bullish pattern without Doji
+        { "Bearish Three Outside Down", EPatternType::Bearish_Three_Outside_Down },
+        { "Bearish Three Inside Down", EPatternType::Bearish_Three_Inside_Down },
+        { "Bearish Matching High", EPatternType::Bearish_Matching_High },
+        { "Bearish Kicking", EPatternType::Bearish_Kicking },
+        { "Bearish Three Black Crow", EPatternType::Bearish_Three_Black_Crow },
+        { "Bearish Meeting Line", EPatternType::Bearish_Meeting_Line },
+        { "Bearish Evening Star", EPatternType::Bearish_Evening_Star },
+        { "Bullish Shooting Star", EPatternType::Bullish_Shooting_Star },
+        { "Bearish Harami", EPatternType::Bearish_Harami },
+        { "Bearish Piercing", EPatternType::Bearish_Piercing },
+        { "Bearish Engulfing", EPatternType::Bearish_Engulfing },
+        { "Bearish Hanging Man", EPatternType::Bearish_Hanging_Man },
+
+
+        // Generic Patterns
+        { "Dragon Fly Doji", EPatternType::Dragon_Fly_Doji },
+        { "Grave Stone Doji", EPatternType::Grave_Stone_Doji },
+        { "Long Leg Doji", EPatternType::Long_Leg_Doji },
     };
 
     auto itr = s_string_to_pattern.find(short_description);

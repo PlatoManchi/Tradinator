@@ -282,6 +282,10 @@ void TrendAnalysisDebug::CalculateRaw(
 			uint64_t troughs_up_count = 0;
 			uint64_t peaks_down_count = 0;
 			uint64_t troughs_down_count = 0;
+			uint64_t perfect_peaks_up_count = 0;
+			uint64_t perfect_troughs_up_count = 0;
+			uint64_t perfect_peaks_down_count = 0;
+			uint64_t perfect_troughs_down_count = 0;
 
 			double threshold = 0.01;
 			for (int64_t j = peak_index; j > peak_index - history_length_for_trend_detection && j >= 0; --j)
@@ -291,12 +295,20 @@ void TrendAnalysisDebug::CalculateRaw(
 				if (fabs(savitzky_golay_output[curr_peak_index] - savitzky_golay_output[prev_peak_index]) < savitzky_golay_output[prev_peak_index] * threshold ||
 					savitzky_golay_output[curr_peak_index] > savitzky_golay_output[prev_peak_index])
 				{
-					peaks_up_count++;
+					++peaks_up_count;
+				}
+				if (savitzky_golay_output[curr_peak_index] > savitzky_golay_output[prev_peak_index])
+				{
+					++perfect_peaks_up_count;
 				}
 				if (fabs(savitzky_golay_output[curr_peak_index] - savitzky_golay_output[prev_peak_index]) < savitzky_golay_output[prev_peak_index] * threshold ||
 					savitzky_golay_output[curr_peak_index] < savitzky_golay_output[prev_peak_index])
 				{
-					peaks_down_count++;
+					++peaks_down_count;
+				}
+				if (savitzky_golay_output[curr_peak_index] < savitzky_golay_output[prev_peak_index])
+				{
+					++perfect_peaks_down_count;
 				}
 			}
 			for (int j = trough_index; j > trough_index - history_length_for_trend_detection && j >= 0; --j)
@@ -306,12 +318,20 @@ void TrendAnalysisDebug::CalculateRaw(
 				if (fabs(savitzky_golay_output[curr_trough_index] - savitzky_golay_output[prev_trough_index]) < savitzky_golay_output[prev_trough_index] * threshold ||
 					savitzky_golay_output[curr_trough_index] > savitzky_golay_output[prev_trough_index])
 				{
-					troughs_up_count++;
+					++troughs_up_count;
+				}
+				if (savitzky_golay_output[curr_trough_index] > savitzky_golay_output[prev_trough_index])
+				{
+					++perfect_troughs_up_count;
 				}
 				if (fabs(savitzky_golay_output[curr_trough_index] - savitzky_golay_output[prev_trough_index]) < savitzky_golay_output[prev_trough_index] * threshold ||
 					savitzky_golay_output[curr_trough_index] < savitzky_golay_output[prev_trough_index])
 				{
-					troughs_down_count++;
+					++troughs_down_count;
+				}
+				if (savitzky_golay_output[curr_trough_index] < savitzky_golay_output[prev_trough_index])
+				{
+					++perfect_troughs_down_count;
 				}
 			}
 

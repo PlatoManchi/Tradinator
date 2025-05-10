@@ -4,9 +4,10 @@
 #include <cmath>
 
 #define _DOJI_BODY_RATIO_ 0.02 // 2%
+#define _LONG_BODY_RATIO_ 0.7 // 60% Body
 
 #define _HAMMER_BODY_RATIO_ 0.2 // 20%
-#define _HAMMER_SHADOW_RATIO_ 0.1 // 10%
+#define _HAMMER_SHORT_TO_LONG_SHADOW_RATIO_ 0.1 // 10%
 
 #define _DRAGON_FLY_DOJI_SHADOW_RATIO_ 0.1 // 10% upper_shadow/lower_shadow ratio
 #define _GRAVE_STONE_DOJI_SHADOW_RATIO_ 0.1 // 10% lower_shadow/upper_shadow ratio
@@ -27,7 +28,7 @@ bool CandlesData::IsDoji(size_t idx) const
 
 	double body_ratio = body_size / total_range;
 
-	return body_ratio < _DOJI_BODY_RATIO_;
+	return body_ratio <= _DOJI_BODY_RATIO_;
 }
 
 bool CandlesData::IsMarubozu(size_t idx) const
@@ -37,13 +38,12 @@ bool CandlesData::IsMarubozu(size_t idx) const
 	{
 		// In Indian market, closing price is not the last transaction. It is avg of last half hour
 		// so green marubozu will have a small upper shadow and for red marubozu will have a small lower shadow.
-		bool is_green = m_opens[idx] < m_closes[idx];
-
+		
 		// How much shadow is acceptable
 		// 5% shadow is acceptable? Magic Number, adjust for better results
 		const double shadow_threshold = fabs(m_opens[idx] < m_closes[idx]) * 0.05;
 
-		if (is_green)
+		if (IsBullish(idx))
 		{
 			// Green marubozu will have small upper shadow
 			return (m_highs[idx] - m_closes[idx] < shadow_threshold) && (fabs(m_opens[idx] - m_lows[idx]) <= LDBL_EPSILON);
@@ -83,7 +83,7 @@ bool CandlesData::IsHammer(size_t idx) const
 	double body_ratio = body_size / total_range;
 	double upper_to_lower_ratio = upper_shadow / lower_shadow;
 
-	return (upper_to_lower_ratio < _HAMMER_SHADOW_RATIO_) && (body_ratio < _HAMMER_BODY_RATIO_);
+	return (upper_to_lower_ratio < _HAMMER_SHORT_TO_LONG_SHADOW_RATIO_) && (body_ratio < _HAMMER_BODY_RATIO_);
 }
 
 bool CandlesData::IsInvertedHammer(size_t idx) const
@@ -106,7 +106,7 @@ bool CandlesData::IsInvertedHammer(size_t idx) const
 	double body_ratio = body_size / total_range;
 	double lower_to_upper_ratio = lower_shadow / upper_shadow;
 
-	return (lower_to_upper_ratio < _HAMMER_SHADOW_RATIO_) && (body_ratio < _HAMMER_BODY_RATIO_);
+	return (lower_to_upper_ratio < _HAMMER_SHORT_TO_LONG_SHADOW_RATIO_) && (body_ratio < _HAMMER_BODY_RATIO_);
 }
 
 bool CandlesData::IsDragonflyDoji(size_t idx) const
@@ -172,4 +172,25 @@ bool CandlesData::IsLongLegDoji(size_t idx) const
 		lower_shadow > body_size * _LONG_LEG_DOJI_BODY_TO_SHADO_RATIO &&		// lower shadow should be long
 		shadow_ratio >= (1.0 - _LONG_LEG_DOJI_SHADOW_RATIO) &&					// shadows ratio should be in range
 		shadow_ratio <= (1.0 + _LONG_LEG_DOJI_SHADOW_RATIO);
+}
+
+bool CandlesData::IsLongCandle(size_t idx) const
+{
+	double body_size = fabs(m_closes[idx] - m_opens[idx]);
+	double total_range = m_highs[idx] - m_lows[idx];
+	//double upper_shadow = IsBullish(idx) ? m_highs[idx] - m_closes[idx] : m_highs[idx] - m_opens[idx];
+	//double lower_shadow = IsBullish(idx) ? m_opens[idx] - m_lows[idx] : m_closes[idx] - m_lows[idx];
+
+	if (total_range < DBL_EPSILON)
+	{
+		return false;
+	}
+
+	double body_ratio = body_size / total_range;
+	
+	//const double shadow_ratio = (1.0 - _LONG_BODY_RATIO_) / 2.0;
+
+	return body_ratio >= _LONG_BODY_RATIO_;
+		//&& upper_shadow / total_range < shadow_ratio
+		//&& lower_shadow / total_range < shadow_ratio;
 }

@@ -243,7 +243,7 @@ bool StartupWindow::Show()
             for (std::unique_ptr<Pattern>& pattern : patterns)
             {
                 bool is_visible = TradinatorSettings::Get().GetPatternVisibility(pattern->PatternType());
-                ImGui::Checkbox(TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType()).c_str(), &is_visible);
+                ImGui::Checkbox(pattern->Name().c_str(), &is_visible);
                 TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), is_visible);
             }
 

@@ -532,7 +532,7 @@ export void calculate_trend_analysis_debug( const uniform double* uniform highs,
             }
 
             if(peaks_up_count == history_length_for_trend_detection && troughs_up_count == history_length_for_trend_detection &&
-                peaks_up_count == history_length_for_trend_detection && troughs_up_count == history_length_for_trend_detection)
+                peaks_down_count == history_length_for_trend_detection && troughs_down_count == history_length_for_trend_detection)
             {
                 // Ambiguous results when using threshold.
                 // Use perfect values

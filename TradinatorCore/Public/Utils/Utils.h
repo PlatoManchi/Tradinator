@@ -3,10 +3,11 @@
 #include <string>
 #include <chrono>
 
-#include "Patterns/Pattern.h"
+//#include "Patterns/Pattern.h"
 
 class Indicator;
 class Pattern;
+enum class EPatternType : uint64_t;
 
 namespace TradinatorCoreSpace
 {
@@ -34,7 +35,7 @@ namespace TradinatorCoreSpace
 		static void SetReadWriteBatchSize(size_t read_write_batch_size);
 
 
-		static std::string GetPatternDescription(EPatternType pattern);
+		//static std::string GetPatternDescription(EPatternType pattern);
 		static std::string GetPatternShortDescription(EPatternType pattern);
 		static EPatternType GetPatternFromShortDescription(const std::string& short_description);
 

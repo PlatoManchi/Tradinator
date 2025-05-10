@@ -538,7 +538,7 @@ std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 					{
 						NewsPoint news_point(this->shared_from_this());
 						news_point.m_date_range = pattern_range;
-						news_point.m_pattern |= pattern->PatternType();
+						news_point.m_pattern = pattern->PatternType();
 
 						m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
 

@@ -5,6 +5,13 @@
 #include <cstdint>
 #include <fstream>
 
+enum class ETrend
+{
+	Up,
+	Down,
+
+	None
+};
 
 class CandlesData
 {
@@ -32,6 +39,7 @@ public:
 	bool IsDragonflyDoji(size_t idx) const;
 	bool IsGravestoneDoji(size_t idx) const;
 	bool IsLongLegDoji(size_t idx) const;
+	bool IsLongCandle(size_t idx) const;
 
 
 	/**
@@ -47,6 +55,7 @@ public:
 	std::vector<double> m_highs;
 	std::vector<double> m_lows;
 	std::vector<double> m_closes;
+	std::vector<ETrend> m_trends;
 	std::vector<uint64_t> m_volumes;
 	std::vector<uint64_t> m_open_interests;
 };
