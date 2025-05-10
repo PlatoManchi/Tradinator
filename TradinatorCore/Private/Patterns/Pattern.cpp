@@ -8,12 +8,11 @@ Pattern::Pattern()
 }
 
 
-std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end)
+std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
-    std::vector<std::chrono::system_clock::time_point> result;
+    std::vector<uint64_t> result;
 
-    const Candle& curr = (*current_candle_itr).second;
-    if (current_candle_itr != begin)
+    if (at < candles_data.m_dates.size() - 1)
     {
         /*
                       |
@@ -29,22 +28,15 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(C
 
         */
 
-
-        // Remember the data is arranged in descending order of dates.
-        // Latest data is at 0 and previous day is at 1 and on
-        // so next day will be previous data in terms of iteration.
-        CandleDataMapType::const_iterator next_itr = std::prev(current_candle_itr, 1);
-
-        const Candle& next = (*next_itr).second;
-        bool is_pattern_matched = curr.m_close < curr.m_open && // curr is bearish
-            next.m_close > next.m_open &&    // next is bullish    
-            curr.m_open > next.m_close &&    // curr open is above next close
-            curr.m_close < next.m_open;      // curr close is below next open
+        bool is_pattern_matched = candles_data.IsBearish(at) &&            // curr is bearish
+            candles_data.IsBullish(at + 1) &&                              // next is bullish    
+            candles_data.m_opens[at] > candles_data.m_closes[at + 1] &&    // curr open is above next close
+            candles_data.m_closes[at] < candles_data.m_opens[at + 1];      // curr close is below next open
 
         if (is_pattern_matched)
         {
-            result.push_back(next.m_date);
-            result.push_back(curr.m_date);
+            result.push_back(at);
+            result.push_back(at + 1);
         }
     }
 
@@ -52,12 +44,11 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiPattern::Check(C
 }
 
 
-std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end)
+std::vector<uint64_t> BullishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
-    std::vector<std::chrono::system_clock::time_point> result;
+    std::vector<uint64_t> result;
 
-    const Candle& curr = (*current_candle_itr).second;
-    if (current_candle_itr != begin)
+    if (at < candles_data.m_dates.size() - 1)
     {
         /*
                       |
@@ -74,15 +65,9 @@ std::vector<std::chrono::system_clock::time_point> BullishHaramiCrossPattern::Ch
         */
 
 
-        // Remember the data is arranged in descending order of dates.
-        // Latest data is at 0 and previous day is at 1 and on
-        // so next day will be previous data in terms of iteration.
-        CandleDataMapType::const_iterator next_itr = std::prev(current_candle_itr, 1);
-
-        const Candle& next = (*next_itr).second;
-        if (next.IsDoji())
+        if (candles_data.IsDoji(at + 1))
         {
-            return BullishHaramiPattern::Check(current_candle_itr, begin, end);
+            return BullishHaramiPattern::Check(at, candles_data);
         }
     }
 

@@ -30,7 +30,7 @@ public:
 	bool CanSafelyShutdown() const;
 	
 	const AsyncData<std::vector<std::weak_ptr<Security>>>& GetTenNewestIPOs() const;
-	const AsyncData<NewsPointMapType>& GetGlobalNews() const { return m_global_news; }
+	const AsyncData<NewsPointVectorType>& GetGlobalNews() const { return m_global_news; }
 
 
 	inline bool IsProcessing() const { return m_async_task_manager->IsProcessing(); }
@@ -55,7 +55,7 @@ private:
 	std::vector<std::shared_ptr<Market>> m_market_list;
 
 	// Will contain cummulation of news points from all securities in all markets.
-	AsyncData<NewsPointMapType> m_global_news;
+	AsyncData<NewsPointVectorType> m_global_news;
 
 	bool m_is_initialized;
 	bool m_is_shut_down;

@@ -1403,10 +1403,11 @@ std::string TrendAnalysisDebugWrapper::GetHumanReadableValueAt(size_t index) con
         {
             trend_str = "Down";
         }
-        return std::format("{}({}) :   {}",
+        return std::format("{}({}) :   {} ({})",
             TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
             index,
-            trend_str);
+            trend_str,
+            m_points_list[0][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",

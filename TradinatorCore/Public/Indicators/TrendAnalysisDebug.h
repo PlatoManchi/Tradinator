@@ -1,6 +1,6 @@
 #pragma once
 
-#if 0
+#if 1
 #define _SAVITZKY_GOLAY_FILTER_ISPC_
 #else
 #endif
@@ -46,6 +46,7 @@ public:
 		uint64_t distance_btw_peaks,
 		uint64_t width_for_peaks,
 		double relative_height_for_peaks,
+		uint64_t history_length_for_trend_detection,
 		uint64_t count);
 
 	void SavitzkyGolayFilterRaw(

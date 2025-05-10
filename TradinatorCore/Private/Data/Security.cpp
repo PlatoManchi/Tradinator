@@ -35,9 +35,8 @@ Security::Security()
 	, m_face_value(0)
 	, m_candle_count(0)
 	, m_database_connection(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath())
-	, m_candle_data(std::make_shared<AsyncData<CandleDataMapType>>())
 	, m_candles_data(std::make_shared<AsyncData<CandlesData>>())
-	, m_news_points_data(std::make_shared<AsyncData<NewsPointMapType>>())
+	, m_news_points_data(std::make_shared<AsyncData<NewsPointVectorType>>())
 	, m_is_downloading(false)
 	, m_is_inserting(false)
 	, m_is_latest_date_dirty(true)
@@ -376,7 +375,6 @@ void Security::LoadCandleDataToMemory()
 
 	if (!DoesProcessedHistoricalDataExist())
 	{
-		m_candle_data->SetDataReady(true);
 		m_candles_data->SetDataReady(true);
 		return;
 	}
@@ -386,10 +384,6 @@ void Security::LoadCandleDataToMemory()
 	{
 		try
 		{
-			if (m_candle_data->IsDataReady())
-			{
-				m_candle_data->SetDataReady(false);
-			}
 			if (m_candles_data->IsDataReady())
 			{
 				m_candles_data->SetDataReady(false);
@@ -413,17 +407,7 @@ void Security::LoadCandleDataToMemory()
 				std::chrono::system_clock::duration duration_since_epoch(time_count);
 				std::chrono::system_clock::time_point date(duration_since_epoch);
 
-				Candle candle_data;
-				candle_data.m_date = date;
-				candle_data.m_open = query.getColumn(1);
-				candle_data.m_high = query.getColumn(2);
-				candle_data.m_low = query.getColumn(3);
-				candle_data.m_close = query.getColumn(4);
-				candle_data.m_volume = query.getColumn(5).getInt64();
-				candle_data.m_open_interest = query.getColumn(6).getInt64();
-
-				m_candle_data->GetAsyncDataCopy()[date] = candle_data;
-
+				
 				m_candles_data->GetAsyncDataCopy().m_dates.push_back(date);
 				m_candles_data->GetAsyncDataCopy().m_opens.push_back(query.getColumn(1));
 				m_candles_data->GetAsyncDataCopy().m_highs.push_back(query.getColumn(2));
@@ -433,7 +417,6 @@ void Security::LoadCandleDataToMemory()
 				m_candles_data->GetAsyncDataCopy().m_open_interests.push_back(query.getColumn(6).getInt64());
 			}
 
-			m_candle_data->SetDataReady(true);
 			m_candles_data->SetDataReady(true);
 
 			m_is_memory_in_sync = true;
@@ -479,7 +462,6 @@ void Security::UnloadCandleDataFromMemory()
 	if (!m_lock_in_memory)
 	{
 		m_is_memory_in_sync = false;
-		m_candle_data->Reset();
 		m_candles_data->Reset();
 	}
 }
@@ -545,31 +527,25 @@ std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 
 			std::vector<std::unique_ptr<Pattern>> patterns = std::move(TradinatorCoreSpace::Utils::GetAvailablePatterns());
 
-			CandleDataMapType::const_iterator itr = m_candle_data->GetData().begin();
-			CandleDataMapType::const_iterator begin = m_candle_data->GetData().begin();
-			CandleDataMapType::const_iterator end = m_candle_data->GetData().end();
-			
-			while (itr != end)
-			{
-				EPatternType satisfied_patterns;
+			const CandlesData& candles_data = m_candles_data->GetData();
 
+			for (uint64_t i = 0; i < candles_data.m_dates.size(); ++i)
+			{
 				for (const std::unique_ptr<Pattern>& pattern : patterns)
 				{
-					std::vector<std::chrono::system_clock::time_point> pattern_range = pattern->Check(itr, begin, end);
+					std::vector<uint64_t> pattern_range = pattern->Check(i, candles_data);
 					if (pattern_range.size() > 0)
 					{
 						NewsPoint news_point(this->shared_from_this());
 						news_point.m_date_range = pattern_range;
 						news_point.m_pattern |= pattern->PatternType();
 
-						m_news_points_data->GetAsyncDataCopy()[pattern_range[0]] = news_point;
+						m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
 
 						// First come first serve
 						break;
 					}
 				}
-				
-				std::advance(itr, 1);
 			}
 		};
 

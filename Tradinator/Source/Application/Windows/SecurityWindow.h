@@ -42,19 +42,13 @@ private:
 	void ShowPatterns(float chart_width, float chart_height,  ImPlotRect chart_limits);
 
 	void RebuildCachedPlotPoints();
-	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
+	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, const uint64_t* volumes, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
 	
 	//template <typename T>
 	int BinarySearch(const size_t* arr, int l, int r, double x);
 
 
-	std::vector<size_t> m_dates;
-	std::vector<double> m_opens;
-	std::vector<double> m_highes;
-	std::vector<double> m_lows;
-	std::vector<double> m_closes;
-	std::vector<size_t> m_volumes;
-	std::vector<size_t> m_open_interests;
+	std::vector<uint64_t> m_dates;
 
 	std::vector<std::unique_ptr<IIndicatorWrapper>> m_available_indicator_wrappers;
 	std::vector<std::unique_ptr<IIndicatorWrapper>> m_applied_indicator_wrappers;

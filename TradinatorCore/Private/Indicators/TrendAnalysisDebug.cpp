@@ -11,8 +11,7 @@
 #include "Utils/StopWatch.h"
 
 #ifdef _SAVITZKY_GOLAY_FILTER_ISPC_
-#include "matrix_helper_ispc.h"
-#include "indicator_helper_ispc.h"
+#include "utils_ispc.h"
 #endif // _SAVITZKY_GOLAY_FILTER_ISPC_
 
 
@@ -114,8 +113,8 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 		std::vector<double> average_true_ranges(count, 0.0);
 
 		// max number of peaks possible will be count / m_distance_btw_peaks
-		std::vector<double> peaks(count / m_distance_btw_peaks, 0.0);
-		std::vector<double> troughs(count / m_distance_btw_peaks, 0.0);
+		std::vector<double> peaks(count, 0.0);
+		std::vector<double> troughs(count, 0.0);
 
 		uint64_t peaks_count = 0;
 		uint64_t troughs_count = 0;
@@ -123,43 +122,35 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 		std::vector<double> trend_points(count, 0.0);
 
 #ifdef _SAVITZKY_GOLAY_FILTER_ISPC_
-		
-		std::vector<double> ispc_input;
-		ispc_input.reserve(count);
-		std::vector<double> ispc_output(count);
-
-		const CandleDataMapType& data = candle_data->GetData();
-		for (auto& pair : data)
-		{
-			ispc_input.emplace_back(pair.second.m_close);
-		}
+		std::vector<int8_t> peaks_and_trough_tmp_buff(count, 0);
 
 		ispc::calculate_trend_analysis_debug(
-			ispc_input.data(),
-			count,
+			data.m_highs.data(),
+			data.m_lows.data(),
+			data.m_closes.data(),
 			a.data(),
 			at.data(),
 			ata.data(),
 			ata_inv.data(),
+			ata_inv_tmp.data(),
 			ata_inv_at.data(),
 			convolution_coefficient.data(),
 			convolution_coefficient_tmp.data(),
-			m_polynomial_order,
+			savitzky_golay_output.data(),
+			average_true_ranges.data(),
+			peaks.data(),
+			troughs.data(),
+			peaks_and_trough_tmp_buff.data(),
+			trend_points.data(),
+			&peaks_count,
+			&troughs_count,
 			m_length,
-			ispc_output.data());
-
-		auto itr = candle_data->GetData().begin();
-		for (double sma_value : ispc_output)
-		{
-			IndicatorPoint point;
-			point.date = (*itr).first;
-			point.value = sma_value;
-
-			trend_analysis_debug.emplace_back(std::move(point));
-
-			std::advance(itr, 1);
-		}
-
+			m_polynomial_order,
+			m_distance_btw_peaks,
+			m_width_for_peaks,
+			m_relative_height,
+			2,
+			count);
 #else
 		CalculateRaw(
 			data.m_highs.data(),
@@ -185,11 +176,13 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 			m_distance_btw_peaks,
 			m_width_for_peaks,
 			m_relative_height,
+			2,
 			count
 		);
 #endif // _SAVITZKY_GOLAY_FILTER_ISPC_
 
-
+		//std::cout << "peaks_count : " << peaks_count << std::endl;
+		//std::cout << "troughs_count : " << troughs_count << std::endl;
 		peaks.resize(peaks_count);
 		troughs.resize(troughs_count);
 
@@ -229,6 +222,7 @@ void TrendAnalysisDebug::CalculateRaw(
 	uint64_t distance_btw_peaks,
 	uint64_t width_for_peaks,
 	double relative_height_for_peaks,
+	uint64_t history_length_for_trend_detection,
 	uint64_t count)
 {
 	VandermondeMatrix(a_buff, polynomial_order, window_size);
@@ -280,10 +274,9 @@ void TrendAnalysisDebug::CalculateRaw(
 		//  1 - up trend
 		// -1 - down trend
 		double trend = 0;
-		uint64_t history_length = 2;
-
-		if (peak_index - history_length >= 0 &&
-			trough_index - history_length >= 0)
+		
+		if (peak_index - history_length_for_trend_detection >= 0 &&
+			trough_index - history_length_for_trend_detection >= 0)
 		{
 			uint64_t peaks_up_count = 0;
 			uint64_t troughs_up_count = 0;
@@ -291,7 +284,7 @@ void TrendAnalysisDebug::CalculateRaw(
 			uint64_t troughs_down_count = 0;
 
 			double threshold = 0.01;
-			for (int64_t j = peak_index; j > peak_index - history_length && j >= 0; --j)
+			for (int64_t j = peak_index; j > peak_index - history_length_for_trend_detection && j >= 0; --j)
 			{
 				uint64_t curr_peak_index = (uint64_t)peaks_output[j];
 				uint64_t prev_peak_index = (uint64_t)peaks_output[j - 1];
@@ -306,7 +299,7 @@ void TrendAnalysisDebug::CalculateRaw(
 					peaks_down_count++;
 				}
 			}
-			for (int j = trough_index; j > trough_index - history_length && j >= 0; --j)
+			for (int j = trough_index; j > trough_index - history_length_for_trend_detection && j >= 0; --j)
 			{
 				uint64_t curr_trough_index = (uint64_t)troughs_output[j];
 				uint64_t prev_trough_index = (uint64_t)troughs_output[j - 1];
@@ -322,11 +315,11 @@ void TrendAnalysisDebug::CalculateRaw(
 				}
 			}
 
-			if (peaks_up_count == history_length && troughs_up_count == history_length)
+			if (peaks_up_count == history_length_for_trend_detection && troughs_up_count == history_length_for_trend_detection)
 			{
 				trend = 1.0f;
 			}
-			else if (peaks_down_count == history_length && troughs_down_count == history_length)
+			else if (peaks_down_count == history_length_for_trend_detection && troughs_down_count == history_length_for_trend_detection)
 			{
 				trend = -1.0f;
 			}
@@ -466,7 +459,7 @@ double find_local_min_right(const double* input_data, uint64_t at_index, uint64_
 	return input_data[count - 1] * modifier;
 }
 
-size_t find_crossing_left(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
+int64_t find_crossing_left(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
 {
 	for (int64_t i = at_index; i >= 0; --i)
 	{
@@ -483,9 +476,9 @@ size_t find_crossing_left(const double* input_data, uint64_t at_index, uint64_t 
 	return 0;
 }
 
-size_t find_crossing_right(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
+int64_t find_crossing_right(const double* input_data, uint64_t at_index, uint64_t count, double height, int modifier)
 {
-	for (size_t i = at_index; i < count; ++i)
+	for (uint64_t i = at_index; i < count; ++i)
 	{
 		if (input_data[i] * modifier < height)
 		{
@@ -537,9 +530,10 @@ void TrendAnalysisDebug::FindPeaks(const double* input_data, uint64_t count, dou
 	std::vector<double> all_peaks;
 
 	
-	for (size_t i = 1; i < count - 2; ++i)
+	for (size_t i = 1; i < count - 1; ++i)
 	{
-		if (input_data[i] * input_modifier > input_data[i - 1] * input_modifier && input_data[i] * input_modifier > input_data[i + 1] * input_modifier)
+		if (input_data[i] * input_modifier > input_data[i - 1] * input_modifier && 
+			input_data[i] * input_modifier > input_data[i + 1] * input_modifier)
 		{
 			double peak_height = input_data[i] * input_modifier;
 
@@ -562,8 +556,8 @@ void TrendAnalysisDebug::FindPeaks(const double* input_data, uint64_t count, dou
 			double height_at_width = peak_height - (prominence * relative_height);
 
 			// Step 3: Walk left and right from peak to find crossing points
-			size_t left_index = find_crossing_left(input_data, i, count, height_at_width, input_modifier);
-			size_t right_index = find_crossing_right(input_data, i, count, height_at_width, input_modifier);
+			uint64_t left_index = find_crossing_left(input_data, i, count, height_at_width, input_modifier);
+			uint64_t right_index = find_crossing_right(input_data, i, count, height_at_width, input_modifier);
 
 			// Step 4: Measure width
 			size_t width = right_index - left_index;
@@ -579,7 +573,11 @@ void TrendAnalysisDebug::FindPeaks(const double* input_data, uint64_t count, dou
 	// Step 6: Now we have all the peaks in the data. Filter the peaks based on distance
 	//std::reverse(all_peaks.begin(), all_peaks.end());
 
-	//output_peaks_indices = all_peaks;
+	/*for (uint64_t i = 0; i < all_peaks.size(); ++i)
+	{
+		output_peaks_indices[i] = all_peaks[i];
+	}
+	*peaks_count = all_peaks.size();*/
 
 	bool is_done = false;
 	size_t start = 0;

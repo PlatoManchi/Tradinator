@@ -59,7 +59,7 @@ public:
     * Arranged in descending order. 
     * Latest date to oldest date
     */
-    virtual std::vector<std::chrono::system_clock::time_point> Check(CandleDataMapType::const_iterator current_candle, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end) = 0;
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) = 0;
 };
 
 class BullishHaramiPattern : public Pattern
@@ -68,7 +68,7 @@ public:
     virtual std::string Name() const override { return "Bullish Harami"; }
     virtual EPatternType PatternType() const override { return Bullish_Harami; }
     
-    virtual std::vector<std::chrono::system_clock::time_point> Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end) override;
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
 };
 
 class BullishHaramiCrossPattern : public BullishHaramiPattern
@@ -78,5 +78,5 @@ public:
     virtual EPatternType PatternType() const override { return Bullish_Harami_Cross; }
     virtual bool IsDefaultVisible() const { return true; }
 
-    virtual std::vector<std::chrono::system_clock::time_point> Check(CandleDataMapType::const_iterator current_candle_itr, CandleDataMapType::const_iterator begin, CandleDataMapType::const_iterator end) override;
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
 };

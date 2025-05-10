@@ -164,7 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ispc\indicator_helper_ispc.h" />
-    <ClInclude Include="ispc\matrix_helper_ispc.h" />
+    <ClInclude Include="ispc\utils_ispc.h" />
     <ClInclude Include="Public\Data\AsyncData.h" />
     <ClInclude Include="Public\Data\Candle.h" />
     <ClInclude Include="Public\Data\Company.h" />
@@ -227,7 +227,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ispc\indicator_helper.ispc" />
-    <None Include="ispc\matrix_helper.ispc" />
+    <None Include="ispc\utils.ispc" />
     <None Include="Public\Data\AsyncData.inl" />
   </ItemGroup>
   <ItemGroup>
@@ -240,10 +240,10 @@
     <Object Include="ispc\indicator_helper_ispc_avx2.o" />
     <Object Include="ispc\indicator_helper_ispc_avx512skx.o" />
     <Object Include="ispc\indicator_helper_ispc_sse2.o" />
-    <Object Include="ispc\matrix_helper_ispc.o" />
-    <Object Include="ispc\matrix_helper_ispc_avx2.o" />
-    <Object Include="ispc\matrix_helper_ispc_avx512skx.o" />
-    <Object Include="ispc\matrix_helper_ispc_sse2.o" />
+    <Object Include="ispc\utils.o" />
+    <Object Include="ispc\utils_avx2.o" />
+    <Object Include="ispc\utils_avx512skx.o" />
+    <Object Include="ispc\utils_sse2.o" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

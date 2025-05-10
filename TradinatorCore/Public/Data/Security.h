@@ -50,11 +50,10 @@ public:
 	inline uint32_t MarketLot() const { return m_market_lot; }
 	inline uint32_t FaceValue() const { return m_face_value; }
 
-	inline std::shared_ptr<const AsyncData<CandleDataMapType>> GetCandleData() const { return m_candle_data; }
 	inline std::shared_ptr<const AsyncData<CandlesData>> GetCandlesData() const { return m_candles_data; }
-	inline std::shared_ptr<const AsyncData<NewsPointMapType>> GetNewsPointsData() const { return m_news_points_data; }
+	inline std::shared_ptr<const AsyncData<NewsPointVectorType>> GetNewsPointsData() const { return m_news_points_data; }
 
-	inline bool IsCandleDataReady() const { return m_candle_data->IsDataReady(); }
+	inline bool IsCandleDataReady() const { return m_candles_data->IsDataReady(); }
 	inline void SetOwningMarket(std::weak_ptr<Market> parent) { m_owning_market = parent; }
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 
@@ -114,13 +113,11 @@ protected:
 	// per thread.
 	SQLite::Database m_database_connection;
 
-	// Candle data sorted from latest to oldest
-	std::shared_ptr<AsyncData<CandleDataMapType>> m_candle_data;
-
+	
 	std::shared_ptr<AsyncData<CandlesData>> m_candles_data;
 
 	// News points sorted from latest to oldest
-	std::shared_ptr<AsyncData<NewsPointMapType>> m_news_points_data;
+	std::shared_ptr<AsyncData<NewsPointVectorType>> m_news_points_data;
 
 	// Cached latest local candle date
 	mutable std::chrono::system_clock::time_point m_cached_latest_candle_date;

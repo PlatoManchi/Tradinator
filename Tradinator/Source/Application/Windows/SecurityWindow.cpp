@@ -67,10 +67,10 @@ void SecurityWindow::Show()
     {
         ShowTitle();
 
-        const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_security->GetCandleData();
+        const std::shared_ptr<const AsyncData<CandlesData>>& async_candles_data = m_security->GetCandlesData();
 
 
-        if (candle_data->IsDataReady())
+        if (async_candles_data->IsDataReady())
         {
             if (!m_security->IsMemoryInSync())
             {
@@ -91,7 +91,7 @@ void SecurityWindow::Show()
             }
         }
 
-        if (!candle_data->IsDataReady())
+        if (!async_candles_data->IsDataReady())
         {
             m_is_dirty = true;
 
@@ -105,7 +105,7 @@ void SecurityWindow::Show()
             ImGui::Text(label.c_str()); ImGui::SameLine();
             ImSpinner::SpinnerScaleDots(m_security->ISIN_Number().c_str(), 15, 5);
         }
-        else if (candle_data->GetData().size() == 0)
+        else if (async_candles_data->GetData().m_dates.size() == 0)
         {
             ImGuiStyle& style = ImGui::GetStyle();
             std::string label = "No candle data available for this security.";
@@ -175,8 +175,8 @@ void SecurityWindow::Show()
             m_price_chart_height -= volume_chart_height; // remove volume chart
             
 
-
-            size_t count = candle_data->GetData().size();
+            const CandlesData& candles_data = async_candles_data->GetData();
+            size_t count = candles_data.m_dates.size();
 
             ShowIndicatorsList();
 
@@ -266,10 +266,11 @@ void SecurityWindow::Show()
 
                 PlotCandlestick(m_security->Name().c_str(), 
                     m_dates.data(), 
-                    m_opens.data(), 
-                    m_closes.data(), 
-                    m_lows.data(), 
-                    m_highes.data(), 
+                    candles_data.m_opens.data(),
+                    candles_data.m_closes.data(),
+                    candles_data.m_lows.data(),
+                    candles_data.m_highs.data(),
+                    candles_data.m_volumes.data(),
                     m_dates.size(), 
                     m_show_tool_tip, 
                     0.25f, 
@@ -346,7 +347,7 @@ void SecurityWindow::Show()
                 }
 
                 double x_axis_interval = 60 * 60 * 24; // one day in sec
-                ImPlot::PlotBars("Volume", m_dates.data(), m_volumes.data(), m_volumes.size(), x_axis_interval * 0.5);
+                ImPlot::PlotBars("Volume", m_dates.data(), candles_data.m_volumes.data(), candles_data.m_volumes.size(), x_axis_interval * 0.5);
 
                 m_volume_chart_limits = ImPlot::GetPlotLimits();
 
@@ -609,60 +610,43 @@ void SecurityWindow::ShowTitle()
 
 void SecurityWindow::RebuildCachedPlotPoints()
 {
-    const std::shared_ptr<const AsyncData<CandleDataMapType>>& candle_data = m_security->GetCandleData();
-    size_t count = candle_data->GetData().size();
+    const std::shared_ptr<const AsyncData<CandlesData>>& async_candles_data = m_security->GetCandlesData();
+    const CandlesData& candles_data = async_candles_data->GetData();
+
+    size_t count = candles_data.m_dates.size();
 
     // don't care about previous data stored in cache
     m_dates.reserve(count);
-    m_opens.reserve(count);
-    m_highes.reserve(count);
-    m_lows.reserve(count);
-    m_closes.reserve(count);
-    m_volumes.reserve(count);
-    m_open_interests.reserve(count);
-
+    
     date_axis_min = SIZE_MAX;
     date_axis_max = 0;
     price_axis_min = DBL_MAX;
     price_axis_max = -DBL_MAX;
     volume_axis_min = SIZE_MAX;
     volume_axis_max = 0;
-    const auto& candle_data_map = candle_data->GetData();
 
-    // processing in reverse direction because plot needs data to be in ascending order of dates
-    for (auto iter = candle_data_map.rbegin(); iter != candle_data_map.rend(); ++iter) {
-
-        std::chrono::system_clock::rep date = std::chrono::duration_cast<std::chrono::seconds>(iter->second.m_date.time_since_epoch()).count();
-
+    for (size_t i = 0; i < count; ++i)
+    {
+        std::chrono::system_clock::rep date = std::chrono::duration_cast<std::chrono::seconds>(candles_data.m_dates[i].time_since_epoch()).count();
         m_dates.push_back(date);
-        m_opens.push_back(iter->second.m_open);
-        m_highes.push_back(iter->second.m_high);
-        m_lows.push_back(iter->second.m_low);
-        m_closes.push_back(iter->second.m_close);
-        m_volumes.push_back(iter->second.m_volume);
-        m_open_interests.push_back(iter->second.m_open_interest);
 
         if (date_axis_min > date)
             date_axis_min = date;
         if (date_axis_max < date)
             date_axis_max = date;
 
-        double max = std::max({ iter->second.m_open, iter->second.m_high, iter->second.m_close, iter->second.m_low });
-        double min = std::max({ iter->second.m_open, iter->second.m_high, iter->second.m_close, iter->second.m_low });
+        double max = std::max({ candles_data.m_opens[i], candles_data.m_highs[i], candles_data.m_closes[i], candles_data.m_lows[i]});
+        double min = std::min({ candles_data.m_opens[i], candles_data.m_highs[i], candles_data.m_closes[i], candles_data.m_lows[i] });
 
         if (price_axis_min > min)
             price_axis_min = min;
         if (price_axis_max < max)
             price_axis_max = max;
 
-        if (volume_axis_min > iter->second.m_volume)
-            volume_axis_min = iter->second.m_volume;
-        if (volume_axis_max < iter->second.m_volume)
-            volume_axis_max = iter->second.m_volume;
-
-        count--;
-        //if(count <=0 )
-            //break;
+        if (volume_axis_min > candles_data.m_volumes[i])
+            volume_axis_min = candles_data.m_volumes[i];
+        if (volume_axis_max < candles_data.m_volumes[i])
+            volume_axis_max = candles_data.m_volumes[i];
     }
 
     // Adding one day padding at start and end of graph
@@ -678,7 +662,7 @@ void SecurityWindow::RebuildCachedPlotPoints()
     }
 }
 
-void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
+void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, const uint64_t* volumes, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
 
     // get ImGui window DrawList
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
@@ -708,7 +692,7 @@ void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, con
                 "Close:  ${}\n"
                 "Low:    ${}\n"
                 "High:   ${}\n\n"
-                "Volume: {}", buff, opens[idx], closes[idx], lows[idx], highs[idx], m_volumes[idx]);
+                "Volume: {}", buff, opens[idx], closes[idx], lows[idx], highs[idx], volumes[idx]);
 
             string_stream << text;
             for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
@@ -785,45 +769,49 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
 {
     m_tooltip_override = false;
 
-    if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandleData()->IsDataReady())
+    if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandlesData()->IsDataReady())
     {
         if (ImPlot::BeginItem("Patterns")) {
-            const CandleDataMapType& candle_data = m_security->GetCandleData()->GetData();
-            const NewsPointMapType& news_points = m_security->GetNewsPointsData()->GetData();
+            const CandlesData& candle_data = m_security->GetCandlesData()->GetData();
+            const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
 
             ImDrawList* draw_list = ImPlot::GetPlotDrawList();
 
-            for (auto& pair : news_points)
+            uint64_t candles_count = candle_data.m_dates.size();
+            uint64_t news_count = news_points.size();
+            for (uint64_t i = 0; i < news_count; ++i)
             {
-                if (!TradinatorSettings::Get().GetPatternVisibility(pair.second.m_pattern))
+                if (!TradinatorSettings::Get().GetPatternVisibility(news_points[i].m_pattern))
                 {
                     continue;
                 }
 
-                if (pair.second.m_date_range.size() > 0)
+                if (news_points[i].m_date_range.size() > 0)
                 {
-                    auto itr = candle_data.find(pair.first);
-                    if (itr != candle_data.end())
+                    if (news_points[i].m_date_range[0] < candles_count)
                     {
+                        //std::chrono::system_clock::time_point first_date = candle_data.m_dates[news_points[i].m_date_range[0]];
                         std::chrono::system_clock::rep cummulative_x_date = 0;
-                        std::chrono::system_clock::rep date = std::chrono::duration_cast<std::chrono::seconds>(pair.first.time_since_epoch()).count();
-
+                        //std::chrono::system_clock::rep date = std::chrono::duration_cast<std::chrono::seconds>(first_date.time_since_epoch()).count();
 
                         double top = -DBL_MAX, bottom = DBL_MAX;
-                        for (std::chrono::system_clock::time_point x_value : pair.second.m_date_range)
+                        for (uint64_t index : news_points[i].m_date_range)
                         {
-                            cummulative_x_date += std::chrono::duration_cast<std::chrono::seconds>(x_value.time_since_epoch()).count();
-
-                            auto tmp_itr = candle_data.find(x_value);
-                            if (tmp_itr != candle_data.end())
+                            if (index < candles_count)
                             {
-                                top = std::max({ top, (*tmp_itr).second.m_high, (*tmp_itr).second.m_open, (*tmp_itr).second.m_close, (*tmp_itr).second.m_low });
-                                bottom = std::min({ bottom, (*tmp_itr).second.m_high, (*tmp_itr).second.m_open, (*tmp_itr).second.m_close, (*tmp_itr).second.m_low });
+                                std::chrono::system_clock::time_point date = candle_data.m_dates[index];
+                                cummulative_x_date += std::chrono::duration_cast<std::chrono::seconds>(date.time_since_epoch()).count();
+
+                                top = std::max({ top, candle_data.m_highs[index], candle_data.m_opens[index], candle_data.m_closes[index], candle_data.m_lows[index] });
+                                bottom = std::min({ bottom, candle_data.m_highs[index], candle_data.m_opens[index], candle_data.m_closes[index], candle_data.m_lows[index] });
                             }
                         }
 
-                        std::chrono::system_clock::rep left = std::chrono::duration_cast<std::chrono::seconds>(pair.second.m_date_range[pair.second.m_date_range.size() - 1].time_since_epoch()).count() - 60 * 60 * 12;
-                        std::chrono::system_clock::rep right = std::chrono::duration_cast<std::chrono::seconds>(pair.second.m_date_range[0].time_since_epoch()).count() + 60 * 60 * 12;
+                        std::chrono::system_clock::time_point left_date = candle_data.m_dates[news_points[i].m_date_range[0]];
+                        std::chrono::system_clock::time_point right_date = candle_data.m_dates[news_points[i].m_date_range[news_points[i].m_date_range.size() - 1]];
+                        std::chrono::system_clock::rep left = std::chrono::duration_cast<std::chrono::seconds>(left_date.time_since_epoch()).count() - 60 * 60 * 12;
+                        std::chrono::system_clock::rep right = std::chrono::duration_cast<std::chrono::seconds>(right_date.time_since_epoch()).count() + 60 * 60 * 12;
+
                         ImVec2 upper_left = ImPlot::PlotToPixels(left, top);
                         ImVec2 lower_right = ImPlot::PlotToPixels(right, bottom);
                         ImVec2 upper_right = ImPlot::PlotToPixels(right, top);
@@ -831,13 +819,13 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
 
                         upper_left.y -= 15.0f;
                         lower_right.y += 15.0f;
-                        
+
                         float offset = ((chart_limits.Y.Max - chart_limits.Y.Min) / chart_height) * 50.0f;
 
                         double top_tmp = top + offset;
                         double bottom_tmp = bottom - offset;
 
-                        if (ImPlot::FitThisFrame()) 
+                        if (ImPlot::FitThisFrame())
                         {
                             ImVec2 upper_left_tmp(left, top_tmp);
                             ImVec2 bottom_right_tmp(right, bottom_tmp);
@@ -846,7 +834,7 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                             ImPlot::FitPoint(bottom_right_tmp);
                         }
 
-                        TradinatorAppSpace::EPatternNatureType type = TradinatorAppSpace::Utils::GetPatternNatureType(pair.second.m_pattern);
+                        TradinatorAppSpace::EPatternNatureType type = TradinatorAppSpace::Utils::GetPatternNatureType(news_points[i].m_pattern);
                         ImVec4 color = ImVec4(76.0 / 255.0, 144.0 / 255.0, 176.0 / 255.0, 1.0f); //  neutral color
                         if (type == TradinatorAppSpace::EPatternNatureType::BULL)
                         {
@@ -859,7 +847,7 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
 
                         bool is_annotation_hovered = false;
 
-                        float annotation_x = cummulative_x_date / pair.second.m_date_range.size();
+                        float annotation_x = cummulative_x_date / news_points[i].m_date_range.size();
                         float annotation_y = bottom - offset / 2.0f;
                         if (!m_tooltip_override)
                         {
@@ -874,7 +862,7 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                                 m_tooltip_override = true;
                                 is_annotation_hovered = true;
                                 ImGui::BeginTooltip();
-                                ImGui::Text(TradinatorCoreSpace::Utils::GetPatternDescription(pair.second.m_pattern).c_str());
+                                ImGui::Text(TradinatorCoreSpace::Utils::GetPatternDescription(news_points[i].m_pattern).c_str());
                                 ImGui::EndTooltip();
                             }
                             else
@@ -891,12 +879,13 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                             draw_list->AddRectFilled(upper_left, lower_right, ImGui::GetColorU32(color), 0.0f, ImDrawFlags_RoundCornersNone);
                         }
 
-                        
+
                         color.w = 1.0f; // alpha for annotation
                         ImPlot::Annotation(annotation_x, annotation_y, color, ImVec2(0, 0), false, " PT ");
                     }
                 }
             }
+
 
             ImPlot::EndItem();
         }

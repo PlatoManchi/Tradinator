@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <chrono>
+#include <vector>
 
 #include "Patterns/Pattern.h"
 
@@ -23,11 +24,11 @@ public:
 	// Which security this news belongs to
 	std::shared_ptr<Security> m_security;
 
-	// Most patterns/strategirs happen over a range of candles. This will hold the start and end of the range.
-	std::vector<std::chrono::system_clock::time_point> m_date_range;
+	// Most patterns/strategirs happen over a range of candles. This will hold the start and end indices of the range.
+	std::vector<uint64_t> m_date_range;
 
 	// If new is pattern type, then the pattern
 	EPatternType m_pattern;
 };
 
-typedef std::map<std::chrono::system_clock::time_point, NewsPoint, std::greater<std::chrono::system_clock::time_point>> NewsPointMapType;
+typedef std::vector<NewsPoint> NewsPointVectorType;
