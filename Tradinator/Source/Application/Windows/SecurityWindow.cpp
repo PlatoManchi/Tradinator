@@ -889,7 +889,7 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
 
 
                         color.w = 1.0f; // alpha for annotation
-                        ImPlot::Annotation(annotation_x, annotation_y, color, ImVec2(0, 0), false, " PT ");
+                        ImPlot::Annotation(annotation_x, annotation_y, color, ImVec2(0, 0), false, " P ");
                     }
                 }
             }

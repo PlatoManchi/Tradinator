@@ -133,10 +133,47 @@ std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePa
     std::vector<std::unique_ptr<Pattern>> result;
 
     // Order is important, priority patterns should be first
+    result.emplace_back(std::make_unique<BullishLongLeggedDojiPattern>());
+    result.emplace_back(std::make_unique<BullishTriStarPattern>());
+    result.emplace_back(std::make_unique<BullishAbandonedBabyPattern>());
+    result.emplace_back(std::make_unique<BullishMorningStarDojiPattern>());
+    result.emplace_back(std::make_unique<BullishGraveStoneDojiPattern>());
     result.emplace_back(std::make_unique<BullishHaramiCrossPattern>());
+
+    result.emplace_back(std::make_unique<BullishThreeOutsideUpPattern>());
+    result.emplace_back(std::make_unique<BullishThreeInsideUpPattern>());
+    result.emplace_back(std::make_unique<BullishMatchingLowPattern>());
+    result.emplace_back(std::make_unique<BullishKickingPattern>());
+    result.emplace_back(std::make_unique<BullishThreeWhiteSoldiersPattern>());
+    result.emplace_back(std::make_unique<BullishMeetingLinesPattern>());
+    result.emplace_back(std::make_unique<BullishMorningStarPattern>());
+    result.emplace_back(std::make_unique<BullishInvertedHammerPattern>());
     result.emplace_back(std::make_unique<BullishHaramiPattern>());
     result.emplace_back(std::make_unique<BullishPiercingPattern>());
     result.emplace_back(std::make_unique<BullishEngulfingPattern>());
+    result.emplace_back(std::make_unique<BullishHammerPattern>());
+
+
+    result.emplace_back(std::make_unique<BearishLongLeggedDojiPattern>());
+    result.emplace_back(std::make_unique<BearishTriStarPattern>());
+    result.emplace_back(std::make_unique<BearishAbandonedBabyPattern>());
+    result.emplace_back(std::make_unique<BearishEveningStarDojiPattern>());
+    result.emplace_back(std::make_unique<BearishGraveStoneDojiPattern>());
+    result.emplace_back(std::make_unique<BearishHaramiCrossPattern>());
+
+    result.emplace_back(std::make_unique<BearishThreeOutsideDownPattern>());
+    result.emplace_back(std::make_unique<BearishThreeInsideDownPattern>());
+    result.emplace_back(std::make_unique<BearishMatchingHighPattern>());
+    result.emplace_back(std::make_unique<BearishKickingPattern>());
+    result.emplace_back(std::make_unique<BearishThreeBlackCrowPattern>());
+    result.emplace_back(std::make_unique<BearishMeetingLinePattern>());
+    result.emplace_back(std::make_unique<BearishEveningStarPattern>());
+    result.emplace_back(std::make_unique<BearishShootingStarPattern>());
+    result.emplace_back(std::make_unique<BearishHaramiPattern>());
+    result.emplace_back(std::make_unique<BearishPiercingPattern>());
+    result.emplace_back(std::make_unique<BearishEngulfingPattern>());
+    result.emplace_back(std::make_unique<BearishHangingManPattern>());
+    
 
 
     result.emplace_back(std::make_unique<DragonFlyDojiPattern>());
@@ -191,7 +228,7 @@ std::string TradinatorCoreSpace::Utils::GetPatternShortDescription(EPatternType 
         { EPatternType::Bearish_Tri_Star, "Bearish Tri Star" },
         { EPatternType::Bearish_Abandoned_Baby, "Bearish Abandoned Baby" },
         { EPatternType::Bearish_Evening_Star_Doji, "Bearish Evening Star Doji" },
-        { EPatternType::Bearish_Bear_Stone_Doji, "Bearish Bear Stone Doji" },
+        { EPatternType::Bearish_Grave_Stone_Doji, "Bearish Grave Stone Doji" },
         { EPatternType::Bearish_Harami_Cross, "Bearish Harami Cross" },
 
         // Bullish pattern without Doji
@@ -202,7 +239,7 @@ std::string TradinatorCoreSpace::Utils::GetPatternShortDescription(EPatternType 
         { EPatternType::Bearish_Three_Black_Crow, "Bearish Three Black Crow" },
         { EPatternType::Bearish_Meeting_Line, "Bearish Meeting Line" },
         { EPatternType::Bearish_Evening_Star, "Bearish Evening Star" },
-        { EPatternType::Bullish_Shooting_Star, "Bullish Shooting Star" },
+        { EPatternType::Bearish_Shooting_Star, "Bearish Shooting Star" },
         { EPatternType::Bearish_Harami, "Bearish Harami" },
         { EPatternType::Bearish_Piercing, "Bearish Piercing" },
         { EPatternType::Bearish_Engulfing, "Bearish Engulfing" },
@@ -258,7 +295,7 @@ EPatternType TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const st
         { "Bearish Tri Star", EPatternType::Bearish_Tri_Star },
         { "Bearish Abandoned Baby", EPatternType::Bearish_Abandoned_Baby },
         { "Bearish Evening Star Doji", EPatternType::Bearish_Evening_Star_Doji },
-        { "Bearish Bear Stone Doji", EPatternType::Bearish_Bear_Stone_Doji },
+        { "Bearish Grave Stone Doji", EPatternType::Bearish_Grave_Stone_Doji },
         { "Bearish Harami Cross", EPatternType::Bearish_Harami_Cross },
 
         // Bullish pattern without Doji
@@ -269,7 +306,7 @@ EPatternType TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const st
         { "Bearish Three Black Crow", EPatternType::Bearish_Three_Black_Crow },
         { "Bearish Meeting Line", EPatternType::Bearish_Meeting_Line },
         { "Bearish Evening Star", EPatternType::Bearish_Evening_Star },
-        { "Bullish Shooting Star", EPatternType::Bullish_Shooting_Star },
+        { "Bearish Shooting Star", EPatternType::Bearish_Shooting_Star },
         { "Bearish Harami", EPatternType::Bearish_Harami },
         { "Bearish Piercing", EPatternType::Bearish_Piercing },
         { "Bearish Engulfing", EPatternType::Bearish_Engulfing },

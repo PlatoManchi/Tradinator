@@ -26,6 +26,12 @@
         |
        ---     ->     Doji
         |
+
+       ---
+       | |
+       | |     -> Marubozu candle
+       | |
+       ---
 */
 
 
@@ -34,6 +40,7 @@ Pattern::Pattern()
     
 }
 
+#pragma region BullishPatterns
 /*******************************************************************************************
 *                                     Bullish Long Legged Doji
 ********************************************************************************************/
@@ -78,21 +85,21 @@ std::vector<uint64_t> BullishTriStarPattern::Check(uint64_t at, const CandlesDat
         //&& at < candles_data.m_trends.size())
     {
         /*
-                        |
-                       ---                            |
-                        |                            ---
-                                                      |
-                                     |
-                                    ---
-                                     |
+                        |        
+                       ---              |
+                        |              ---
+                                        |
+                               |
+                              ---
+                               |
         */
         bool is_pattern_matched =
             //candles_data.m_trends[at] == ETrend::Down && // currently trend detection isn't stable
             candles_data.IsDoji(at) &&
             candles_data.IsDoji(at - 1) &&
             candles_data.IsDoji(at - 2) &&
-            candles_data.m_highs[at - 1] < candles_data.m_lows[at - 2] &&  // If middle doji body is below prev and curr
-            candles_data.m_highs[at - 1] < candles_data.m_lows[at];
+            candles_data.m_closes[at - 1] < candles_data.m_closes[at - 2] &&  // If middle doji body is below prev and curr
+            candles_data.m_closes[at - 1] < candles_data.m_closes[at];
 
         if (is_pattern_matched)
         {
@@ -228,12 +235,12 @@ std::vector<uint64_t> BullishGraveStoneDojiPattern::Check(uint64_t at, const Can
     if (at >= 1 && at < candles_data.m_dates.size() - 1)
     {
         /*
-                 |
-                ---
+                 |                
+                ---            Confirmation
                 |:|                 |
                 |:|                ---
                 |:|                | |
-                |:|                | |
+                |:|                | | 
                 |:|        |       | |
                 |:|        |       | |
                 |:|        |       ---
@@ -249,7 +256,7 @@ std::vector<uint64_t> BullishGraveStoneDojiPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at - 1, at, at + 1 };
+            return { at - 1, at };
         }
     }
 
@@ -262,18 +269,18 @@ std::vector<uint64_t> BullishGraveStoneDojiPattern::Check(uint64_t at, const Can
 ********************************************************************************************/
 std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
-    if (at > 0 && at < candles_data.m_dates.size())
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
     {
         /*          Prev      Curr
-                      |
-                Open ---
-                     |:|        |
-                     |:|       ---  Close
-                     |:|       | |
-                     |:|       | |
-                     |:|       ---  Open
-                     |:|        |
-               Close ---
+                      |                     Confirmation
+                Open ---                         |
+                     |:|        |               ---
+                     |:|       ---  Close       | |
+                     |:|       | |              | |
+                     |:|       | |              | |
+                     |:|       ---  Open        | |
+                     |:|        |               ---
+               Close ---                         |
                       |
 
         */
@@ -281,7 +288,8 @@ std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData
         bool is_pattern_matched = candles_data.IsBearish(at - 1) &&       // prev is bearish
             candles_data.IsBullish(at) &&                                 // curr is bullish    
             candles_data.m_opens[at - 1] > candles_data.m_closes[at] &&   // prev open is above prev close
-            candles_data.m_closes[at - 1] < candles_data.m_opens[at];     // prev close is below curropen
+            candles_data.m_closes[at - 1] < candles_data.m_opens[at] &&   // prev close is below curropen
+            candles_data.IsBullish(at + 1);  // Confirmation
 
         if (is_pattern_matched)
         {
@@ -301,7 +309,7 @@ std::vector<uint64_t> BullishHaramiCrossPattern::Check(uint64_t at, const Candle
 {
     std::vector<uint64_t> result;
 
-    if (at > 0 && at < candles_data.m_dates.size())
+    if (at >= 1 && at < candles_data.m_dates.size())
     {
         /*          Prev       Curr
                       |
@@ -422,18 +430,21 @@ std::vector<uint64_t> BullishMatchingLowPattern::Check(uint64_t at, const Candle
                 |      |
         */
         double longest_body = std::max(fabs(candles_data.m_closes[at - 1] - candles_data.m_opens[at - 1]), fabs(candles_data.m_closes[at] - candles_data.m_opens[at]));
-        double small_threshold = longest_body * 0.01; // 1% threshold
+        double small_threshold = longest_body * 0.05; // 5% threshold
 
         bool is_pattern_matched = 
             candles_data.IsBearish(at - 1) &&
+            !candles_data.IsDoji(at - 1) &&
             candles_data.IsBearish(at) &&
-            fabs(candles_data.m_closes[at - 1] - candles_data.m_closes[at - 1]) <= small_threshold;
+            !candles_data.IsDoji(at) &&
+            fabs(candles_data.m_closes[at] - candles_data.m_closes[at - 1]) <= small_threshold;
         
         if (is_pattern_matched)
         {
             return { at - 1, at };
         }
     }
+
     return {};
 }
 
@@ -445,12 +456,25 @@ std::vector<uint64_t> BullishKickingPattern::Check(uint64_t at, const CandlesDat
 {
     if (at >= 1 && at < candles_data.m_dates.size())
     {
+        /*
+                      ---
+                      | |
+                      | |
+                      | |
+                      ---        
+
+             ---
+             |:|
+             |:|
+             |:|
+             ---
+        */
         bool is_pattern_matched = 
             candles_data.IsBearish(at - 1) &&
             candles_data.IsMarubozu(at - 1) &&
             candles_data.IsBullish(at) &&
             candles_data.IsMarubozu(at) &&
-            candles_data.m_opens[at - 1] > candles_data.m_highs[at];
+            candles_data.m_lows[at] > candles_data.m_highs[at - 1];
 
         if (is_pattern_matched)
         {
@@ -490,9 +514,9 @@ std::vector<uint64_t> BullishThreeWhiteSoldiersPattern::Check(uint64_t at, const
             candles_data.IsBullish(at) &&
             candles_data.IsLongCandle(at) &&
             candles_data.m_opens[at - 1] > candles_data.m_opens[at - 2] &&
-            candles_data.m_opens[at - 1] < candles_data.m_closes[at - 2] &&
+            candles_data.m_closes[at - 1] > candles_data.m_closes[at - 2] &&
             candles_data.m_opens[at] > candles_data.m_opens[at - 1] &&
-            candles_data.m_opens[at] < candles_data.m_closes[at - 1];
+            candles_data.m_closes[at] > candles_data.m_closes[at - 1];
 
         if (is_pattern_matched)
         {
@@ -516,16 +540,16 @@ std::vector<uint64_t> BullishMeetingLinesPattern::Check(uint64_t at, const Candl
              |:|
              |:|
              |:|
-             |:|        |
-             ---       ---
-              |        | |
-                       | |
-                       | |
-                       ---
-                        |
+             |:|        |       Confirmation
+             ---       ---           |
+              |        | |          ---
+                       | |          | |
+                       | |          | |
+                       ---          ---
+                        |            |
         */
         double longest_body = std::max(fabs(candles_data.m_closes[at - 1] - candles_data.m_opens[at - 1]), fabs(candles_data.m_closes[at] - candles_data.m_opens[at]));
-        double small_threshold = longest_body * 0.01; // 1% threshold
+        double small_threshold = longest_body * 0.05; // 5% threshold
 
         bool is_pattern_matched =
             candles_data.IsBearish(at - 1) && candles_data.IsLongCandle(at - 1) &&
@@ -536,7 +560,7 @@ std::vector<uint64_t> BullishMeetingLinesPattern::Check(uint64_t at, const Candl
 
         if (is_pattern_matched)
         {
-            return { at - 1, at, at + 1 };
+            return { at - 1, at };
         }
     }
 
@@ -554,13 +578,14 @@ std::vector<uint64_t> BullishInvertedHammerPattern::Check(uint64_t at, const Can
                |
               ---
               |:|
-              |:|        |
-              |:|        |
-              |:|        |
-              |:|       ---
-              ---       |.|
-               |        ---
-        */
+              |:|        |       Confirmation
+              |:|        |           |
+              |:|        |          ---
+              |:|       ---         | |
+              ---       |.|         | |
+               |        ---         ---
+                                     |
+        */                           
         bool is_pattern_matched = 
             candles_data.IsBearish(at - 1) &&
             candles_data.IsInvertedHammer(at) &&
@@ -568,47 +593,10 @@ std::vector<uint64_t> BullishInvertedHammerPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at - 1, at, at + 1 };
+            return { at - 1, at };
         }
     }
     return {};
-}
-
-
-/*******************************************************************************************
-*                                     Bullish Engulfing
-********************************************************************************************/
-std::vector<uint64_t> BullishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
-{
-    std::vector<uint64_t> result;
-
-    if (at > 0 && at < candles_data.m_dates.size())
-    {
-        /*         Prev      Current
-                                |
-                               ---  Close
-                      |        | |
-                Open ---       | |
-                     |:|       | |  
-                     |:|       | |     
-               Close ---       | |
-                      |        | |
-                               ---  Open
-                                |
-
-        */
-        bool is_pattern_matched = candles_data.IsBullish(at) && candles_data.IsBearish(at - 1) &&
-            candles_data.m_closes[at] > candles_data.m_opens[at - 1]  &&    // curr close is above prev open
-            candles_data.m_opens[at] < candles_data.m_closes[at - 1];       // curr open is below prev close
-
-        if (is_pattern_matched)
-        {
-            result.push_back(at - 1);
-            result.push_back(at);
-        }
-    }
-
-    return result;
 }
 
 /*******************************************************************************************
@@ -618,7 +606,7 @@ std::vector<uint64_t> BullishPiercingPattern::Check(uint64_t at, const CandlesDa
 {
     std::vector<uint64_t> result;
 
-    if (at > 0 && at < candles_data.m_dates.size())
+    if (at >= 1 && at < candles_data.m_dates.size())
     {
         /*         Prev         Curr  
                       |      
@@ -635,17 +623,51 @@ std::vector<uint64_t> BullishPiercingPattern::Check(uint64_t at, const CandlesDa
         double prev_candle_body_size = candles_data.m_opens[at - 1] - candles_data.m_closes[at - 1];
         double half_point = candles_data.m_closes[at - 1] + prev_candle_body_size * 0.5;
 
-        bool is_pattern_matched = candles_data.IsBearish(at - 1) && candles_data.IsBullish(at)
-            && candles_data.m_closes[at] > half_point;
+        bool is_pattern_matched = 
+            candles_data.IsBearish(at - 1) && 
+            candles_data.IsBullish(at) &&
+            candles_data.m_closes[at] > half_point;
 
         if (is_pattern_matched)
         {
-            result.push_back(at - 1);
-            result.push_back(at);
+            return { at - 1, at };
         }
     }
 
-    return result;
+    return {};
+}
+
+/*******************************************************************************************
+*                                     Bullish Engulfing
+********************************************************************************************/
+std::vector<uint64_t> BullishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at > 0 && at < candles_data.m_dates.size())
+    {
+        /*         Prev      Current
+                                |
+                               ---  Close
+                      |        | |
+                Open ---       | |
+                     |:|       | |
+                     |:|       | |
+               Close ---       | |
+                      |        | |
+                               ---  Open
+                                |
+
+        */
+        bool is_pattern_matched = candles_data.IsBullish(at) && candles_data.IsBearish(at - 1) &&
+            candles_data.m_closes[at] > candles_data.m_opens[at - 1] &&    // curr close is above prev open
+            candles_data.m_opens[at] < candles_data.m_closes[at - 1];       // curr open is below prev close
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
 }
 
 /*******************************************************************************************
@@ -656,7 +678,7 @@ std::vector<uint64_t> BullishHammerPattern::Check(uint64_t at, const CandlesData
     if (at > 0 && at < candles_data.m_dates.size() - 1)
     {
         /*
-        
+                  Confirmation
                        |
                       ---
               ---     | |
@@ -674,8 +696,677 @@ std::vector<uint64_t> BullishHammerPattern::Check(uint64_t at, const CandlesData
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return { at };
+        }
+    }
+
+    return {};
+}
+
+#pragma endregion
+
+
+
+#pragma region BearishPatterns
+/*******************************************************************************************
+*                                 Bearish Long Legged Doji
+********************************************************************************************/
+std::vector<uint64_t> BearishLongLeggedDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
+        //&& at < candles_data.m_trends.size())
+    {
+        /*          Prev       Curr                  Next
+                      |
+                Open ---                               |
+                     | |                              ---
+                     | |        |                     |:|
+                     | |       ---  Open, Close       |:|
+                     | |        |                     |:|
+                     | |                              ---
+                     | |                               |
+               Close ---
+                      |
+        */
+        bool is_pattern_matched =
+            //candles_data.m_trends[at] == ETrend::Up && // currently trend detection isn't stable
+            candles_data.IsBullish(at - 1) &&           // Prev is bear
+            candles_data.IsLongLegDoji(at) &&
+            candles_data.IsBearish(at + 1) && candles_data.m_closes[at + 1] < candles_data.m_lows[at]; // Confirmation with next candle
+
+        if (is_pattern_matched)
+        {
+            return { at };
         }
     }
     return {};
 }
+
+
+/*******************************************************************************************
+*                                 Bearish Tri Star
+********************************************************************************************/
+std::vector<uint64_t> BearishTriStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+        //&& at < candles_data.m_trends.size())
+    {
+        /*
+                                 | 
+                                ---
+                                 |
+
+                        |
+                       ---                |
+                        |                ---
+                                          |
+        */
+        bool is_pattern_matched =
+            //candles_data.m_trends[at] == ETrend::Up && // currently trend detection isn't stable
+            candles_data.IsDoji(at) &&
+            candles_data.IsDoji(at - 1) &&
+            candles_data.IsDoji(at - 2) &&
+            candles_data.m_closes[at - 1] > candles_data.m_closes[at - 2] &&  // If middle doji body is below prev and curr
+            candles_data.m_closes[at - 1] > candles_data.m_closes[at];
+
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1, at };
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                 Bearish Abandoned Baby
+********************************************************************************************/
+std::vector<uint64_t> BearishAbandonedBabyPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+    {
+        /*
+                            | 
+                           ---
+                            |
+
+                 |
+                ---
+                | |                 |
+                | |                ---
+                | |                |:|
+                | |                |:|
+                | |                |:|
+                ---                |:|
+                 |                 ---
+                                    |
+        */
+
+        bool is_pattern_matched =
+            candles_data.IsBullish(at - 2) &&
+            candles_data.IsDoji(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_lows[at - 1] > candles_data.m_highs[at - 2] && // gap up between middle and first candle
+            candles_data.m_highs[at] < candles_data.m_lows[at - 1];       // gap down between middle and third candle
+        
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                               Bearish Evening Star
+********************************************************************************************/
+std::vector<uint64_t> BearishEveningStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+    {
+        /*
+                          |
+                         ---
+                         |.|
+                         ---
+                          |        |
+                                  ---
+                 |                |:|
+                ---               |:|
+                | |               |:| 
+                | |               |:|
+                | |               ---
+                | |                |
+                | |                
+                | |                
+                | |                
+                ---                
+                 |       
+        */
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 2) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_lows[at - 1] > candles_data.m_highs[at - 2] &&
+            candles_data.m_highs[at] > candles_data.m_lows[at - 1];
+
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1, at };
+        }
+    }
+    return {};
+}
+
+/*******************************************************************************************
+*                                 Bearish Evening Star Doji
+********************************************************************************************/
+std::vector<uint64_t> BearishEveningStarDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size())
+    {
+        /*
+                          |
+                         ---
+                          |        |
+                                  ---
+                 |                |:|
+                ---               |:|
+                | |               |:|
+                | |               |:|
+                | |               ---
+                | |                |
+                | |
+                | |
+                | |
+                ---
+                 |
+        */
+        if (candles_data.IsDoji(at - 1))
+        {
+            return BearishEveningStarPattern::Check(at, candles_data);
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                 Bearish Grave Stone Doji
+********************************************************************************************/
+std::vector<uint64_t> BearishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
+    {
+        /*                |   
+                          |   
+                          |   
+                          |   
+                          |
+                 |       ---
+                ---       |
+                | |             |
+                | |            ---
+                | |            |:|
+                | |            |:|
+                | |            |:|
+                | |            |:|
+                | |            ---
+                ---             |
+                 |         
+        */
+
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 1) &&
+            candles_data.IsGravestoneDoji(at) &&
+            candles_data.IsBearish(at + 1);
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                 Bearish Harami
+********************************************************************************************/
+std::vector<uint64_t> BearishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
+    {
+        /* 
+                      |                     Confirmation
+                     ---                         |
+                     | |        |               ---
+                     | |       ---              |:|
+                     | |       |:|              |:|
+                     | |       |:|              |:|
+                     | |       ---              |:|
+                     | |        |               ---
+                     ---                         |
+                      |
+
+        */
+
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_opens[at - 1] > candles_data.m_closes[at] &&   // prev open is above prev close
+            candles_data.m_closes[at - 1] < candles_data.m_opens[at] &&   // prev close is below curropen
+            candles_data.IsBearish(at + 1);
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                 Bearish Harami Cross
+********************************************************************************************/
+std::vector<uint64_t> BearishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at > 0 && at < candles_data.m_dates.size())
+    {
+        /*
+                      |                     Confirmation
+                     ---                         |
+                     | |                        ---
+                     | |                        |:|
+                     | |        |               |:|
+                     | |       ---              |:|
+                     | |        |               |:|
+                     | |                        ---
+                     ---                         |
+                      |
+
+        */
+        if (candles_data.IsDoji(at))
+        {
+            return BearishHaramiPattern::Check(at, candles_data);
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                              Bearish Three Outside Down
+********************************************************************************************/
+std::vector<uint64_t> BearishThreeOutsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+    {
+        /*                
+                      |   
+                |    ---  
+               ---   |:|  
+               | |   |:|  
+               | |   |:|  
+               | |   |:|    | 
+               ---   |:|   ---
+                |    ---   |:|
+                      |    |:|
+                           |:|
+                           ---
+                            |
+        */
+
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 2) &&
+            candles_data.IsBearish(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_opens[at - 1] > candles_data.m_closes[at - 2] &&
+            candles_data.m_closes[at - 1] < candles_data.m_opens[at - 2] &&
+            candles_data.m_closes[at] < candles_data.m_closes[at - 1];
+
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1, at };
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                              Bearish Three Inside Down
+********************************************************************************************/
+std::vector<uint64_t> BearishThreeInsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+    {
+        /*
+                      
+                |    
+               ---    |
+               | |   ---
+               | |   |:|
+               | |   ---    |
+               ---    |    ---
+                |          |:|
+                           |:|
+                           |:|
+                           ---
+                            |
+        */
+
+        bool is_pattern_matched =
+            candles_data.IsBullish(at - 2) &&
+            candles_data.IsBearish(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_opens[at - 1] < candles_data.m_closes[at - 2] &&
+            candles_data.m_closes[at - 1] > candles_data.m_opens[at - 2] &&
+            candles_data.m_closes[at] < candles_data.m_closes[at - 1];
+
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1, at };
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                              Bearish Matching High
+********************************************************************************************/
+std::vector<uint64_t> BearishMatchingHighPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size())
+    {
+        /*      |      |
+               ---    ---
+               |:|    |:|
+               |:|    |:|
+               |:|    |:|
+               |:|    ---
+               ---     |
+                |      
+        */
+        double longest_body = std::max(fabs(candles_data.m_closes[at - 1] - candles_data.m_opens[at - 1]), fabs(candles_data.m_closes[at] - candles_data.m_opens[at]));
+        double small_threshold = longest_body * 0.05; // 5% threshold
+
+        bool is_pattern_matched =
+            candles_data.IsBearish(at - 1) &&
+            !candles_data.IsDoji(at - 1) &&
+            candles_data.IsBearish(at) &&
+            !candles_data.IsDoji(at) &&
+            fabs(candles_data.m_opens[at] - candles_data.m_opens[at - 1]) <= small_threshold;
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                  Bearish Kicking
+********************************************************************************************/
+std::vector<uint64_t> BearishKickingPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size())
+    {
+        /*   ---
+             | |
+             | |
+             | |
+             ---     
+                       ---
+                       |:|
+                       |:|
+                       |:|
+                       ---
+        */
+
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 1) &&
+            candles_data.IsMarubozu(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.IsMarubozu(at) &&
+            candles_data.m_lows[at - 1] > candles_data.m_highs[at];
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                               Bearish Three Black Crow
+********************************************************************************************/
+std::vector<uint64_t> BearishThreeBlackCrowPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 2 && at < candles_data.m_dates.size())
+    {
+        /*                      |
+                               ---
+                               |:|
+                         |     |:|
+                        ---    |:|
+                        |:|    |:|
+                 |      |:|    ---
+                ---     |:|     |
+                |:|     |:|
+                |:|     ---
+                |:|      |
+                |:|
+                ---
+                 |
+        */
+
+        bool is_pattern_matched = 
+            candles_data.IsBearish(at - 2) &&
+            candles_data.IsLongCandle(at - 2) &&
+            candles_data.IsBearish(at - 1) &&
+            candles_data.IsLongCandle(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.IsLongCandle(at) &&
+            candles_data.m_closes[at - 1] > candles_data.m_closes[at - 2] &&
+            candles_data.m_opens[at - 1] > candles_data.m_opens[at - 2] &&
+            candles_data.m_closes[at] > candles_data.m_closes[at - 1] &&
+            candles_data.m_opens[at] > candles_data.m_opens[at - 1];
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                   Bearish Meeting Line
+********************************************************************************************/
+std::vector<uint64_t> BearishMeetingLinePattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
+    {
+        /*
+                        |
+                       ---       Confirmation
+                       |:|            |
+                |      |:|           ---
+               ---     ---           |:|
+               | |      |            |:|
+               | |                   |:|
+               | |                   |:|
+               | |                   ---
+               ---                    |
+                |
+        */
+
+        double longest_body = std::max(fabs(candles_data.m_closes[at - 1] - candles_data.m_opens[at - 1]), fabs(candles_data.m_closes[at] - candles_data.m_opens[at]));
+        double small_threshold = longest_body * 0.05; // 5% threshold
+
+        bool is_pattern_matched =
+            candles_data.IsBullish(at - 1) && candles_data.IsLongCandle(at - 1) &&
+            candles_data.IsBearish(at) && candles_data.IsLongCandle(at) &&
+            candles_data.m_opens[at] > candles_data.m_closes[at - 1] &&
+            fabs(candles_data.m_closes[at] - candles_data.m_closes[at - 1]) < small_threshold &&
+            candles_data.IsBearish(at + 1);    // Option: Confirms the pattern
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                   Bearish Shooting Star
+********************************************************************************************/
+std::vector<uint64_t> BearishShootingStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size() - 1)
+    {
+        /*                |
+                          |
+                          |
+                         ---
+                         | |
+                 |       ---
+                ---       |
+                | |             |
+                | |            ---
+                | |            |:|
+                | |            |:|
+                | |            |:|
+                | |            |:|
+                | |            ---
+                ---             |
+                 |
+        */
+
+        bool is_pattern_matched =
+            candles_data.IsBullish(at - 1) &&
+            candles_data.IsInvertedHammer(at) &&
+            candles_data.IsBearish(at + 1);
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                      Bearish Piercing
+********************************************************************************************/
+std::vector<uint64_t> BearishPiercingPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at >= 1 && at < candles_data.m_dates.size())
+    {
+        /*
+                       |
+              |       ---
+             ---      |:|
+             | |      |:|
+             | |      |:|
+             | |      |:|
+             | |      --- Closing below 50% of prev bullish candle
+             | |       |
+             ---
+              |
+        */
+
+        double prev_candle_body_size = candles_data.m_closes[at - 1] - candles_data.m_opens[at - 1];
+        double half_point = candles_data.m_closes[at - 1] + prev_candle_body_size * 0.5;
+
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 1) &&
+            candles_data.IsBearish(at) &&
+            candles_data.m_closes[at] < half_point;
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                      Bearish Engulfing
+********************************************************************************************/
+std::vector<uint64_t> BearishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at > 0 && at < candles_data.m_dates.size())
+    {
+        /*         
+                                |
+                               ---  
+                      |        |:|
+                     ---       |:|
+                     | |       |:|
+                     | |       |:|
+                     ---       |:|
+                      |        |:|
+                               ---  
+                                |
+
+        */
+        bool is_pattern_matched = 
+            candles_data.IsBullish(at - 1) && 
+            candles_data.IsBearish(at - 1) &&
+            candles_data.m_opens[at] > candles_data.m_closes[at - 1] &&    // curr open is above prev close
+            candles_data.m_closes[at] < candles_data.m_opens[at - 1];       // curr close is below prev open
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
+    }
+
+    return {};
+}
+
+
+/*******************************************************************************************
+*                                     Bearish Hanging Man
+********************************************************************************************/
+std::vector<uint64_t> BearishHangingManPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    if (at > 0 && at < candles_data.m_dates.size() - 1)
+    {
+        /*
+                  Confirmation
+                       |
+                      ---
+              ---     |:|
+              |.|     ---
+              ---      |
+               |
+               |
+               |
+               |
+        */
+
+        bool is_pattern_matched =
+            candles_data.IsHammer(at) &&
+            candles_data.IsBearish(at + 1);
+
+        if (is_pattern_matched)
+        {
+            return { at };
+        }
+    }
+
+    return {};
+}
+
+#pragma endregion

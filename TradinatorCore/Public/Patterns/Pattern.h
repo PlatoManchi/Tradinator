@@ -40,7 +40,7 @@ enum class EPatternType : uint64_t {
     Bearish_Tri_Star = 1ULL << 31,
     Bearish_Abandoned_Baby = 1ULL << 32,
     Bearish_Evening_Star_Doji = 1ULL << 33,
-    Bearish_Bear_Stone_Doji = 1ULL << 34,
+    Bearish_Grave_Stone_Doji = 1ULL << 34,
     Bearish_Harami_Cross = 1ULL << 35,
     
     // Bullish pattern without Doji
@@ -51,7 +51,7 @@ enum class EPatternType : uint64_t {
     Bearish_Three_Black_Crow = 1ULL << 40,
     Bearish_Meeting_Line = 1ULL << 41,
     Bearish_Evening_Star = 1ULL << 42,
-    Bullish_Shooting_Star = 1ULL << 43,
+    Bearish_Shooting_Star = 1ULL << 43,
     Bearish_Harami = 1ULL << 44,
     Bearish_Piercing = 1ULL << 45,
     Bearish_Engulfing = 1ULL << 46,
@@ -167,7 +167,7 @@ const EPatternType Bearish_Pattern_Type =
     EPatternType::Bearish_Tri_Star |
     EPatternType::Bearish_Abandoned_Baby |
     EPatternType::Bearish_Evening_Star_Doji |
-    EPatternType::Bearish_Bear_Stone_Doji |
+    EPatternType::Bearish_Grave_Stone_Doji |
     EPatternType::Bearish_Harami_Cross |
     EPatternType::Bearish_Three_Outside_Down |
     EPatternType::Bearish_Three_Inside_Down |
@@ -176,7 +176,7 @@ const EPatternType Bearish_Pattern_Type =
     EPatternType::Bearish_Three_Black_Crow |
     EPatternType::Bearish_Meeting_Line |
     EPatternType::Bearish_Evening_Star |
-    EPatternType::Bullish_Shooting_Star |
+    EPatternType::Bearish_Shooting_Star |
     EPatternType::Bearish_Harami |
     EPatternType::Bearish_Piercing |
     EPatternType::Bearish_Engulfing |
@@ -397,10 +397,193 @@ public:
 
 
 
-
-
-
 #pragma region BearishPatterns
+/*******************************************************************************************
+*                                 Bearish Long Legged Doji
+********************************************************************************************/
+class BearishLongLeggedDojiPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Long_Legged_Doji; }
+    virtual bool IsDefaultVisible() const { return true; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                 Bearish Tri Star
+********************************************************************************************/
+class BearishTriStarPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Tri_Star; }
+    virtual bool IsDefaultVisible() const { return true; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                 Bearish Abandoned Baby
+********************************************************************************************/
+class BearishAbandonedBabyPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Abandoned_Baby; }
+    virtual bool IsDefaultVisible() const { return true; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                               Bearish Evening Star
+********************************************************************************************/
+class BearishEveningStarPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Evening_Star; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                 Bearish Evening Star Doji
+********************************************************************************************/
+class BearishEveningStarDojiPattern : public BearishEveningStarPattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Evening_Star_Doji; }
+    virtual bool IsDefaultVisible() const { return true; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                 Bearish Grave Stone Doji
+********************************************************************************************/
+class BearishGraveStoneDojiPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Grave_Stone_Doji; }
+    virtual bool IsDefaultVisible() const { return true; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+
+/*******************************************************************************************
+*                                 Bearish Harami
+********************************************************************************************/
+class BearishHaramiPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Harami; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                 Bearish Harami Cross
+********************************************************************************************/
+class BearishHaramiCrossPattern : public BearishHaramiPattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Harami_Cross; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                              Bearish Three Outside Down
+********************************************************************************************/
+class BearishThreeOutsideDownPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Three_Outside_Down; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                              Bearish Three Inside Down
+********************************************************************************************/
+class BearishThreeInsideDownPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Three_Inside_Down; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                              Bearish Matching High
+********************************************************************************************/
+class BearishMatchingHighPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Matching_High; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                  Bearish Kicking
+********************************************************************************************/
+class BearishKickingPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Kicking; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                               Bearish Three Black Crow
+********************************************************************************************/
+class BearishThreeBlackCrowPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Three_Black_Crow; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                   Bearish Meeting Line
+********************************************************************************************/
+class BearishMeetingLinePattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Meeting_Line; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                   Bearish Shooting Star
+********************************************************************************************/
+class BearishShootingStarPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Shooting_Star; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                      Bearish Piercing
+********************************************************************************************/
+class BearishPiercingPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Piercing; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                      Bearish Engulfing
+********************************************************************************************/
+class BearishEngulfingPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Engulfing; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
+/*******************************************************************************************
+*                                     Bearish Hanging Man
+********************************************************************************************/
+class BearishHangingManPattern : public Pattern
+{
+public:
+    virtual EPatternType PatternType() const override { return EPatternType::Bearish_Hanging_Man; }
+    virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
+};
+
 
 #pragma endregion
 
