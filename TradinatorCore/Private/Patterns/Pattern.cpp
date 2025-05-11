@@ -365,7 +365,7 @@ std::vector<uint64_t> BullishThreeOutsideUpPattern::Check(uint64_t at, const Can
         
         if (is_pattern_matched)
         {
-            return { at - 1, at - 1, at };
+            return { at - 2, at - 1, at };
         }
     }
 
@@ -1137,6 +1137,11 @@ std::vector<uint64_t> BearishKickingPattern::Check(uint64_t at, const CandlesDat
             candles_data.IsBearish(at) &&
             candles_data.IsMarubozu(at) &&
             candles_data.m_lows[at - 1] > candles_data.m_highs[at];
+
+        if (is_pattern_matched)
+        {
+            return { at - 1, at };
+        }
     }
 
     return {};
@@ -1177,6 +1182,11 @@ std::vector<uint64_t> BearishThreeBlackCrowPattern::Check(uint64_t at, const Can
             candles_data.m_opens[at - 1] > candles_data.m_opens[at - 2] &&
             candles_data.m_closes[at] > candles_data.m_closes[at - 1] &&
             candles_data.m_opens[at] > candles_data.m_opens[at - 1];
+
+        if (is_pattern_matched)
+        {
+            return { at - 2, at - 1,at };
+        }
     }
     return {};
 }

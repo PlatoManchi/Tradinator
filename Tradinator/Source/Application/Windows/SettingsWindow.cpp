@@ -149,11 +149,107 @@ bool SettingsWindow::Show()
                 }
             }
             std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
-            for (std::unique_ptr<Pattern>& pattern : patterns)
+            
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            ImVec2 item_spacing = style.ItemSpacing;
+
+            float pattern_width = 180.0f;
+            float window_width = ImGui::GetWindowWidth();
+            float table_width = (window_width - item_spacing.x * 3.0f) / 2.0f;
+            int  column_count = std::max((int)(table_width / pattern_width), 1);
+
+            uint64_t pattern_count = patterns.size();
+
+            ImGui::SeparatorText("Bullish Patterns : ");
+
+            if (ImGui::BeginTable("BullishPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
             {
-                bool is_visible = TradinatorSettings::Get().GetPatternVisibility(pattern->PatternType());
-                ImGui::Checkbox(pattern->Name().c_str(), &is_visible);
-                TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), is_visible);
+                int row = -1;
+                uint64_t index = 0;
+                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                {
+                    if ((pattern->PatternType() & Bullish_Pattern_Type) != EPatternType::None)
+                    {
+                        int tmp_row = index / column_count;
+                        if (tmp_row != row)
+                        {
+                            row = tmp_row;
+                            ImGui::TableNextRow(0, 0);
+                        }
+
+                        ImGui::TableSetColumnIndex(index % column_count);
+
+                        bool is_visible = TradinatorSettings::Get().GetPatternVisibility(pattern->PatternType());
+                        ImGui::Checkbox(pattern->Name().c_str(), &is_visible);
+                        TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), is_visible);
+
+                        ++index;
+                    }
+                }
+
+                ImGui::EndTable();
+            }
+
+            ImGui::SeparatorText("Bearish Patterns : ");
+
+            if (ImGui::BeginTable("BearishPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            {
+                int row = -1;
+                uint64_t index = 0;
+                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                {
+                    if ((pattern->PatternType() & Bearish_Pattern_Type) != EPatternType::None)
+                    {
+                        int tmp_row = index / column_count;
+                        if (tmp_row != row)
+                        {
+                            row = tmp_row;
+                            ImGui::TableNextRow(0, 0);
+                        }
+
+                        ImGui::TableSetColumnIndex(index % column_count);
+
+                        bool is_visible = TradinatorSettings::Get().GetPatternVisibility(pattern->PatternType());
+                        ImGui::Checkbox(pattern->Name().c_str(), &is_visible);
+                        TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), is_visible);
+
+                        ++index;
+                    }
+                }
+
+                ImGui::EndTable();
+            }
+
+            ImGui::SeparatorText("Generic Patterns : ");
+
+            if (ImGui::BeginTable("GenericPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            {
+                int row = -1;
+                uint64_t index = 0;
+                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                {
+                    if ((pattern->PatternType() & Bullish_Pattern_Type) == EPatternType::None &&
+                        (pattern->PatternType() & Bearish_Pattern_Type) == EPatternType::None)
+                    {
+                        int tmp_row = index / column_count;
+                        if (tmp_row != row)
+                        {
+                            row = tmp_row;
+                            ImGui::TableNextRow(0, 0);
+                        }
+
+                        ImGui::TableSetColumnIndex(index % column_count);
+
+                        bool is_visible = TradinatorSettings::Get().GetPatternVisibility(pattern->PatternType());
+                        ImGui::Checkbox(pattern->Name().c_str(), &is_visible);
+                        TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), is_visible);
+
+                        ++index;
+                    }
+                }
+
+                ImGui::EndTable();
             }
 
             /// @begin Separator
