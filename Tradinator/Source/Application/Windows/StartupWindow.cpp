@@ -26,7 +26,12 @@ void StartupWindow::Init()
 
 void StartupWindow::Begin()
 {
-
+    // Set Default Visibility for patterns.
+    std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+    for (const std::unique_ptr<Pattern>& pattern : patterns)
+    {
+        TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), pattern->IsDefaultVisible());
+    }
 }
 
 

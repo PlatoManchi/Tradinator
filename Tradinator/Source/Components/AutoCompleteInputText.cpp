@@ -45,7 +45,6 @@ std::shared_ptr<IAutoCommpleteItem> AutoCompleteInputText::Show(const char* id, 
         }
     }
 
-    //char* search_symbol = new char();
     char search_symbol[128] = "";
     ImGui::PushItemWidth(-FLT_MIN);
     bool wasChanged = ImGui::InputTextWithHint(label, hint, search_symbol, IM_ARRAYSIZE(search_symbol), ImGuiInputTextFlags_None);

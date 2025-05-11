@@ -58,10 +58,10 @@ void TradinatorApp::Begin()
 
 bool TradinatorApp::ShowApp()
 {
-    bool should_exit = false;
+    bool should_app_run = true;
     if (TradinatorSettings::Get().IsValid())
     {
-        should_exit = !ShowMainWindow();
+        should_app_run = ShowMainWindow();
     }
     else
     {
@@ -75,12 +75,12 @@ bool TradinatorApp::ShowApp()
         }
     }
 
-    return should_exit;
+    return should_app_run;
 }
 
 bool TradinatorApp::ShowMainWindow()
 {
-    bool should_exit = !m_main_windows.Show();
+    bool should_app_run = m_main_windows.Show();
 
     for (std::pair<std::string, std::shared_ptr<SecurityWindow>> pair : m_security_windows)
     {
@@ -101,7 +101,7 @@ bool TradinatorApp::ShowMainWindow()
         return item.second->m_close;
         });
 
-    return should_exit;
+    return should_app_run;
 }
 
 
@@ -121,9 +121,13 @@ void TradinatorApp::ShowSecurityWindow(std::shared_ptr<Security> security)
 void TradinatorApp::Shutdown()
 {
     SaveWindowsState();
+    TradinatorSettings::Get().SaveSettings();
 
-    m_tradinator_core->Shutdown();
-
+    if (m_tradinator_core)
+    {
+        m_tradinator_core->Shutdown();
+    }
+    
     m_main_windows.Shutdown();
 }
 

@@ -63,8 +63,7 @@ std::shared_ptr<Security> SecuritiesSearchBar::Show()
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoDocking;
     
-    char* search_symbol = new char();
-
+    
     if (ImGui::Begin("SearchBar", nullptr, no_decoration))
     {
 

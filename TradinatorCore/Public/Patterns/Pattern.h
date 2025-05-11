@@ -481,6 +481,7 @@ class BearishHaramiCrossPattern : public BearishHaramiPattern
 {
 public:
     virtual EPatternType PatternType() const override { return EPatternType::Bearish_Harami_Cross; }
+    virtual bool IsDefaultVisible() const { return true; }
     virtual std::vector<uint64_t> Check(uint64_t at, const CandlesData& candles_data) override;
 };
 

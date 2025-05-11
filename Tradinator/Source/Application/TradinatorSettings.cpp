@@ -21,10 +21,6 @@ TradinatorSettings::TradinatorSettings()
 	LoadSettings();
 }
 
-TradinatorSettings::~TradinatorSettings()
-{
-	SaveSettings();
-}
 
 bool TradinatorSettings::IsValid() const
 {
@@ -63,7 +59,7 @@ void TradinatorSettings::LoadSettings()
 		std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
 		for (std::unique_ptr<Pattern>& pattern : patterns)
 		{
-			std::string pattern_name = TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType());
+			std::string pattern_name = pattern->Name();
 			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"].find(pattern_name) ? m_settings["PatternVisibility"][pattern_name].asBool() : pattern->IsDefaultVisible();
 		}
 
@@ -82,7 +78,7 @@ void TradinatorSettings::SaveSettings()
 	std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
 	for (std::unique_ptr<Pattern>& pattern : patterns)
 	{
-		std::string pattern_name = TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern->PatternType());
+		std::string pattern_name = pattern->Name();
 		m_settings["PatternVisibility"][pattern_name] = m_pattern_visbility[pattern->PatternType()];
 	}
 

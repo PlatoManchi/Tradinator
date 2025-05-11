@@ -23,12 +23,11 @@ public:
 	bool GetPatternVisibility(EPatternType type);
 	void SetPatternVisbility(EPatternType type, bool is_visible);
 
-private:
-	TradinatorSettings();
-	~TradinatorSettings();
-
 	void LoadSettings();
 	void SaveSettings();
+
+private:
+	TradinatorSettings();
 
 	void EvulateSettings();
 
