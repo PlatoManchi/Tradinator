@@ -31,7 +31,7 @@ void DashboardWindow::Begin()
 
 void DashboardWindow::Show()
 {
-    ImGuiWindowFlags no_decoration =
+    ImGuiWindowFlags flags =
         ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove |
@@ -41,7 +41,7 @@ void DashboardWindow::Show()
         ;
 
     //ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    if (ImGui::Begin("Main Window", nullptr, no_decoration))
+    if (ImGui::Begin("Main Window", nullptr, flags))
     {
 
         ImGui::SeparatorText("Newest 10 Listings");

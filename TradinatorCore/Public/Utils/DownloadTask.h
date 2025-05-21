@@ -7,6 +7,8 @@
 class DownloadTask : public AsyncTask
 {
 public:
+	DownloadTask() {};
+
 	struct DownloadRequest
 	{
 		std::string url;
@@ -21,6 +23,8 @@ public:
 
 	DownloadTask(std::function<void()> callback, std::string url, std::string file_path);
 
+	void DownloadFile(DownloadRequest request);
+
 protected:
 	size_t m_attempts;
 	// in seconds
@@ -29,8 +33,6 @@ protected:
 	virtual std::string GetHumanReadableDescription() const;
 
 private:
-	void DownloadFile(DownloadRequest request);
-
 	std::string m_url;
 	std::string m_file_path;
 };

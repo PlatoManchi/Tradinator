@@ -1,6 +1,12 @@
 #include "Patterns/Pattern.h"
 
+
 #include <cassert>
+
+
+
+#include "Data/Candle.h"
+#include "Utils/Utils.h"
 
 
 /*
@@ -40,11 +46,82 @@ Pattern::Pattern()
     
 }
 
+std::string Pattern::Name() const
+{
+    return TradinatorCoreSpace::Utils::GetPatternShortDescription(PatternType());
+}
+
+std::vector<uint64_t> Pattern::GetPatternRangeAt(EPattern type, uint64_t at)
+{
+    switch (type)
+    {
+    case EPattern::None:
+        return {};
+
+    case EPattern::Bullish_Hammer:
+    case EPattern::Bearish_Hanging_Man:
+    case EPattern::Dragon_Fly_Doji:
+    case EPattern::Grave_Stone_Doji:
+    case EPattern::Long_Leg_Doji:
+        return { at };
+
+    case EPattern::Bullish_Long_Legged_Doji:
+    case EPattern::Bearish_Long_Legged_Doji:
+        return { at + 1 };
+
+    case EPattern::Bullish_Grave_Stone_Doji:
+    case EPattern::Bullish_Harami:
+    case EPattern::Bullish_Harami_Cross:
+    case EPattern::Bullish_Matching_Low:
+    case EPattern::Bullish_Kicking:
+    case EPattern::Bullish_Meeting_Lines:
+    case EPattern::Bullish_Inverted_Hammer:
+    case EPattern::Bullish_Piercing:
+    case EPattern::Bullish_Engulfing:
+    case EPattern::Bearish_Grave_Stone_Doji:
+    case EPattern::Bearish_Harami:
+    case EPattern::Bearish_Harami_Cross:
+    case EPattern::Bearish_Matching_High:
+    case EPattern::Bearish_Kicking:
+    case EPattern::Bearish_Meeting_Line:
+    case EPattern::Bearish_Shooting_Star:
+    case EPattern::Bearish_Piercing:
+    case EPattern::Bearish_Engulfing:
+        return { at, at + 1 };
+
+    case EPattern::Bullish_Tri_Star:
+    case EPattern::Bullish_Abandoned_Baby:
+    case EPattern::Bullish_Morning_Star:
+    case EPattern::Bullish_Morning_Star_Doji:
+    case EPattern::Bullish_Three_Outside_Up:
+    case EPattern::Bullish_Three_Inside_Up:
+    case EPattern::Bullish_Three_White_Soldiers:
+    case EPattern::Bearish_Tri_Star:
+    case EPattern::Bearish_Abandoned_Baby:
+    case EPattern::Bearish_Evening_Star:
+    case EPattern::Bearish_Evening_Star_Doji:
+    case EPattern::Bearish_Three_Outside_Down:
+    case EPattern::Bearish_Three_Inside_Down:
+    case EPattern::Bearish_Three_Black_Crow:
+        return { at, at + 1, at + 2 };
+    
+    case EPattern::Max:
+        return {};
+
+    default:
+        return {};
+
+    }
+
+    return {};
+}
+
+
 #pragma region BullishPatterns
 /*******************************************************************************************
 *                                     Bullish Long Legged Doji
 ********************************************************************************************/
-std::vector<uint64_t> BullishLongLeggedDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishLongLeggedDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
         //&& at < candles_data.m_trends.size())
@@ -69,17 +146,17 @@ std::vector<uint64_t> BullishLongLeggedDojiPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                     Bullish Tri Star
 ********************************************************************************************/
-std::vector<uint64_t> BullishTriStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishTriStarPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
         //&& at < candles_data.m_trends.size())
@@ -103,18 +180,18 @@ std::vector<uint64_t> BullishTriStarPattern::Check(uint64_t at, const CandlesDat
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                     Bullish Abandoned Baby
 ********************************************************************************************/
-std::vector<uint64_t> BullishAbandonedBabyPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishAbandonedBabyPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -145,18 +222,18 @@ std::vector<uint64_t> BullishAbandonedBabyPattern::Check(uint64_t at, const Cand
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bullish Morning Star
 ********************************************************************************************/
-std::vector<uint64_t> BullishMorningStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishMorningStarPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -192,17 +269,17 @@ std::vector<uint64_t> BullishMorningStarPattern::Check(uint64_t at, const Candle
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                  Bullish Morning Star Doji
 ********************************************************************************************/
-std::vector<uint64_t> BullishMorningStarDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishMorningStarDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -227,13 +304,13 @@ std::vector<uint64_t> BullishMorningStarDojiPattern::Check(uint64_t at, const Ca
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                  Bullish Grave Stone Doji
 ********************************************************************************************/
-std::vector<uint64_t> BullishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -259,18 +336,18 @@ std::vector<uint64_t> BullishGraveStoneDojiPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                     Bullish Harami
 ********************************************************************************************/
-std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -296,11 +373,11 @@ std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
@@ -308,7 +385,7 @@ std::vector<uint64_t> BullishHaramiPattern::Check(uint64_t at, const CandlesData
 /*******************************************************************************************
 *                               Bullish Harami Cross
 ********************************************************************************************/
-std::vector<uint64_t> BullishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     std::vector<uint64_t> result;
 
@@ -334,7 +411,7 @@ std::vector<uint64_t> BullishHaramiCrossPattern::Check(uint64_t at, const Candle
         }
     }
 
-    return result;
+    return false;
 }
 
 
@@ -342,7 +419,7 @@ std::vector<uint64_t> BullishHaramiCrossPattern::Check(uint64_t at, const Candle
 /*******************************************************************************************
 *                               Bullish Three Outside Up
 ********************************************************************************************/
-std::vector<uint64_t> BullishThreeOutsideUpPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishThreeOutsideUpPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -368,18 +445,18 @@ std::vector<uint64_t> BullishThreeOutsideUpPattern::Check(uint64_t at, const Can
         
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bullish Three Inside Up
 ********************************************************************************************/
-std::vector<uint64_t> BullishThreeInsideUpPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishThreeInsideUpPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -410,16 +487,16 @@ std::vector<uint64_t> BullishThreeInsideUpPattern::Check(uint64_t at, const Cand
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return{};
+    return false;
 }
 
 /*******************************************************************************************
 *                               Bullish Matching Low
 ********************************************************************************************/
-std::vector<uint64_t> BullishMatchingLowPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishMatchingLowPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -444,18 +521,18 @@ std::vector<uint64_t> BullishMatchingLowPattern::Check(uint64_t at, const Candle
         
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bullish Kicking
 ********************************************************************************************/
-std::vector<uint64_t> BullishKickingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishKickingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -481,18 +558,18 @@ std::vector<uint64_t> BullishKickingPattern::Check(uint64_t at, const CandlesDat
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bullish Three White Soldiers
 ********************************************************************************************/
-std::vector<uint64_t> BullishThreeWhiteSoldiersPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishThreeWhiteSoldiersPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -523,17 +600,17 @@ std::vector<uint64_t> BullishThreeWhiteSoldiersPattern::Check(uint64_t at, const
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bullish Meeting Lines
 ********************************************************************************************/
-std::vector<uint64_t> BullishMeetingLinesPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishMeetingLinesPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -565,17 +642,17 @@ std::vector<uint64_t> BullishMeetingLinesPattern::Check(uint64_t at, const Candl
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                               Bullish Inverted Hammer
 ********************************************************************************************/
-std::vector<uint64_t> BullishInvertedHammerPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishInvertedHammerPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -598,16 +675,16 @@ std::vector<uint64_t> BullishInvertedHammerPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                     Bullish Piercing
 ********************************************************************************************/
-std::vector<uint64_t> BullishPiercingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishPiercingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -630,17 +707,17 @@ std::vector<uint64_t> BullishPiercingPattern::Check(uint64_t at, const CandlesDa
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                     Bullish Engulfing
 ********************************************************************************************/
-std::vector<uint64_t> BullishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -665,17 +742,17 @@ std::vector<uint64_t> BullishEngulfingPattern::Check(uint64_t at, const CandlesD
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 /*******************************************************************************************
 *                                     Bullish Hammer
 ********************************************************************************************/
-std::vector<uint64_t> BullishHammerPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BullishHammerPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -698,11 +775,11 @@ std::vector<uint64_t> BullishHammerPattern::Check(uint64_t at, const CandlesData
 
         if (is_pattern_matched)
         {
-            return { at };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 #pragma endregion
@@ -713,7 +790,7 @@ std::vector<uint64_t> BullishHammerPattern::Check(uint64_t at, const CandlesData
 /*******************************************************************************************
 *                                 Bearish Long Legged Doji
 ********************************************************************************************/
-std::vector<uint64_t> BearishLongLeggedDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishLongLeggedDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
         //&& at < candles_data.m_trends.size())
@@ -738,17 +815,18 @@ std::vector<uint64_t> BearishLongLeggedDojiPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at + 1 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                 Bearish Tri Star
 ********************************************************************************************/
-std::vector<uint64_t> BearishTriStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishTriStarPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
         //&& at < candles_data.m_trends.size())
@@ -773,18 +851,18 @@ std::vector<uint64_t> BearishTriStarPattern::Check(uint64_t at, const CandlesDat
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                 Bearish Abandoned Baby
 ********************************************************************************************/
-std::vector<uint64_t> BearishAbandonedBabyPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishAbandonedBabyPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -817,18 +895,18 @@ std::vector<uint64_t> BearishAbandonedBabyPattern::Check(uint64_t at, const Cand
         
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bearish Evening Star
 ********************************************************************************************/
-std::vector<uint64_t> BearishEveningStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishEveningStarPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -865,16 +943,17 @@ std::vector<uint64_t> BearishEveningStarPattern::Check(uint64_t at, const Candle
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 /*******************************************************************************************
 *                                 Bearish Evening Star Doji
 ********************************************************************************************/
-std::vector<uint64_t> BearishEveningStarDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishEveningStarDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -900,14 +979,15 @@ std::vector<uint64_t> BearishEveningStarDojiPattern::Check(uint64_t at, const Ca
             return BearishEveningStarPattern::Check(at, candles_data);
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                 Bearish Grave Stone Doji
 ********************************************************************************************/
-std::vector<uint64_t> BearishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -936,18 +1016,18 @@ std::vector<uint64_t> BearishGraveStoneDojiPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                 Bearish Harami
 ********************************************************************************************/
-std::vector<uint64_t> BearishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishHaramiPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -974,17 +1054,18 @@ std::vector<uint64_t> BearishHaramiPattern::Check(uint64_t at, const CandlesData
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                 Bearish Harami Cross
 ********************************************************************************************/
-std::vector<uint64_t> BearishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishHaramiCrossPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1006,14 +1087,14 @@ std::vector<uint64_t> BearishHaramiCrossPattern::Check(uint64_t at, const Candle
             return BearishHaramiPattern::Check(at, candles_data);
         }
     }
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                              Bearish Three Outside Down
 ********************************************************************************************/
-std::vector<uint64_t> BearishThreeOutsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishThreeOutsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -1042,17 +1123,18 @@ std::vector<uint64_t> BearishThreeOutsideDownPattern::Check(uint64_t at, const C
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                              Bearish Three Inside Down
 ********************************************************************************************/
-std::vector<uint64_t> BearishThreeInsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishThreeInsideDownPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -1081,17 +1163,18 @@ std::vector<uint64_t> BearishThreeInsideDownPattern::Check(uint64_t at, const Ca
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                              Bearish Matching High
 ********************************************************************************************/
-std::vector<uint64_t> BearishMatchingHighPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishMatchingHighPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1116,18 +1199,18 @@ std::vector<uint64_t> BearishMatchingHighPattern::Check(uint64_t at, const Candl
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                  Bearish Kicking
 ********************************************************************************************/
-std::vector<uint64_t> BearishKickingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishKickingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1152,18 +1235,18 @@ std::vector<uint64_t> BearishKickingPattern::Check(uint64_t at, const CandlesDat
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                               Bearish Three Black Crow
 ********************************************************************************************/
-std::vector<uint64_t> BearishThreeBlackCrowPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishThreeBlackCrowPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -1197,17 +1280,18 @@ std::vector<uint64_t> BearishThreeBlackCrowPattern::Check(uint64_t at, const Can
 
         if (is_pattern_matched)
         {
-            return { at, at + 1, at + 2 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                   Bearish Meeting Line
 ********************************************************************************************/
-std::vector<uint64_t> BearishMeetingLinePattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishMeetingLinePattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -1239,18 +1323,18 @@ std::vector<uint64_t> BearishMeetingLinePattern::Check(uint64_t at, const Candle
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                   Bearish Shooting Star
 ********************************************************************************************/
-std::vector<uint64_t> BearishShootingStarPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishShootingStarPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
@@ -1279,17 +1363,18 @@ std::vector<uint64_t> BearishShootingStarPattern::Check(uint64_t at, const Candl
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
-    return {};
+
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                      Bearish Piercing
 ********************************************************************************************/
-std::vector<uint64_t> BearishPiercingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishPiercingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1313,18 +1398,18 @@ std::vector<uint64_t> BearishPiercingPattern::Check(uint64_t at, const CandlesDa
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                      Bearish Engulfing
 ********************************************************************************************/
-std::vector<uint64_t> BearishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishEngulfingPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1349,18 +1434,18 @@ std::vector<uint64_t> BearishEngulfingPattern::Check(uint64_t at, const CandlesD
 
         if (is_pattern_matched)
         {
-            return { at, at + 1 };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 
 /*******************************************************************************************
 *                                     Bearish Hanging Man
 ********************************************************************************************/
-std::vector<uint64_t> BearishHangingManPattern::Check(uint64_t at, const CandlesData& candles_data)
+bool BearishHangingManPattern::Check(uint64_t at, const CandlesData& candles_data)
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 1)
     {
@@ -1383,11 +1468,41 @@ std::vector<uint64_t> BearishHangingManPattern::Check(uint64_t at, const Candles
 
         if (is_pattern_matched)
         {
-            return { at };
+            return true;
         }
     }
 
-    return {};
+    return false;
 }
 
 #pragma endregion
+
+
+
+/*******************************************************************************************
+*                               Dragon Fly Doji
+********************************************************************************************/
+
+bool DragonFlyDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    return candles_data.IsDragonflyDoji(at);
+}
+
+
+
+/*******************************************************************************************
+*                               Grave Stone Doji
+********************************************************************************************/
+bool GraveStonrDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    return candles_data.IsGravestoneDoji(at);
+}
+
+
+/*******************************************************************************************
+*                               Long Leg Doji
+********************************************************************************************/
+bool LongLegDojiPattern::Check(uint64_t at, const CandlesData& candles_data)
+{
+    return candles_data.IsLongLegDoji(at);
+}

@@ -43,6 +43,7 @@ public:
 private:
 	void InitializeDB();
 	void OnSecurityDataLoaded();
+	void OnCheckingForNewDataCompleted();
 	void OnDownloadAndWriteCompleted();
 
 	// Working directory for all data

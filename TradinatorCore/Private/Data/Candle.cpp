@@ -16,6 +16,49 @@
 #define _LONG_LEG_DOJI_SHADOW_RATIO 0.1 // 10% difference between upper and lower shadows
 
 
+CandlesData::CandlesData(size_t size)
+	: m_dates(size)
+	, m_opens(size)
+	, m_highs(size)
+	, m_lows(size)
+	, m_closes(size)
+	, m_volumes(size)
+	, m_open_interests(size)
+	, m_trends(size)
+	, m_patterns(size)
+	, m_strategies(size)
+{
+
+}
+
+void CandlesData::Reserve(size_t size)
+{
+	m_dates.reserve(size);
+	m_opens.reserve(size);
+	m_highs.reserve(size);
+	m_lows.reserve(size);
+	m_closes.reserve(size);
+	m_volumes.reserve(size);
+	m_open_interests.reserve(size);
+	m_trends.reserve(size);
+	m_patterns.reserve(size);
+	m_strategies.reserve(size);
+}
+
+void CandlesData::Reverse()
+{
+	std::reverse(m_dates.begin(), m_dates.end());
+	std::reverse(m_opens.begin(), m_opens.end());
+	std::reverse(m_highs.begin(), m_highs.end());
+	std::reverse(m_lows.begin(), m_lows.end());
+	std::reverse(m_closes.begin(), m_closes.end());
+	std::reverse(m_volumes.begin(), m_volumes.end());
+	std::reverse(m_open_interests.begin(), m_open_interests.end());
+	std::reverse(m_trends.begin(), m_trends.end());
+	std::reverse(m_patterns.begin(), m_patterns.end());
+	std::reverse(m_strategies.begin(), m_strategies.end());
+}
+
 bool CandlesData::IsDoji(size_t idx) const
 {
 	double body_size = fabs(m_closes[idx] - m_opens[idx]);

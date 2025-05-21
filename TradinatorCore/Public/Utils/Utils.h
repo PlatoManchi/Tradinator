@@ -8,7 +8,7 @@
 
 class Indicator;
 class Pattern;
-enum class EPatternType : uint64_t;
+enum class EPattern : uint64_t;
 
 namespace TradinatorCoreSpace
 {
@@ -36,16 +36,17 @@ namespace TradinatorCoreSpace
 		static void SetReadWriteBatchSize(size_t read_write_batch_size);
 
 
-		//static std::string GetPatternDescription(EPatternType pattern);
-		static std::string GetPatternShortDescription(EPatternType pattern);
-		static EPatternType GetPatternFromShortDescription(const std::string& short_description);
+		static std::vector<EPattern> GetAllPatternsFrom(EPattern patterns);
+		static EPattern GetPatternFrom(EPattern patterns);
+		static std::string GetPatternShortDescription(EPattern pattern);
+		static EPattern GetPatternFromShortDescription(const std::string& short_description);
 
 	private:
 		static std::string _DATA_FOLDER_PATH_;
 		static size_t _MAX_PARALLEL_DOWNLOADS_;
 		static size_t _MAX_PARALLEL_ANALYSIS_;
 		static size_t _READ_WRITE_BATCH_SIZE_;
-	};
 
+	};
 
 }

@@ -240,9 +240,10 @@
     <Object Include="ispc\indicator_helper_ispc_avx2.o" />
     <Object Include="ispc\indicator_helper_ispc_avx512skx.o" />
     <Object Include="ispc\indicator_helper_ispc_sse2.o" />
-    <Object Include="ispc\utils.o" />
-    <Object Include="ispc\utils_avx2.o" />
-    <Object Include="ispc\utils_avx512skx.o" />
+    <Object Include="ispc\utils_ispc.o" />
+    <Object Include="ispc\utils_ispc_avx2.o" />
+    <Object Include="ispc\utils_ispc_avx512skx.o" />
+    <Object Include="ispc\utils_ispc_sse2.o" />
     <Object Include="ispc\utils_sse2.o" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

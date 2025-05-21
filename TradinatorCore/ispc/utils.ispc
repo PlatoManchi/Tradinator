@@ -2,7 +2,6 @@
 // ispc utils.ispc -o utils_ispc.o -h utils_ispc.h --target=avx2,avx512skx-x64,sse2
 
 #include "indicator_helper.ispc"
-//#include "matrix_helper.ispc"
 
 
 /*****************************************************************************************************
@@ -418,6 +417,7 @@ export void calculate_trend_analysis_debug( const uniform double* uniform highs,
                                             uniform uint64* uniform peaks_count,
                                             uniform uint64* uniform troughs_count,
                                             uniform uint64 window_size,
+                                            uniform uint64 atr_window_size,
                                             uniform uint64 polynomial_order,
                                             uniform uint64 distance_btw_peaks,
                                             uniform uint64 width_for_peaks,
@@ -439,7 +439,7 @@ export void calculate_trend_analysis_debug( const uniform double* uniform highs,
 
     calculate_savitzky_golay_filter(closes, convolution_coefficient, convolution_coefficient_buff, savitzky_golay_output, window_size, polynomial_order, count);
 
-    calculate_atr(highs, lows, closes, atr_output, 30, count);
+    calculate_atr(highs, lows, closes, atr_output, atr_window_size, count);
 
     find_peaks(savitzky_golay_output, atr_output, peaks_output, peaks_and_trough_tmp_buff, peaks_count, distance_btw_peaks, width_for_peaks, relative_height_for_peaks, 1, count);
     find_peaks(savitzky_golay_output, atr_output, troughs_output, peaks_and_trough_tmp_buff, troughs_count, distance_btw_peaks, width_for_peaks, relative_height_for_peaks, -1, count);

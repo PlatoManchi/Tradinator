@@ -1,3 +1,5 @@
+
+
 #include "Data/Security.h"
 
 #include <iostream>
@@ -19,12 +21,19 @@
 #include "Utils/SerialAsyncTask.h"
 #include "Utils/Utils.h"
 #include "Utils/Log.h"
+#include "Indicators/TrendAnalysisDebug.h"
 
-static std::string _STATUS_ = "status";
-static std::string _SUCCESS_ = "success";
+#ifdef _TECHNICAL_ANALYSIS_ISPC_
+#include "utils_ispc.h"
+#endif // _TECHNICAL_ANALYSIS_ISPC_
 
-static std::string _DATA_ = "data";
-static std::string _CANDLES_ = "candles";
+
+
+std::string Security::_STATUS_ = "status";
+std::string Security::_SUCCESS_ = "success";
+
+std::string Security::_DATA_ = "data";
+std::string Security::_CANDLES_ = "candles";
 
 
 Security::Security()
@@ -134,31 +143,45 @@ bool Security::IsHistoricalCandleDataOutDated() const
 
 
 
-
-
-std::unique_ptr<AsyncTask> Security::GetDownloadLatestCandleDataTask()
+std::string Security::GetDownloadURL() const
 {
 	std::chrono::system_clock::time_point to_tp = std::chrono::system_clock::now();
 	std::chrono::system_clock::time_point from_tp = GetLastCandleDataDate() + std::chrono::days(1);
 
-	
-	std::shared_ptr<Market> owning_market = m_owning_market.lock();
-	assert(owning_market);
-
-	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
-	assert(owning_tradinator_core_thread);
-
 	std::string to = std::format("{:%F}", to_tp);
 	std::string from = std::format("{:%F}", from_tp);
 
+
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
+
 	/* eg url format
 	https://api.upstox.com/v2/historical-candle/NSE_EQ|INE696F01016/day/2025-04-06/2025-04-01*/
-	std::string url = std::format("https://api.upstox.com/v2/historical-candle/{}_{}|{}/day/{}/{}"
+	return std::format("https://api.upstox.com/v2/historical-candle/{}_{}|{}/day/{}/{}"
 		, owning_market->GetMarketCode()
 		, m_series
 		, m_isin_number
 		, to
 		, from);
+
+}
+
+std::string Security::GetTmpDownloadFilePath() const
+{
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
+
+	return std::format("{}/{}.json", owning_market->GetRawDataFolderPath(), Symbol());
+	//return owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
+}
+
+std::unique_ptr<AsyncTask> Security::GetDownloadLatestCandleDataTask()
+{
+	std::shared_ptr<Market> owning_market = m_owning_market.lock();
+	assert(owning_market);
+
+	std::shared_ptr<TradinatorCoreThread> owning_tradinator_core_thread = m_owning_tradinator_core_thread.lock();
+	assert(owning_tradinator_core_thread);
 
 	
 	// Set the security to updating state
@@ -173,8 +196,8 @@ std::unique_ptr<AsyncTask> Security::GetDownloadLatestCandleDataTask()
 		[]() {}
 	);
 
-	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
-	std::unique_ptr<AsyncTask> download_task = std::make_unique<DownloadTask>([](){}, url, tmp_file_path);
+	std::string tmp_file_path = GetTmpDownloadFilePath();
+	std::unique_ptr<AsyncTask> download_task = std::make_unique<DownloadTask>([](){}, GetDownloadURL(), tmp_file_path);
 
 	std::vector<std::unique_ptr<AsyncTask>> tasks;
 	if (!m_is_downloading)
@@ -211,7 +234,216 @@ void Security::ReadFromRawFileToMemory()
 }
 
 
+void Security::AnalyzeDownloadedData()
+{
+	const Json::Value* data = m_raw_downloaded_data.find(_DATA_);
+	if (!data) return;
 
+	const Json::Value* candles_data = data->find(_CANDLES_);
+	if (!candles_data) return;
+
+	int64_t json_candle_count = candles_data->size();
+	if (json_candle_count == 0) return;
+
+
+	const uint64_t window_size = 4;
+	const uint64_t polynomial_order = 25;
+	const uint64_t atr_window_size = 30;
+	const uint64_t min_distance_btw_peaks = 15;
+	const uint64_t width_for_finding_peaks = 3;
+	const double relative_width = 0.5;
+
+	if (DoesProcessedHistoricalDataExist())
+	{
+		// if historical data exists load some data necessary for analysis
+		// since most of analysis techniques relay on previous data of window size
+		
+		uint64_t back_data_needed = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size }) + 10; // 10 extra for smoothing
+
+		m_new_downloaded_data.Reserve(back_data_needed + json_candle_count);
+
+		std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date DESC LIMIT {}", GetTableName(), back_data_needed);
+		SQLite::Statement query(m_database_connection, query_str);
+
+		LoadCandleDataToMemoryFromQuery(query, m_new_downloaded_data);
+	}
+	else
+	{
+		m_new_downloaded_data.Reserve(json_candle_count);
+	}
+
+	Json::Value::const_iterator itr = candles_data->end();
+	bool is_done = false;
+	while (!is_done)
+	{
+		--itr;
+		is_done = (itr == candles_data->begin());
+
+		std::string date_str = (*itr)[0].asCString();
+		std::istringstream is{ date_str };
+		std::chrono::system_clock::time_point date;
+		is >> std::chrono::parse("%F", date);
+
+		m_new_downloaded_data.m_dates.push_back(date);
+		m_new_downloaded_data.m_opens.push_back((*itr)[1].asDouble());
+		m_new_downloaded_data.m_highs.push_back((*itr)[2].asDouble());
+		m_new_downloaded_data.m_lows.push_back((*itr)[3].asDouble());
+		m_new_downloaded_data.m_closes.push_back((*itr)[4].asDouble());
+		
+		// one candle from the data has negative value for volumes and open interest for some reason and this 
+		// is for that one random wrong value
+		int64_t volume = (*itr)[5].asInt64();
+		if (volume < 0)
+		{
+			volume = 0;
+		}
+		int64_t open_interest = (*itr)[6].asInt64();
+		if (open_interest < 0)
+		{
+			open_interest = 0;
+		}
+
+		m_new_downloaded_data.m_volumes.push_back(volume);
+		m_new_downloaded_data.m_open_interests.push_back(open_interest);
+	}
+
+	// Unload the raw data. We never need it again
+	m_raw_downloaded_data = std::move(Json::Value());
+
+	size_t total_candles = m_new_downloaded_data.m_dates.size();
+	m_new_downloaded_data.m_trends = std::move(std::vector<ETrend>(total_candles, ETrend::None));
+	m_new_downloaded_data.m_patterns = std::move(std::vector<EPattern>(total_candles, EPattern::None));
+	m_new_downloaded_data.m_strategies = std::move(std::vector<uint64_t>(total_candles, 0));
+
+	// Analyze
+	// -------------------------- Trends ---------------------
+	uint64_t max_data_required_for_analysis = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size });
+	if (total_candles > max_data_required_for_analysis)
+	{
+		std::vector<double> a(polynomial_order * window_size, 0.0);
+		std::vector<double> at(polynomial_order * window_size, 0.0);
+		std::vector<double> ata(window_size * window_size, 0.0);
+		std::vector<double> ata_inv(window_size * window_size, 0.0);
+		std::vector<double> ata_inv_tmp(window_size * window_size, 0.0);// buffer to calculate inverse
+		std::vector<double> ata_inv_at(window_size * polynomial_order, 0.0);
+		std::vector<double> convolution_coefficient(polynomial_order, 0.0);
+		std::vector<double> convolution_coefficient_tmp(polynomial_order, 0.0);
+
+		std::vector<double> savitzky_golay_output(total_candles, 0.0);
+
+		std::vector<double> average_true_ranges(total_candles, 0.0);
+
+		// max number of peaks possible will be count / m_distance_btw_peaks
+		std::vector<double> peaks(total_candles / min_distance_btw_peaks, 0.0);
+		std::vector<double> troughs(total_candles / min_distance_btw_peaks, 0.0);
+
+		uint64_t peaks_count = 0;
+		uint64_t troughs_count = 0;
+
+		std::vector<double> trend_points(total_candles, 0.0);
+
+#ifdef _TECHNICAL_ANALYSIS_ISPC_
+		std::vector<int8_t> peaks_and_trough_tmp_buff(total_candles, 0);
+
+		ispc::calculate_trend_analysis_debug(
+			m_new_downloaded_data.m_highs.data(),
+			m_new_downloaded_data.m_lows.data(),
+			m_new_downloaded_data.m_closes.data(),
+			a.data(),
+			at.data(),
+			ata.data(),
+			ata_inv.data(),
+			ata_inv_tmp.data(),
+			ata_inv_at.data(),
+			convolution_coefficient.data(),
+			convolution_coefficient_tmp.data(),
+			savitzky_golay_output.data(),
+			average_true_ranges.data(),
+			peaks.data(),
+			troughs.data(),
+			peaks_and_trough_tmp_buff.data(),
+			trend_points.data(),
+			&peaks_count,
+			&troughs_count,
+			window_size,
+			atr_window_size,
+			polynomial_order,
+			min_distance_btw_peaks,
+			width_for_finding_peaks,
+			relative_width,
+			2,
+			total_candles
+		);
+#else
+		TrendAnalysisDebug trend_analysis;
+		trend_analysis.CalculateRaw(
+			m_new_downloaded_data.m_highs.data(),
+			m_new_downloaded_data.m_lows.data(),
+			m_new_downloaded_data.m_closes.data(),
+			a.data(),
+			at.data(),
+			ata.data(),
+			ata_inv.data(),
+			ata_inv_tmp.data(),
+			ata_inv_at.data(),
+			convolution_coefficient.data(),
+			convolution_coefficient_tmp.data(),
+			savitzky_golay_output.data(),
+			average_true_ranges.data(),
+			peaks.data(),
+			troughs.data(),
+			trend_points.data(),
+			&peaks_count,
+			&troughs_count,
+			window_size,
+			atr_window_size,
+			polynomial_order,
+			min_distance_btw_peaks,
+			width_for_finding_peaks,
+			relative_width,
+			2,
+			total_candles
+		);
+#endif // _TECHNICAL_ANALYSIS_ISPC_
+
+		
+
+		for (uint64_t i = 0; i < total_candles; ++i)
+		{
+			if (trend_points[i] > 0.9)
+			{
+				m_new_downloaded_data.m_trends[i] = ETrend::Up;
+			}
+			else if (trend_points[i] < -0.9)
+			{
+				m_new_downloaded_data.m_trends[i] = ETrend::Down;
+			}
+			else
+			{
+				m_new_downloaded_data.m_trends[i] = ETrend::None;
+			}
+		}
+	}
+	
+
+	// --------------------------- Patterns ------------------
+	std::vector<std::unique_ptr<Pattern>> patterns = std::move(TradinatorCoreSpace::Utils::GetAvailablePatterns());
+
+	for (uint64_t i = 0; i < m_new_downloaded_data.m_dates.size(); ++i)
+	{
+		EPattern satisfied_patterns = EPattern::None;
+
+		for (const std::unique_ptr<Pattern>& pattern : patterns)
+		{
+			if (pattern->Check(i, m_new_downloaded_data))
+			{
+				satisfied_patterns = satisfied_patterns | pattern->PatternType();
+			}
+		}
+
+		m_new_downloaded_data.m_patterns[i] = satisfied_patterns;
+	}
+}
 
 
 
@@ -227,9 +459,7 @@ void Security::InsertRawDataToDatabase()
 		m_is_inserting = true;
 	}
 	
-
-	Json::Value json_candles = m_raw_downloaded_data[_DATA_][_CANDLES_];
-	Json::ArrayIndex count = json_candles.size();
+	size_t count = m_new_downloaded_data.m_dates.size();;
 	if (count > 0)
 	{
 		bool is_success = false;
@@ -259,7 +489,10 @@ void Security::InsertRawDataToDatabase()
 						"Low              REAL         NOT NULL," \
 						"Close            REAL         NOT NULL," \
 						"Volume           INTEGER      NOT NULL," \
-						"OpenInterest     INTEGER      NOT NULL);", GetTableName());
+						"OpenInterest     INTEGER      NOT NULL," \
+						"Trend            TEXT         NOT NULL DEFAULT 'None'," \
+						"Patterns         INTEGER      NOT NULL DEFAULT '0'," \
+						"Strategies       INTEGER      NOT NULL DEFAULT '0'); ", GetTableName());
 
 
 					SQLite::Transaction transaction(db);
@@ -288,52 +521,37 @@ void Security::InsertRawDataToDatabase()
 
 				SQLite::Transaction transaction(db);
 				// Prepare the insert statement once
-				SQLite::Statement insert(db, std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
-					"(?, ?, ?, ?, ?, ?, ?)", GetTableName()));
+				SQLite::Statement insert(db, std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest, Trend, Patterns, Strategies) VALUES "  \
+					"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", GetTableName()));
 
 				std::chrono::system_clock::time_point tmp_latest_candle_date = m_cached_latest_candle_date;
 
-				for (Json::Value& candle : json_candles)
+				size_t candles_to_insert = m_new_downloaded_data.m_dates.size();
+				for (size_t i = 0; i < candles_to_insert; ++i)
 				{
-					std::string date_str = candle[0].asCString();
-					std::istringstream is{ date_str };
-					std::chrono::system_clock::time_point date;
-					is >> std::chrono::parse("%F", date);
+					std::chrono::system_clock::time_point date = m_new_downloaded_data.m_dates[i];
 
-					// Only process new data
-					if (date > tmp_latest_candle_date)
+					if (date > m_cached_latest_candle_date)
 					{
-						if (date > m_cached_latest_candle_date)
-						{
-							m_cached_latest_candle_date = date;
-						}
-
-						// one candle from the data has negative value for volumes and open interest for some reason and this 
-						// is for that one random wrong value
-						int64_t volume = candle[5].asInt64();
-						if (volume < 0)
-						{
-							volume = 0;
-						}
-						int64_t open_interest = candle[6].asInt64();
-						if (open_interest < 0)
-						{
-							open_interest = 0;
-						}
-
-						insert.bind(1, date.time_since_epoch().count());
-						insert.bind(2, candle[1].asDouble());
-						insert.bind(3, candle[2].asDouble());
-						insert.bind(4, candle[3].asDouble());
-						insert.bind(5, candle[4].asDouble());
-						insert.bind(6, volume);
-						insert.bind(7, open_interest);
-
-						insert.exec();                // execute insert
-						insert.reset();               // reset statement for next use
-						insert.clearBindings();       // clear bound values
+						m_cached_latest_candle_date = date;
 					}
+
+					insert.bind(1, date.time_since_epoch().count());
+					insert.bind(2, m_new_downloaded_data.m_opens[i]);
+					insert.bind(3, m_new_downloaded_data.m_highs[i]);
+					insert.bind(4, m_new_downloaded_data.m_lows[i]);
+					insert.bind(5, m_new_downloaded_data.m_closes[i]);
+					insert.bind(6, (int64_t)m_new_downloaded_data.m_volumes[i]);
+					insert.bind(7, (int64_t)m_new_downloaded_data.m_open_interests[i]);
+					insert.bind(8, (int64_t)m_new_downloaded_data.m_trends[i]);
+					insert.bind(9, (int64_t)m_new_downloaded_data.m_patterns[i]);
+					insert.bind(10, (int64_t)m_new_downloaded_data.m_strategies[i]);
+
+					insert.exec();                // execute insert
+					insert.reset();               // reset statement for next use
+					insert.clearBindings();       // clear bound values
 				}
+
 				transaction.commit();
 
 				UpdateSecuritySkeletonData();
@@ -344,7 +562,7 @@ void Security::InsertRawDataToDatabase()
 			catch (std::exception& e)
 			{
 				is_success = false;
-				Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+				//Log::GetInstance().Write(std::format("ERROR: InsertRawDataToDatabase: SQLite exception: {}", e.what()));
 				
 				// Database might be locked by another thread. Wait for a bit and try again.
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -352,8 +570,8 @@ void Security::InsertRawDataToDatabase()
 		}
 	}
 	
-	// Unload the raw data. We never need it again
-	m_raw_downloaded_data = std::move(Json::Value());
+	// Unload all the new downloaded data
+	m_new_downloaded_data = std::move(CandlesData());
 
 	{
 		std::lock_guard<std::mutex> lock(m_security_mutex);
@@ -362,7 +580,46 @@ void Security::InsertRawDataToDatabase()
 }
 
 
+void Security::LoadCandleDataToMemoryFromQuery(SQLite::Statement& query, CandlesData& candle_data)
+{
+	while (query.executeStep())
+	{
+		// Date, Open, High, Low, Close, Volume, OpenInterest
+		std::chrono::system_clock::rep time_count = query.getColumn(0).getInt64();
+		std::chrono::system_clock::duration duration_since_epoch(time_count);
+		std::chrono::system_clock::time_point date(duration_since_epoch);
 
+
+		candle_data.m_dates.push_back(date);
+		candle_data.m_opens.push_back(query.getColumn(1).getDouble());
+		candle_data.m_highs.push_back(query.getColumn(2).getDouble());
+		candle_data.m_lows.push_back(query.getColumn(3).getDouble());
+		candle_data.m_closes.push_back(query.getColumn(4).getDouble());
+		candle_data.m_volumes.push_back(query.getColumn(5).getInt64());
+		candle_data.m_open_interests.push_back(query.getColumn(6).getInt64());
+
+		std::string trend_str = query.getColumn(7).getString();
+		if (trend_str == "None")
+		{
+			candle_data.m_trends.push_back(ETrend::None);
+		}
+		else if (trend_str == "Up")
+		{
+			candle_data.m_trends.push_back(ETrend::Up);
+		}
+		else if (trend_str == "Down")
+		{
+			candle_data.m_trends.push_back(ETrend::Down);
+		}
+		else if (trend_str == "Consolidation")
+		{
+			candle_data.m_trends.push_back(ETrend::Consolidation);
+		}
+
+		candle_data.m_patterns.push_back((EPattern)query.getColumn(8).getInt64());
+		candle_data.m_strategies.push_back(query.getColumn(9).getInt64());
+	}
+}
 
 
 
@@ -389,33 +646,12 @@ void Security::LoadCandleDataToMemory()
 				m_candles_data->SetDataReady(false);
 			}
 
-			m_candles_data->GetAsyncDataCopy().m_dates.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_opens.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_highs.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_lows.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_closes.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_volumes.reserve(m_candle_count);
-			m_candles_data->GetAsyncDataCopy().m_open_interests.reserve(m_candle_count);
-
+			m_candles_data->GetAsyncDataCopy().Reserve(m_candle_count);
+			
 			std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date ASC", GetTableName());
 			SQLite::Statement query(m_database_connection, query_str);
 			
-			while (query.executeStep())
-			{
-				// Date, Open, High, Low, Close, Volume, OpenInterest
-				std::chrono::system_clock::rep time_count = query.getColumn(0);
-				std::chrono::system_clock::duration duration_since_epoch(time_count);
-				std::chrono::system_clock::time_point date(duration_since_epoch);
-
-				
-				m_candles_data->GetAsyncDataCopy().m_dates.push_back(date);
-				m_candles_data->GetAsyncDataCopy().m_opens.push_back(query.getColumn(1));
-				m_candles_data->GetAsyncDataCopy().m_highs.push_back(query.getColumn(2));
-				m_candles_data->GetAsyncDataCopy().m_lows.push_back(query.getColumn(3));
-				m_candles_data->GetAsyncDataCopy().m_closes.push_back(query.getColumn(4));
-				m_candles_data->GetAsyncDataCopy().m_volumes.push_back(query.getColumn(5).getInt64());
-				m_candles_data->GetAsyncDataCopy().m_open_interests.push_back(query.getColumn(6).getInt64());
-			}
+			LoadCandleDataToMemoryFromQuery(query, m_candles_data->GetAsyncDataCopy());
 
 			m_candles_data->SetDataReady(true);
 
@@ -425,7 +661,7 @@ void Security::LoadCandleDataToMemory()
 		catch (std::exception& e)
 		{
 			is_success = false;
-			Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+			//Log::GetInstance().Write(std::format("ERROR: LoadCandleDataToMemory: SQLite exception: {}", e.what()));
 
 			// Database might be locked by another thread. Wait for a bit and try again.
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -505,7 +741,8 @@ void Security::UpdateSecuritySkeletonData()
 		catch (std::exception& e)
 		{
 			is_success = false;
-			//std::cout << e.what() << std::endl;
+			//Log::GetInstance().Write(std::format("ERROR: UpdateSecuritySkeletonData: SQLite exception: {}", e.what()));
+
 			// Database might be locked by another thread. Wait for a bit and try again.
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
@@ -531,7 +768,7 @@ std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 
 			for (uint64_t i = 0; i < candles_data.m_dates.size(); ++i)
 			{
-				for (const std::unique_ptr<Pattern>& pattern : patterns)
+				/*for (const std::unique_ptr<Pattern>& pattern : patterns)
 				{
 					std::vector<uint64_t> pattern_range = pattern->Check(i, candles_data);
 					if (pattern_range.size() > 0)
@@ -545,6 +782,16 @@ std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 						// First come first serve
 						break;
 					}
+				}*/
+				
+				EPattern pattern = TradinatorCoreSpace::Utils::GetPatternFrom(candles_data.m_patterns[i]);
+				if (pattern != EPattern::None && pattern != EPattern::Max)
+				{
+					NewsPoint news_point(this->shared_from_this());
+					news_point.m_date_range = Pattern::GetPatternRangeAt(pattern, i);
+					news_point.m_pattern = pattern;
+
+					m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
 				}
 			}
 		};

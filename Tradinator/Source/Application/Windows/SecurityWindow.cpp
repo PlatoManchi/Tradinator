@@ -566,7 +566,12 @@ bool SecurityWindow::CanApplyIndicatorOfType(EIndicatorType type)
 
 void SecurityWindow::ShowTitle()
 {
-    ImVec2 title_size = ImGui::CalcTextSize(m_cached_label_id.c_str());
+    ImVec2 window_size = ImGui::GetWindowSize();
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    ImGuiStyle& style = ImGui::GetStyle();
+    float item_spacing = style.ItemSpacing.x;
+
+    ImVec2 title_size = ImGui::CalcTextSize(m_security->Name().c_str());
     ImVec2 close_text_size = ImGui::CalcTextSize(" X ");
 
     ImGuiID id = ImGui::GetID(m_cached_label_id.c_str());
@@ -574,21 +579,49 @@ void SecurityWindow::ShowTitle()
     ImGui::Text(m_security->Name().c_str());
 
 
+    const std::vector<TradinatorSettings::PinnedSecurity>& pinned = TradinatorSettings::Get().GetPinnedSecuritiesIsinNumbers();
+    std::string button_txt = "Pin";
+    bool is_pinned = false;
+    for (const TradinatorSettings::PinnedSecurity& security : pinned)
+    {
+        if (security.isin_number == m_security->ISIN_Number())
+        {
+            is_pinned = true;
+            button_txt = "Unpin";
+            break;
+        }
+    }
 
-    ImVec2 window_size = ImGui::GetWindowSize();
-    ImVec2 window_pos = ImGui::GetWindowPos();
 
+    ImVec2 pin_text_size = ImGui::CalcTextSize(button_txt.c_str());
+    
+    
     ImVec2 button_size = ImVec2(70, 57);
 
     ImVec2 available_space = ImGui::GetContentRegionAvail();
     //ImGui::SetCursorPosX(available_space.x - button_size.x);
     ImVec2 prev_cursor_pos = ImGui::GetCursorPos();
-    ImGui::SetCursorPos(ImVec2(window_size.x - button_size.x, top - 16));
+    
 
     // remove padding after x button so that there is no scrolling
     // but this isn't working. 
     // TODO: Figure out how to remove padding after x button so that page won't scroll horizontally
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0)); 
+
+    ImGui::SetCursorPos(ImVec2(title_size.x + item_spacing * 2.0f, top - 16));
+    if (ImGui::Button(button_txt.c_str(), ImVec2(pin_text_size.x + item_spacing * 2.0f, 57.0f)))
+    {
+        if (is_pinned)
+        {
+            TradinatorSettings::Get().RemovePinnedSecuritiesIsinNumber({ m_security->Symbol(), m_security->ISIN_Number() });
+        }
+        else
+        {
+            TradinatorSettings::Get().AddPinnedSecuritiesIsinNumber({ m_security->Symbol(), m_security->ISIN_Number() });
+        }
+    }
+
+    ImGui::SetCursorPos(ImVec2(window_size.x - button_size.x, top - 16));
     if (ImGui::Button(" X ", button_size))
     {
         m_close = true;

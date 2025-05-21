@@ -25,6 +25,9 @@ public:
 	virtual std::string GetSecurityListRawDataFileName() const = 0;
 	virtual std::string GetSecurityListProcessedDataFileName() const = 0;
 	
+	virtual std::unique_ptr<AsyncTask> GetDoesNewDataExistToDownloadTask() = 0;
+	bool GetDoesNewDataExistToDownload() const { return m_does_new_data_exist_to_download; }
+
 	std::string GetRawDataFolderPath() const;
 	std::string GetProcessedDataFolderPath() const;
 
@@ -35,6 +38,8 @@ public:
 	std::unique_ptr<AsyncTask> GetParallelDownloadTask();
 	std::unique_ptr<AsyncTask> GetSerialWriteTask();
 	std::vector<std::unique_ptr<AsyncTask>> GetGenerateNewsPointsTask();
+
+	std::shared_ptr<Security> GetSecurity(std::string isin_number) const;
 
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }
@@ -56,5 +61,7 @@ protected:
 	
 	//
 	AsyncData<std::map<std::string, std::shared_ptr<Security>>> m_securities_async_data;
+
+	bool m_does_new_data_exist_to_download = false;
 };
 

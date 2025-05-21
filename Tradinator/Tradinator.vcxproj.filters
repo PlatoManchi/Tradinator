@@ -73,6 +73,9 @@
     <ClInclude Include="Source\Application\Windows\SettingsWindow.h">
       <Filter>Source\Application\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Application\Windows\PinnedSecuritiesWindow.h">
+      <Filter>Source\Application\Windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Tradinator.cpp">
@@ -115,6 +118,9 @@
       <Filter>Source\Application\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source\Application\Windows\SettingsWindow.cpp">
+      <Filter>Source\Application\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\Windows\PinnedSecuritiesWindow.cpp">
       <Filter>Source\Application\Windows</Filter>
     </ClCompile>
   </ItemGroup>

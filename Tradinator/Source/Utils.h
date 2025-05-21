@@ -37,7 +37,7 @@ namespace TradinatorAppSpace
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(EIndicatorType type);
 		static std::unique_ptr<IIndicatorWrapper> GetIndicatorWrapper(std::unique_ptr<Indicator> indicator, std::shared_ptr<Security> security = nullptr);
 
-		static EPatternNatureType GetPatternNatureType(EPatternType pattern);
+		static EPatternNatureType GetPatternNatureType(EPattern pattern);
 		
 
 		static void OpenURL(const std::string& url);

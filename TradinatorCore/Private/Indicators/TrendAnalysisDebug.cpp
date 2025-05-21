@@ -113,8 +113,8 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 		std::vector<double> average_true_ranges(count, 0.0);
 
 		// max number of peaks possible will be count / m_distance_btw_peaks
-		std::vector<double> peaks(count, 0.0);
-		std::vector<double> troughs(count, 0.0);
+		std::vector<double> peaks(count / m_distance_btw_peaks, 0.0);
+		std::vector<double> troughs(count / m_distance_btw_peaks, 0.0);
 
 		uint64_t peaks_count = 0;
 		uint64_t troughs_count = 0;
@@ -145,6 +145,7 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 			&peaks_count,
 			&troughs_count,
 			m_length,
+			30,
 			m_polynomial_order,
 			m_distance_btw_peaks,
 			m_width_for_peaks,
@@ -172,6 +173,7 @@ std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 			&peaks_count,
 			&troughs_count,
 			m_length,
+			30,
 			m_polynomial_order,
 			m_distance_btw_peaks,
 			m_width_for_peaks,
@@ -218,6 +220,7 @@ void TrendAnalysisDebug::CalculateRaw(
 	uint64_t* peaks_count,
 	uint64_t* troughs_count,
 	uint64_t window_size,
+	uint64_t atr_window_size,
 	uint64_t polynomial_order,
 	uint64_t distance_btw_peaks,
 	uint64_t width_for_peaks,
@@ -241,7 +244,7 @@ void TrendAnalysisDebug::CalculateRaw(
 	SavitzkyGolayFilterRaw(closes, convolution_coefficient, convolution_coefficient_buff, savitzky_golay_output, window_size, polynomial_order, count);
 
 	ATR atr;
-	atr.CalculateRaw(highs, lows, closes, atr_output, 30, count);
+	atr.CalculateRaw(highs, lows, closes, atr_output, atr_window_size, count);
 
 
 

@@ -44,6 +44,23 @@ void TradinatorSettings::SetWorkingFolder(std::string working_folder)
 	EvulateSettings();
 }
 
+void TradinatorSettings::AddPinnedSecuritiesIsinNumber(PinnedSecurity security_details)
+{
+	m_pinned_securities_isin_numbers.push_back(security_details);
+}
+
+void TradinatorSettings::RemovePinnedSecuritiesIsinNumber(PinnedSecurity security_details)
+{
+	for (size_t i = 0; i < m_pinned_securities_isin_numbers.size(); ++i)
+	{
+		if (m_pinned_securities_isin_numbers[i].isin_number == security_details.isin_number)
+		{
+			m_pinned_securities_isin_numbers.erase(m_pinned_securities_isin_numbers.begin() + i);
+			break;
+		}
+	}
+}
+
 void TradinatorSettings::LoadSettings()
 {
 	std::ifstream input_file(_SETTINGS_FILE_, std::ifstream::binary);
@@ -61,6 +78,13 @@ void TradinatorSettings::LoadSettings()
 		{
 			std::string pattern_name = pattern->Name();
 			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"].find(pattern_name) ? m_settings["PatternVisibility"][pattern_name].asBool() : pattern->IsDefaultVisible();
+		}
+
+		m_pinned_securities_isin_numbers.clear();
+		Json::Value::ArrayIndex count = m_settings["PinnedSecurities"].size();
+		for (Json::Value::ArrayIndex i = 0; i < count; ++i)
+		{
+			m_pinned_securities_isin_numbers.push_back({ m_settings["PinnedSecurities"][i]["Symbol"].asString(), m_settings["PinnedSecurities"][i]["ISIN_Number"].asString() });
 		}
 
 		EvulateSettings();
@@ -82,6 +106,17 @@ void TradinatorSettings::SaveSettings()
 		m_settings["PatternVisibility"][pattern_name] = m_pattern_visbility[pattern->PatternType()];
 	}
 
+	m_settings["PinnedSecurities"].clear();
+	for (PinnedSecurity& security : m_pinned_securities_isin_numbers)
+	{
+		Json::Value security_value;
+		security_value["Symbol"] = security.symbol;
+		security_value["ISIN_Number"] = security.isin_number;
+
+		m_settings["PinnedSecurities"].append(security_value);
+	}
+	
+
 	output_file << m_settings;
 	output_file.close();
 }
@@ -97,7 +132,7 @@ void TradinatorSettings::SetAllOpenedWindowsStatus(Json::Value status)
 }
 
 
-bool TradinatorSettings::GetPatternVisibility(EPatternType type)
+bool TradinatorSettings::GetPatternVisibility(EPattern type)
 {
 	auto itr = m_pattern_visbility.find(type);
 	if (itr != m_pattern_visbility.end())
@@ -108,7 +143,7 @@ bool TradinatorSettings::GetPatternVisibility(EPatternType type)
 	return true;
 }
 
-void TradinatorSettings::SetPatternVisbility(EPatternType type, bool is_visible)
+void TradinatorSettings::SetPatternVisbility(EPattern type, bool is_visible)
 {
 	m_pattern_visbility[type] = is_visible;
 }

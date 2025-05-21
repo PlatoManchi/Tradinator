@@ -169,7 +169,7 @@ bool SettingsWindow::Show()
                 uint64_t index = 0;
                 for (const std::unique_ptr<Pattern>& pattern : patterns)
                 {
-                    if ((pattern->PatternType() & Bullish_Pattern_Type) != EPatternType::None)
+                    if ((pattern->PatternType() & Bullish_Pattern_Type) != EPattern::None)
                     {
                         int tmp_row = index / column_count;
                         if (tmp_row != row)
@@ -199,7 +199,7 @@ bool SettingsWindow::Show()
                 uint64_t index = 0;
                 for (const std::unique_ptr<Pattern>& pattern : patterns)
                 {
-                    if ((pattern->PatternType() & Bearish_Pattern_Type) != EPatternType::None)
+                    if ((pattern->PatternType() & Bearish_Pattern_Type) != EPattern::None)
                     {
                         int tmp_row = index / column_count;
                         if (tmp_row != row)
@@ -229,8 +229,8 @@ bool SettingsWindow::Show()
                 uint64_t index = 0;
                 for (const std::unique_ptr<Pattern>& pattern : patterns)
                 {
-                    if ((pattern->PatternType() & Bullish_Pattern_Type) == EPatternType::None &&
-                        (pattern->PatternType() & Bearish_Pattern_Type) == EPatternType::None)
+                    if ((pattern->PatternType() & Bullish_Pattern_Type) == EPattern::None &&
+                        (pattern->PatternType() & Bearish_Pattern_Type) == EPattern::None)
                     {
                         int tmp_row = index / column_count;
                         if (tmp_row != row)

@@ -255,16 +255,19 @@
     <Object Include="ispc\indicator_helper_ispc_sse2.o">
       <Filter>ispc\Objects</Filter>
     </Object>
-    <Object Include="ispc\utils.o">
-      <Filter>ispc\Objects</Filter>
-    </Object>
-    <Object Include="ispc\utils_avx2.o">
-      <Filter>ispc\Objects</Filter>
-    </Object>
-    <Object Include="ispc\utils_avx512skx.o">
-      <Filter>ispc\Objects</Filter>
-    </Object>
     <Object Include="ispc\utils_sse2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\utils_ispc.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\utils_ispc_avx2.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\utils_ispc_avx512skx.o">
+      <Filter>ispc\Objects</Filter>
+    </Object>
+    <Object Include="ispc\utils_ispc_sse2.o">
       <Filter>ispc\Objects</Filter>
     </Object>
   </ItemGroup>

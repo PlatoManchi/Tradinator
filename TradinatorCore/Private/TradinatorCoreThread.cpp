@@ -68,6 +68,46 @@ void TradinatorCoreThread::Init()
 
 void TradinatorCoreThread::OnSecurityDataLoaded()
 {
+	std::vector<std::unique_ptr<AsyncTask>> check_if_new_download_data_exist;
+	size_t count = m_market_list.size();
+
+	// Gathering the security list
+	if (count == 1)
+	{
+		check_if_new_download_data_exist.emplace_back(std::move(m_market_list[0]->GetDoesNewDataExistToDownloadTask()));
+	}
+	else if (count > 1)
+	{
+		std::vector<std::unique_ptr<AsyncTask>> gather_securities_tasks_list;
+		for (std::shared_ptr<Market> market : m_market_list)
+		{
+			gather_securities_tasks_list.emplace_back(std::move(market->GetDoesNewDataExistToDownloadTask()));
+		}
+
+		check_if_new_download_data_exist.emplace_back(std::move(std::make_unique<ParallelAsyncTask>(
+			std::string(""),
+			m_async_task_manager,
+			std::move(gather_securities_tasks_list),
+			[]() {}
+		)));
+	}
+
+	std::unique_ptr<AsyncTask> init_task = std::move(std::make_unique<SerialAsyncTask>(
+		std::string("Check to see if there is new data available online"),
+		m_async_task_manager,
+		std::move(check_if_new_download_data_exist),
+		[&]()
+		{
+			OnCheckingForNewDataCompleted();
+		}
+	));
+
+	m_async_task_manager->AddTask(std::move(init_task));
+}
+
+
+void TradinatorCoreThread::OnCheckingForNewDataCompleted()
+{
 	std::vector<std::unique_ptr<AsyncTask>> download_and_write_tasks;
 	size_t count = m_market_list.size();
 
@@ -94,7 +134,7 @@ void TradinatorCoreThread::OnSecurityDataLoaded()
 		std::string(""),
 		m_async_task_manager,
 		std::move(download_and_write_tasks),
-		[&]() 
+		[&]()
 		{
 			OnDownloadAndWriteCompleted();
 		}

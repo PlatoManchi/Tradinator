@@ -28,7 +28,7 @@ public:
 	std::vector<uint64_t> m_date_range;
 
 	// If new is pattern type, then the pattern
-	EPatternType m_pattern;
+	EPattern m_pattern;
 };
 
 typedef std::vector<NewsPoint> NewsPointVectorType;

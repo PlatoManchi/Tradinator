@@ -4,6 +4,8 @@
 
 #include "Application/Windows/DashboardWindow.h"
 #include "Application/Windows/SettingsWindow.h"
+#include "Application/Windows/AutoAnalysisUpdateWindow.h"
+#include "Application/Windows/PinnedSecuritiesWindow.h"
 #include "Components/SecuritiesSearchBar.h"
 #include "Components/StatusBar.h"
 
@@ -30,6 +32,8 @@ private:
 	
 	SecuritiesSearchBar m_securities_search_bar;
 	DashboardWindow m_dashboard_window;
+	PinnedSecuritiesWindow m_pinned_securities_window;
+	AutoAnalysisUpdateWindow m_auto_analysis_update_window;
 	StatusBar m_status_bar;
 	SettingsWindow m_settings_window;
 

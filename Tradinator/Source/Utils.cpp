@@ -232,13 +232,13 @@ namespace TradinatorAppSpace
 	}
 
 
-	EPatternNatureType Utils::GetPatternNatureType(EPatternType pattern)
+	EPatternNatureType Utils::GetPatternNatureType(EPattern pattern)
 	{
-		if ((pattern & Bullish_Pattern_Type) != EPatternType::None)
+		if ((pattern & Bullish_Pattern_Type) != EPattern::None)
 		{
 			return EPatternNatureType::BULL;
 		}
-		else if ((pattern & Bearish_Pattern_Type) != EPatternType::None)
+		else if ((pattern & Bearish_Pattern_Type) != EPattern::None)
 		{
 			return EPatternNatureType::BEAR;
 		}

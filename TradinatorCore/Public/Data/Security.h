@@ -1,5 +1,11 @@
 #pragma once
 
+#if 1
+#define _TECHNICAL_ANALYSIS_ISPC_
+#else
+#endif
+
+
 #include "Company.h"
 
 #include <cstdint>
@@ -38,12 +44,18 @@ public:
 	std::unique_ptr<AsyncTask> GetDownloadLatestCandleDataTask();
 	std::unique_ptr<AsyncTask> GetGenerateNewsPointsTask();
 	void ReadFromRawFileToMemory();
+	void AnalyzeDownloadedData();
 	void InsertRawDataToDatabase();
 
 	void LoadCandleDataToMemoryAsync();
 	void UnloadCandleDataFromMemory();
 
 	void FromString(std::string str);
+
+	std::string GetDownloadURL() const;
+	std::string GetTmpDownloadFilePath() const;
+
+	std::weak_ptr<Market> GetOwningMarket() const { return m_owning_market; }
 
 	inline std::string Series() const { return m_series; }
 	inline uint32_t PaidUpValue() const { return m_paid_up_value; }
@@ -79,6 +91,12 @@ public:
 		m_candle_count = candle_count;
 	}
 
+	static std::string _STATUS_;
+	static std::string _SUCCESS_;
+
+	static std::string _DATA_;
+	static std::string _CANDLES_;
+
 protected:
 	// -----------------------------------------------
 	inline std::string GetProcessedHistoricalDataFilePath() const;
@@ -88,6 +106,7 @@ protected:
 
 	void UpdateSecuritySkeletonData();
 	void LoadCandleDataToMemory();
+	void LoadCandleDataToMemoryFromQuery(SQLite::Statement& query, CandlesData& candle_data);
 	std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
 	// -----------------------------------------------
@@ -103,6 +122,9 @@ protected:
 
 	// Raw json from reading the downloaded data
 	Json::Value m_raw_downloaded_data;
+
+	// Temporary storage for the newly downloaded data used to analyze it before inserting into db
+	CandlesData m_new_downloaded_data;
 
 	// market this security belongs to
 	std::weak_ptr<Market> m_owning_market;

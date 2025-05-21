@@ -10,7 +10,8 @@ class NSE_Market : public Market
 public:
 	NSE_Market();
 
-	
+	virtual std::unique_ptr<AsyncTask> GetDoesNewDataExistToDownloadTask() override;
+
 	virtual std::string GetMarketName() const override { return "National Stock Exchange, India"; }
 	virtual std::string GetMarketCode() const override { return "NSE"; }
 

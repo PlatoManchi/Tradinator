@@ -7,7 +7,7 @@
 #include <map>
 
 #include <curl/curl.h>
-
+#include "json/json.h"
 #include "SQLiteCpp/SQLiteCpp.h"
 
 #include "TradinatorCore.h"
@@ -104,6 +104,64 @@ void NSE_Market::ParseSecurityListData()
         }
     }
 }
+
+
+
+
+std::unique_ptr<AsyncTask> NSE_Market::GetDoesNewDataExistToDownloadTask()
+{
+    std::function<void()> check_function =
+        [&]()
+        {
+            bool is_success = false;
+
+            while (!is_success)
+            {
+                const  std::map<std::string, std::shared_ptr<Security>>& securities_list = m_securities_async_data.GetData();
+                for (std::pair<std::string, std::shared_ptr<Security>> pair : securities_list)
+                {
+                    std::string tmp_file_name = std::format("{}/Checking_Tmp.json", GetRawDataFolderPath());
+                    // Instead of downloading as task directly download
+                    DownloadTask download;
+                    download.DownloadFile({ pair.second->GetDownloadURL(), tmp_file_name });
+
+                    Json::Value json_downloaded_data;
+                    std::ifstream downloaded_tmp_file(tmp_file_name);
+                    downloaded_tmp_file >> json_downloaded_data;
+
+                    if (json_downloaded_data[Security::_STATUS_] == Security::_SUCCESS_)
+                    {
+                        is_success = true;
+
+                        m_does_new_data_exist_to_download = json_downloaded_data[Security::_DATA_][Security::_CANDLES_].size() != 0;
+
+                        break;
+                    }
+                }
+
+                break;
+            }
+        };
+
+    return std::make_unique<AsyncTask>(
+        std::string(""),
+        check_function,
+        []() {}
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool NSE_Market::IsRawFileExist() const
 {

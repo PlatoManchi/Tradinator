@@ -5,23 +5,33 @@
 #include <cstdint>
 #include <fstream>
 
+#include "Patterns/Pattern.h"
+
 enum class ETrend
 {
+	None = 0,
+
 	Up,
 	Down,
-
-	None
+	Consolidation
 };
 
 class CandlesData
 {
 public:
 	CandlesData() = default;
+	CandlesData(size_t size);
 
 	CandlesData(const CandlesData& other) = default;
 	CandlesData(CandlesData&& other) noexcept = default;
 	CandlesData& operator=(const CandlesData& other) = default;
 	CandlesData& operator=(CandlesData&& other) noexcept = default;
+
+	// Careful when calling this. It will clear out all the data
+	void Reserve(size_t size);
+
+	// Reverse all data
+	void Reverse();
 
 	inline bool IsBearish(size_t idx) const
 	{
@@ -55,7 +65,9 @@ public:
 	std::vector<double> m_highs;
 	std::vector<double> m_lows;
 	std::vector<double> m_closes;
-	std::vector<ETrend> m_trends;
 	std::vector<uint64_t> m_volumes;
 	std::vector<uint64_t> m_open_interests;
+	std::vector<ETrend> m_trends;
+	std::vector<EPattern> m_patterns;
+	std::vector<uint64_t> m_strategies;
 };

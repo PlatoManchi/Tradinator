@@ -25,6 +25,7 @@
     <ClInclude Include="Source\Application\Windows\AutoAnalysisUpdateWindow.h" />
     <ClInclude Include="Source\Application\Windows\DashboardWindow.h" />
     <ClInclude Include="Source\Application\Windows\MainWindow.h" />
+    <ClInclude Include="Source\Application\Windows\PinnedSecuritiesWindow.h" />
     <ClInclude Include="Source\Application\Windows\SecurityWindow.h" />
     <ClInclude Include="Source\Application\Windows\SettingsWindow.h" />
     <ClInclude Include="Source\Application\Windows\StartupWindow.h" />
@@ -43,6 +44,7 @@
     <ClCompile Include="Source\Application\Windows\AutoAnalysisUpdateWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\DashboardWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\MainWindow.cpp" />
+    <ClCompile Include="Source\Application\Windows\PinnedSecuritiesWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\SecurityWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\SettingsWindow.cpp" />
     <ClCompile Include="Source\Application\Windows\StartupWindow.cpp" />

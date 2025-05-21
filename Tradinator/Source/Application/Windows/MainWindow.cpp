@@ -15,6 +15,7 @@
 
 MainWindow::MainWindow(TradinatorApp& tradinator_app)
     : m_dashboard_window(tradinator_app)
+    , m_pinned_securities_window(tradinator_app)
     , m_show_settings_window(false)
     , m_should_exit(false)
     , m_tradinator_app(tradinator_app)
@@ -27,6 +28,8 @@ void MainWindow::Init(std::shared_ptr<TradinatorCore> tradinator_core)
     m_tradinator_core = tradinator_core;
 
     m_dashboard_window.Init(m_tradinator_core);
+    m_pinned_securities_window.Init(m_tradinator_core);
+    m_auto_analysis_update_window.Init();
     m_securities_search_bar.Init(m_tradinator_core);
     m_status_bar.Init(m_tradinator_core);
     m_settings_window.Init();
@@ -37,6 +40,8 @@ void MainWindow::Init(std::shared_ptr<TradinatorCore> tradinator_core)
 void MainWindow::Begin()
 {
     m_dashboard_window.Begin();
+    m_pinned_securities_window.Begin();
+    m_auto_analysis_update_window.Begin();
     m_securities_search_bar.Begin();
     m_status_bar.Begin();
     m_settings_window.Begin();
@@ -66,9 +71,21 @@ bool MainWindow::Show()
             m_tradinator_app.ShowSecurityWindow(security);
         }
 
+        float pinned_securities_width = work_size.x * 0.2f > 400 ? 400 : work_size.x * 0.2f;
+        float auto_analysis_width = work_size.x * 0.2f > 400 ? 400 : work_size.x * 0.2f;
+        float dashboard_width = work_size.x - auto_analysis_width - pinned_securities_width;
+
         ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + search_bar_height));
-        ImGui::SetNextWindowSize(ImVec2(work_size.x, work_size.y - (search_bar_height + status_bar_height)));
+        ImGui::SetNextWindowSize(ImVec2(pinned_securities_width, work_size.y - (search_bar_height + status_bar_height)));
+        m_pinned_securities_window.Show();
+
+        ImGui::SetNextWindowPos(ImVec2(work_pos.x + pinned_securities_width, work_pos.y + search_bar_height));
+        ImGui::SetNextWindowSize(ImVec2(dashboard_width, work_size.y - (search_bar_height + status_bar_height)));
         m_dashboard_window.Show();
+
+        ImGui::SetNextWindowPos(ImVec2(work_pos.x + pinned_securities_width + dashboard_width, work_pos.y + search_bar_height));
+        ImGui::SetNextWindowSize(ImVec2(auto_analysis_width, work_size.y - (search_bar_height + status_bar_height)));
+        m_auto_analysis_update_window.Show();
 
 
         ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + work_size.y - status_bar_height));
@@ -197,4 +214,10 @@ void MainWindow::ShowMainMenu_File()
 
 void MainWindow::Shutdown()
 {
+    m_dashboard_window.Shutdown();
+    m_pinned_securities_window.Shutdown();
+    m_auto_analysis_update_window.Shutdown();
+    m_securities_search_bar.Shutdown();
+    m_status_bar.Shutdown();
+    m_settings_window.Shutdown();
 }

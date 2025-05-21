@@ -1,6 +1,6 @@
 #pragma once
 
-#if 0
+#if 1
 #define _SAVITZKY_GOLAY_FILTER_ISPC_
 #else
 #endif
@@ -42,6 +42,7 @@ public:
 		uint64_t* peaks_count,
 		uint64_t* troughs_count,
 		uint64_t window_size,
+		uint64_t atr_window_size,
 		uint64_t polynomial_order,
 		uint64_t distance_btw_peaks,
 		uint64_t width_for_peaks,
