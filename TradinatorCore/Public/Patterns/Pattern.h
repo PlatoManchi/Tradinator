@@ -11,7 +11,8 @@
 class CandlesData;
 
 // The order in which enum is arranged is also priority of patterns based on their importance
-enum class EPattern : uint64_t {
+// NOTE: Sqlite can only store int64_t and not uint64_t. Hence using int64_t so that it can be converted from int64_t to EPattern
+enum class EPattern : int64_t {
     None = 0,
 
     // Patterns with Doji

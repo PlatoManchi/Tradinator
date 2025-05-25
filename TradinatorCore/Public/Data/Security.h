@@ -105,9 +105,10 @@ protected:
 	std::chrono::system_clock::time_point GetLastCandleDataDate() const;
 
 	void UpdateSecuritySkeletonData();
-	void LoadCandleDataToMemory();
-	void LoadCandleDataToMemoryFromQuery(SQLite::Statement& query, CandlesData& candle_data);
-	std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
+	void LoadCandleDataToMemory(int64_t days = -1);
+	void LoadCandleDataToMemoryFromQuery(SQLite::Statement& query, CandlesData& candle_data, int64_t days = -1);
+	//std::unique_ptr<AsyncTask> LoadCandleDataToMemoryTask();
+	void GenerateNewsPoints();
 	inline std::string GetTableName() const { return std::format("{}_{}", m_symbol, m_isin_number); }
 	// -----------------------------------------------
 	

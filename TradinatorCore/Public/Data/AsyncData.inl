@@ -33,16 +33,16 @@ void AsyncData<T>::SetDataReady(bool is_ready)
 	{
 		if (is_ready)
 		{
-			m_log_to_file_mutex.lock();
+			std::lock_guard<std::mutex> lock(m_log_to_file_mutex);
 
 			m_data = std::move(m_async_data_copy);
 			m_was_ready_before = true;
-
-			m_log_to_file_mutex.unlock();
 		}
 		else
 		{
 			// reset the copy to default value
+			std::lock_guard<std::mutex> lock(m_log_to_file_mutex);
+
 			m_async_data_copy = std::move(T());
 		}
 
@@ -57,6 +57,8 @@ bool AsyncData<T>::Reset()
 	{
 		return false;
 	}
+
+	std::lock_guard<std::mutex> lock(m_log_to_file_mutex);
 
 	m_is_ready = false;
 	m_was_ready_before = false;

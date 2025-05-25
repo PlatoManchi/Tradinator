@@ -8,7 +8,7 @@
 
 class Indicator;
 class Pattern;
-enum class EPattern : uint64_t;
+enum class EPattern : int64_t;
 
 namespace TradinatorCoreSpace
 {

@@ -181,7 +181,7 @@ void TradinatorCoreThread::InitializeDB()
 		SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
 		// Begin transaction
-		SQLite::Transaction transaction(db);
+		SQLite::Transaction securities_transaction(db);
 		db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
 			"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
 			"Symbol           TEXT         NOT NULL," \
@@ -193,7 +193,36 @@ void TradinatorCoreThread::InitializeDB()
 			"FaceValue        INTEGER      NOT NULL," \
 			"LatestCandleData INTEGER      NOT NULL," \
 			"CandlesCount     INTEGER      NOT NULL); ");
-		transaction.commit();
+		securities_transaction.commit();
+
+
+		SQLite::Transaction trends_transaction(db);
+		db.exec("CREATE TABLE IF NOT EXISTS Trends("  \
+			"ISIN             CHAR(12)     NOT NULL," \
+			"Symbol           TEXT         NOT NULL," \
+			"Date             INTEGER      NOT NULL," \
+			"Trend            INTEGER      NOT NULL," \
+		    "PRIMARY KEY (ISIN, Symbol, Date)); ");
+		trends_transaction.commit();
+
+		SQLite::Transaction patterns_transaction(db);
+		db.exec("CREATE TABLE IF NOT EXISTS Patterns("  \
+			"ISIN             CHAR(12)     NOT NULL," \
+			"Symbol           TEXT         NOT NULL," \
+			"Date             INTEGER      NOT NULL," \
+			"Patterns         INTEGER      NOT NULL," \
+			"PRIMARY KEY (ISIN, Symbol, Date)); ");
+		patterns_transaction.commit();
+
+
+		SQLite::Transaction strategies_transaction(db);
+		db.exec("CREATE TABLE IF NOT EXISTS Strategies("  \
+			"ISIN             CHAR(12)     NOT NULL," \
+			"Symbol           TEXT         NOT NULL," \
+			"Date             INTEGER      NOT NULL," \
+			"Strategies       INTEGER      NOT NULL," \
+			"PRIMARY KEY (ISIN, Symbol, Date)); ");
+		strategies_transaction.commit();
 	}
 	
 
