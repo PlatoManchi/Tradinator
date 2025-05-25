@@ -710,7 +710,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 			std::string trends_query_str = std::format("SELECT \"Date\",\"Trend\" FROM \"Trends\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement trends_query(m_database_connection, trends_query_str);
 
-			while (trends_query.executeStep())
+			/*while (trends_query.executeStep())
 			{
 				std::chrono::system_clock::rep time_count = trends_query.getColumn(0);
 				std::chrono::system_clock::duration duration_since_epoch(time_count);
@@ -726,13 +726,13 @@ void Security::LoadCandleDataToMemory(int64_t days)
 				{
 					previous_trend = (ETrend)trends_query.getColumn(1).getInt64();
 				}
-			}
+			}*/
 
 			EPattern next_pattern = EPattern::None;
 			std::chrono::system_clock::time_point next_pattern_date;
 			std::string patterns_query_str = std::format("SELECT \"Date\",\"Patterns\" FROM \"Patterns\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement patterns_query(m_database_connection, patterns_query_str);
-			while (patterns_query.executeStep())
+			/*while (patterns_query.executeStep())
 			{
 				std::chrono::system_clock::rep time_count = patterns_query.getColumn(0);
 				std::chrono::system_clock::duration duration_since_epoch(time_count);
@@ -744,13 +744,13 @@ void Security::LoadCandleDataToMemory(int64_t days)
 					next_pattern_date = date;
 					break;
 				}
-			}
+			}*/
 
 			int64_t next_strategy = 0;
 			std::chrono::system_clock::time_point next_strategy_date;
 			std::string strategies_query_str = std::format("SELECT \"Date\",\"Strategies\" FROM \"Strategies\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement strategies_query(m_database_connection, strategies_query_str);
-			while (strategies_query.executeStep())
+			/*while (strategies_query.executeStep())
 			{
 				std::chrono::system_clock::rep time_count = strategies_query.getColumn(0);
 				std::chrono::system_clock::duration duration_since_epoch(time_count);
@@ -762,7 +762,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 					next_strategy_date = date;
 					break;
 				}
-			}
+			}*/
 
 			std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date ASC", GetTableName());
 			SQLite::Statement query(m_database_connection, query_str);
@@ -788,42 +788,49 @@ void Security::LoadCandleDataToMemory(int64_t days)
 				candle_data.m_volumes.push_back(query.getColumn(5).getInt64());
 				candle_data.m_open_interests.push_back(query.getColumn(6).getInt64());
 
-				if (next_trend_date == date)
+				if (next_trend_date < date)
 				{
-					previous_trend = next_trend;
-
-					while (trends_query.executeStep())
+					while (!trends_query.isDone() && trends_query.executeStep())
 					{
 						std::chrono::system_clock::rep time_count = trends_query.getColumn(0);
 						std::chrono::system_clock::duration duration_since_epoch(time_count);
 
 						next_trend_date = std::chrono::system_clock::time_point(duration_since_epoch);
 						next_trend = (ETrend)trends_query.getColumn(1).getInt64();
-						if (next_trend_date > date)
+						if (next_trend_date >= date)
 						{
 							break;
 						}
 					}
 				}
 
+				if (next_trend_date == date)
+				{
+					previous_trend = next_trend;
+				}
+
 				candle_data.m_trends.push_back(previous_trend);
 
-				if (next_pattern_date == date)
-				{
-					candle_data.m_patterns.push_back(next_pattern);
 
-					while (patterns_query.executeStep())
+				if (next_pattern_date < date)
+				{
+					while (!patterns_query.isDone() && patterns_query.executeStep())
 					{
 						std::chrono::system_clock::rep time_count = patterns_query.getColumn(0);
 						std::chrono::system_clock::duration duration_since_epoch(time_count);
 
 						next_pattern = (EPattern)patterns_query.getColumn(1).getInt64();
 						next_pattern_date = std::chrono::system_clock::time_point(duration_since_epoch);
-						if (next_pattern_date > date)
+						if (next_pattern_date >= date)
 						{
 							break;
 						}
 					}
+				}
+
+				if (next_pattern_date == date)
+				{
+					candle_data.m_patterns.push_back(next_pattern);	
 				}
 				else
 				{
@@ -831,23 +838,26 @@ void Security::LoadCandleDataToMemory(int64_t days)
 				}
 
 
-				if (next_strategy_date == date)
+				if (next_strategy_date < date)
 				{
-					candle_data.m_strategies.push_back(next_strategy);
-
-					while (patterns_query.executeStep())
+					while (!strategies_query.isDone() && strategies_query.executeStep())
 					{
-						std::chrono::system_clock::rep time_count = patterns_query.getColumn(0);
+						std::chrono::system_clock::rep time_count = strategies_query.getColumn(0);
 						std::chrono::system_clock::duration duration_since_epoch(time_count);
 
-						next_strategy = patterns_query.getColumn(1).getInt64();
+						next_strategy = strategies_query.getColumn(1).getInt64();
 						next_strategy_date = std::chrono::system_clock::time_point(duration_since_epoch);
 
-						if (next_strategy_date > date)
+						if (next_strategy_date >= date)
 						{
 							break;
 						}
 					}
+				}
+
+				if (next_strategy_date == date)
+				{
+					candle_data.m_strategies.push_back(next_strategy);
 				}
 				else
 				{
@@ -1020,12 +1030,12 @@ std::unique_ptr<AsyncTask> Security::GetGenerateNewsPointsTask()
 		std::format("Analysing candle data of {}", Symbol()),
 		[&]()
 		{
-			m_news_points_data->SetDataReady(false);
+			//m_news_points_data->SetDataReady(false);
 		},
 		generate_news_points,
 		[&]()
 		{
-			m_news_points_data->SetDataReady(true);
+			//m_news_points_data->SetDataReady(true);
 		}
 	);
 }
