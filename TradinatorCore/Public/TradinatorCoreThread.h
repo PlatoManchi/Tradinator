@@ -29,6 +29,8 @@ public:
 	void AddMarket(std::shared_ptr<Market>&& market);
 	bool CanSafelyShutdown() const;
 	
+	void LoadNews(int64_t days = 50);
+
 	const AsyncData<std::vector<std::weak_ptr<Security>>>& GetTenNewestIPOs() const;
 	const AsyncData<NewsPointVectorType>& GetGlobalNews() const { return m_global_news; }
 

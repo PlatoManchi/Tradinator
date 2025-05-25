@@ -66,14 +66,11 @@ void PinnedSecuritiesWindow::Show()
                     std::shared_ptr<Security> security = nullptr;
                     for (const std::shared_ptr<Market>& market : markets)
                     {
-                        security = market->GetSecurity(pinned_security.symbol);
-                        if (security && security->ISIN_Number() == pinned_security.isin_number)
+                        std::shared_ptr<Security> tmp = market->GetSecurity(pinned_security.symbol);
+                        if (tmp && tmp->ISIN_Number() == pinned_security.isin_number)
                         {
+                            security = tmp;
                             break;
-                        }
-                        else
-                        {
-                            security = nullptr;
                         }
                     }
                     if (security)

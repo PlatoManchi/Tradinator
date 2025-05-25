@@ -148,7 +148,7 @@ std::unique_ptr<AsyncTask> Market::GetSerialWriteTask()
     {
         const  std::map<std::string, std::shared_ptr<Security>>& securities_list = m_securities_async_data.GetData();
 
-        const size_t count = 0;// securities_list.size();
+        const size_t count = securities_list.size();
         const size_t batch_size = TradinatorCoreSpace::Utils::GetReadWriteBatchSize();
         const size_t total_batch_count = count / batch_size + (count % batch_size == 0 ? 0 : 1);
 
@@ -244,11 +244,11 @@ std::unique_ptr<AsyncTask> Market::GetSerialWriteTask()
 }
 
 
-std::shared_ptr<Security> Market::GetSecurity(std::string isin_number) const
+std::shared_ptr<Security> Market::GetSecurity(std::string symbol) const
 {
     if (m_securities_async_data.IsDataReady())
     {
-        auto itr = m_securities_async_data.GetData().find(isin_number);
+        auto itr = m_securities_async_data.GetData().find(symbol);
         if (itr != m_securities_async_data.GetData().end())
         {
             return (*itr).second;

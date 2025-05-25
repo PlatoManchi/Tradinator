@@ -39,7 +39,7 @@ public:
 	std::unique_ptr<AsyncTask> GetSerialWriteTask();
 	std::vector<std::unique_ptr<AsyncTask>> GetGenerateNewsPointsTask();
 
-	std::shared_ptr<Security> GetSecurity(std::string isin_number) const;
+	std::shared_ptr<Security> GetSecurity(std::string symbol) const;
 
 	inline void SetOwningTradinatorCoreThread(std::weak_ptr<TradinatorCoreThread> owning_tradinator_core_thread) { m_owning_tradinator_core_thread = owning_tradinator_core_thread; }
 	inline std::weak_ptr<TradinatorCoreThread> GetTradinatorCoreThread() const { return m_owning_tradinator_core_thread; }

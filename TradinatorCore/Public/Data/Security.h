@@ -126,6 +126,7 @@ protected:
 
 	// Temporary storage for the newly downloaded data used to analyze it before inserting into db
 	CandlesData m_new_downloaded_data;
+	int64_t back_data_count = 0;
 
 	// market this security belongs to
 	std::weak_ptr<Market> m_owning_market;

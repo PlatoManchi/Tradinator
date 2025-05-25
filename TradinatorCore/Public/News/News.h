@@ -27,8 +27,12 @@ public:
 	// Most patterns/strategirs happen over a range of candles. This will hold the start and end indices of the range.
 	std::vector<uint64_t> m_date_range;
 
-	// If new is pattern type, then the pattern
-	EPattern m_pattern;
+	// If news is strategy type, then strategy ID
+	int64_t m_strategy = -1;
+
+
+	// If news is pattern type, then the pattern
+	EPattern m_pattern = EPattern::None;
 };
 
 typedef std::vector<NewsPoint> NewsPointVectorType;

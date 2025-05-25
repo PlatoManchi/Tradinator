@@ -266,10 +266,12 @@ void Security::AnalyzeDownloadedData()
 		SQLite::Statement query(m_database_connection, query_str);
 
 		LoadCandleDataToMemoryFromQuery(query, m_new_downloaded_data);
+		back_data_count = m_new_downloaded_data.m_dates.size();
 	}
 	else
 	{
 		m_new_downloaded_data.Reserve(json_candle_count);
+		back_data_count = 0;
 	}
 
 	Json::Value::const_iterator itr = candles_data->end();
@@ -459,7 +461,7 @@ void Security::InsertRawDataToDatabase()
 		m_is_inserting = true;
 	}
 	
-	size_t count = m_new_downloaded_data.m_dates.size();;
+	size_t count = m_new_downloaded_data.m_dates.size();
 	if (count > 0)
 	{
 		bool is_success = false;
@@ -514,7 +516,7 @@ void Security::InsertRawDataToDatabase()
 					}
 				}
 
-				m_candle_count += count;
+				m_candle_count += (count - back_data_count); // only consider new data
 
 
 				// Get previous trend
@@ -534,18 +536,19 @@ void Security::InsertRawDataToDatabase()
 				SQLite::Statement insert_candle(db, std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
 					"(?, ?, ?, ?, ?, ?, ?)", GetTableName()));
 
-				SQLite::Statement insert_trends(db, std::format("INSERT OR IGNORE INTO \"Trends\" (ISIN, Symbol, Date, Trend) VALUES "  \
-					"(?, ?, ?, ?)"));
+				SQLite::Statement insert_trends(db, std::format("INSERT OR IGNORE INTO \"Trends\" (ISIN, Symbol, Date, DateIndex, Trend) VALUES "  \
+					"(?, ?, ?, ?, ?)"));
 
-				SQLite::Statement insert_patterns(db, std::format("INSERT OR IGNORE INTO \"Patterns\" (ISIN, Symbol, Date, Patterns) VALUES "  \
-					"(?, ?, ?, ?)"));
+				SQLite::Statement insert_patterns(db, std::format("INSERT OR IGNORE INTO \"Patterns\" (ISIN, Symbol, Date, DateIndex, Patterns) VALUES "  \
+					"(?, ?, ?, ?, ?)"));
 
-				SQLite::Statement insert_strategies(db, std::format("INSERT OR IGNORE INTO \"Strategies\" (ISIN, Symbol, Date, Strategies) VALUES "  \
-					"(?, ?, ?, ?)"));
+				SQLite::Statement insert_strategies(db, std::format("INSERT OR IGNORE INTO \"Strategies\" (ISIN, Symbol, Date, DateIndex, Strategies) VALUES "  \
+					"(?, ?, ?, ?, ?)"));
 
 				std::chrono::system_clock::time_point tmp_latest_candle_date = m_cached_latest_candle_date;
 
 				size_t candles_to_insert = m_new_downloaded_data.m_dates.size();
+				uint64_t start_index = m_candle_count - candles_to_insert;
 				for (size_t i = 0; i < candles_to_insert; ++i)
 				{
 					std::chrono::system_clock::time_point date = m_new_downloaded_data.m_dates[i];
@@ -574,7 +577,8 @@ void Security::InsertRawDataToDatabase()
 						insert_trends.bind(1, ISIN_Number());
 						insert_trends.bind(2, Symbol());
 						insert_trends.bind(3, date.time_since_epoch().count());
-						insert_trends.bind(4, (int64_t)m_new_downloaded_data.m_trends[i]);
+						insert_trends.bind(4, (int64_t)(start_index + i));
+						insert_trends.bind(5, (int64_t)m_new_downloaded_data.m_trends[i]);
 
 						insert_trends.exec();
 						insert_trends.reset();
@@ -586,7 +590,8 @@ void Security::InsertRawDataToDatabase()
 						insert_patterns.bind(1, ISIN_Number());
 						insert_patterns.bind(2, Symbol());
 						insert_patterns.bind(3, date.time_since_epoch().count());
-						insert_patterns.bind(4, (int64_t)m_new_downloaded_data.m_patterns[i]);
+						insert_patterns.bind(4, (int64_t)(start_index + i));
+						insert_patterns.bind(5, (int64_t)m_new_downloaded_data.m_patterns[i]);
 
 						insert_patterns.exec();
 						insert_patterns.reset();
@@ -598,7 +603,8 @@ void Security::InsertRawDataToDatabase()
 						insert_strategies.bind(1, ISIN_Number());
 						insert_strategies.bind(2, Symbol());
 						insert_strategies.bind(3, date.time_since_epoch().count());
-						insert_strategies.bind(4, (int64_t)m_new_downloaded_data.m_strategies[i]);
+						insert_strategies.bind(4, (int64_t)(start_index + i));
+						insert_strategies.bind(5, (int64_t)m_new_downloaded_data.m_strategies[i]);
 
 						insert_strategies.exec();
 						insert_strategies.reset();
@@ -710,59 +716,18 @@ void Security::LoadCandleDataToMemory(int64_t days)
 			std::string trends_query_str = std::format("SELECT \"Date\",\"Trend\" FROM \"Trends\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement trends_query(m_database_connection, trends_query_str);
 
-			/*while (trends_query.executeStep())
-			{
-				std::chrono::system_clock::rep time_count = trends_query.getColumn(0);
-				std::chrono::system_clock::duration duration_since_epoch(time_count);
-
-				std::chrono::system_clock::time_point date(duration_since_epoch);
-				if (date >= load_from)
-				{
-					next_trend = (ETrend)trends_query.getColumn(1).getInt64();
-					next_trend_date = date;
-					break;
-				}
-				else
-				{
-					previous_trend = (ETrend)trends_query.getColumn(1).getInt64();
-				}
-			}*/
 
 			EPattern next_pattern = EPattern::None;
 			std::chrono::system_clock::time_point next_pattern_date;
 			std::string patterns_query_str = std::format("SELECT \"Date\",\"Patterns\" FROM \"Patterns\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement patterns_query(m_database_connection, patterns_query_str);
-			/*while (patterns_query.executeStep())
-			{
-				std::chrono::system_clock::rep time_count = patterns_query.getColumn(0);
-				std::chrono::system_clock::duration duration_since_epoch(time_count);
 
-				std::chrono::system_clock::time_point date(duration_since_epoch);
-				if (date >= load_from)
-				{
-					next_pattern = (EPattern)patterns_query.getColumn(1).getInt64();
-					next_pattern_date = date;
-					break;
-				}
-			}*/
 
 			int64_t next_strategy = 0;
 			std::chrono::system_clock::time_point next_strategy_date;
 			std::string strategies_query_str = std::format("SELECT \"Date\",\"Strategies\" FROM \"Strategies\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement strategies_query(m_database_connection, strategies_query_str);
-			/*while (strategies_query.executeStep())
-			{
-				std::chrono::system_clock::rep time_count = strategies_query.getColumn(0);
-				std::chrono::system_clock::duration duration_since_epoch(time_count);
 
-				std::chrono::system_clock::time_point date(duration_since_epoch);
-				if (date >= load_from)
-				{
-					next_strategy = strategies_query.getColumn(1).getInt64();
-					next_strategy_date = date;
-					break;
-				}
-			}*/
 
 			std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date ASC", GetTableName());
 			SQLite::Statement query(m_database_connection, query_str);

@@ -145,7 +145,7 @@ void TradinatorCoreThread::OnCheckingForNewDataCompleted()
 
 void TradinatorCoreThread::OnDownloadAndWriteCompleted()
 {
-	std::vector<std::unique_ptr<AsyncTask>> tasks;
+	/*std::vector<std::unique_ptr<AsyncTask>> tasks;
 
 	for (std::shared_ptr<Market> market : m_market_list)
 	{
@@ -162,8 +162,128 @@ void TradinatorCoreThread::OnDownloadAndWriteCompleted()
 		std::move(tasks),
 		[](){},
 		TradinatorCoreSpace::Utils::GetMaxParallelAnalysis()
+	)));*/
+
+	m_async_task_manager->AddTask(std::move(std::make_unique<AsyncTask>(
+		std::string("Generating News"),
+		[&]() 
+		{
+			LoadNews();
+		},
+		[]() {}
 	)));
 }
+
+void TradinatorCoreThread::LoadNews(int64_t days)
+{
+	m_global_news.SetDataReady(false);
+
+	try
+	{
+		SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath());
+
+		std::string strategies_query_str = std::format("SELECT * FROM \"Strategies\" ORDER BY Date DESC");
+		SQLite::Statement strategies_query(db, strategies_query_str);
+
+		std::chrono::system_clock::time_point limit;
+		if (days > 0)
+		{
+			limit = std::chrono::system_clock::now() - std::chrono::days(days);
+		}
+
+		while (strategies_query.executeStep())
+		{
+			std::chrono::system_clock::rep time_count = strategies_query.getColumn(2);
+			std::chrono::system_clock::duration duration_since_epoch(time_count);
+
+			std::chrono::system_clock::time_point date(duration_since_epoch);
+
+			if (date >= limit)
+			{
+				std::string isin_num = strategies_query.getColumn(0);
+				std::string symbol = strategies_query.getColumn(1);
+
+				std::shared_ptr<Security> security = nullptr;
+				for (std::shared_ptr<Market> market : m_market_list)
+				{
+					std::shared_ptr<Security> tmp = market->GetSecurity(symbol);
+					if (tmp->ISIN_Number() == isin_num)
+					{
+						security = tmp;
+						break;
+					}
+				}
+				if (security)
+				{
+					NewsPoint point(security);
+					point.m_date_range = std::vector<uint64_t>({ (uint64_t)strategies_query.getColumn(3).getInt64()});
+					point.m_strategy = strategies_query.getColumn(4).getInt64();
+
+					m_global_news.GetAsyncDataCopy().push_back(point);
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+
+
+		std::string patterns_query_str = std::format("SELECT * FROM \"Patterns\" ORDER BY Date DESC");
+		SQLite::Statement patterns_query(db, patterns_query_str);
+		while (patterns_query.executeStep())
+		{
+			std::chrono::system_clock::rep time_count = patterns_query.getColumn(2);
+			std::chrono::system_clock::duration duration_since_epoch(time_count);
+
+			std::chrono::system_clock::time_point date(duration_since_epoch);
+
+			if (date >= limit)
+			{
+				std::string isin_num = patterns_query.getColumn(0);
+				std::string symbol = patterns_query.getColumn(1);
+
+				std::shared_ptr<Security> security = nullptr;
+				for (std::shared_ptr<Market> market : m_market_list)
+				{
+					std::shared_ptr<Security> tmp = market->GetSecurity(symbol);
+					if (tmp->ISIN_Number() == isin_num)
+					{
+						security = tmp;
+						break;
+					}
+				}
+
+				if (security)
+				{
+					EPattern pattern_type = (EPattern)patterns_query.getColumn(4).getInt64();
+
+					NewsPoint point(security);
+					point.m_date_range = Pattern::GetPatternRangeAt(pattern_type, patterns_query.getColumn(3).getInt64());
+					point.m_pattern = pattern_type;
+
+					m_global_news.GetAsyncDataCopy().push_back(point);
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+	}
+	catch (std::exception& e)
+	{
+		Log::GetInstance().Write(std::format("ERROR: LoadNews: SQLite exception: {}", e.what()));
+
+		// Database might be locked by another thread. Wait for a bit and try again.
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+
+	m_global_news.SetDataReady(true);
+}
+
 
 void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 {
@@ -201,8 +321,9 @@ void TradinatorCoreThread::InitializeDB()
 			"ISIN             CHAR(12)     NOT NULL," \
 			"Symbol           TEXT         NOT NULL," \
 			"Date             INTEGER      NOT NULL," \
+			"DateIndex        INTEGER      NOT NULL," \
 			"Trend            INTEGER      NOT NULL," \
-		    "PRIMARY KEY (ISIN, Symbol, Date)); ");
+		    "PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
 		trends_transaction.commit();
 
 		SQLite::Transaction patterns_transaction(db);
@@ -210,8 +331,9 @@ void TradinatorCoreThread::InitializeDB()
 			"ISIN             CHAR(12)     NOT NULL," \
 			"Symbol           TEXT         NOT NULL," \
 			"Date             INTEGER      NOT NULL," \
+			"DateIndex        INTEGER      NOT NULL," \
 			"Patterns         INTEGER      NOT NULL," \
-			"PRIMARY KEY (ISIN, Symbol, Date)); ");
+			"PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
 		patterns_transaction.commit();
 
 
@@ -220,15 +342,16 @@ void TradinatorCoreThread::InitializeDB()
 			"ISIN             CHAR(12)     NOT NULL," \
 			"Symbol           TEXT         NOT NULL," \
 			"Date             INTEGER      NOT NULL," \
+			"DateIndex        INTEGER      NOT NULL," \
 			"Strategies       INTEGER      NOT NULL," \
-			"PRIMARY KEY (ISIN, Symbol, Date)); ");
+			"PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
 		strategies_transaction.commit();
 	}
 	
 
 	catch (std::exception& e)
 	{
-		Log::GetInstance().Write(std::format("ERROR: SQLite exception: {}", e.what()));
+		Log::GetInstance().Write(std::format("ERROR: InitializeDB: SQLite exception: {}", e.what()));
 
 		// Database might be locked by another thread. Wait for a bit and try again.
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
