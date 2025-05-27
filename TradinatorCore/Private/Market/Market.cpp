@@ -144,7 +144,7 @@ std::unique_ptr<AsyncTask> Market::ReadAnalysisWriteTask(std::string task_title,
 
     const  std::map<std::string, std::shared_ptr<Security>>& securities_list = m_securities_async_data.GetData();
 
-    const size_t count = securities_list.size();
+    const size_t count = 0;// securities_list.size();
     const size_t batch_size = TradinatorCoreSpace::Utils::GetReadWriteBatchSize() == 0 ? 1 : TradinatorCoreSpace::Utils::GetReadWriteBatchSize();
     const size_t total_batch_count = count / batch_size + (count % batch_size == 0 ? 0 : 1);
 

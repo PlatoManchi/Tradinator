@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <initializer_list>
+#include <numbers>
 
 #include  "json/json.h"
 
@@ -53,6 +54,8 @@ SecurityWindow::SecurityWindow(std::shared_ptr<Security> security)
 
     m_security->SetLockInMemory(true);
     m_security->LoadCandleDataToMemoryAsync();
+
+    m_auto_analysis_update_window.Init(m_security->GetNewsPointsData());
 }
 
 SecurityWindow::~SecurityWindow()
@@ -135,7 +138,13 @@ void SecurityWindow::Show()
             const float SEPERATE_CHARTS_HEIGHT = 250.0f;
 
             m_price_chart_height = ImGui::GetWindowHeight();
-            
+            ImVec2 window_pos = ImGui::GetWindowPos();
+            float window_height = ImGui::GetWindowHeight();
+            float window_width = ImGui::GetWindowWidth();
+
+            float auto_analysis_width = window_width * 0.2f > 400 ? 400 : window_width * 0.2f;
+            float chart_width = window_width - auto_analysis_width - style.ItemSpacing.x * 2.0f;
+
             float volume_label_width = ImGui::CalcTextSize(std::format("{:.0f}", m_volume_chart_limits.Y.Max).c_str()).x;
             float price_label_width = ImGui::CalcTextSize(std::format("${:.0f}", m_price_chart_limits.Y.Max).c_str()).x;
             float largest_label_width = std::max(volume_label_width, price_label_width);
@@ -180,6 +189,24 @@ void SecurityWindow::Show()
 
             ShowIndicatorsList();
 
+            ImVec2 cusor_pos = ImGui::GetCursorPos();
+
+            ImGui::SetNextWindowPos(ImVec2(window_pos.x + cusor_pos.x + chart_width + style.ItemSpacing.x, window_pos.y + cusor_pos.y));
+            ImGui::SetNextWindowSize(ImVec2(auto_analysis_width - style.ItemSpacing.x, window_height - cusor_pos.y - style.ItemSpacing.y * 2.0));
+            //ImGui::SetNextWindowSize(ImVec2(auto_analysis_width, 500));
+            //ImGui::SetNextWindowPos(ImVec2(500, 500));
+            int64_t index = m_auto_analysis_update_window.Show();
+            if (index >= 0)
+            {
+                const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
+                if (index < news_points.size())
+                {
+                    NewsPoint news = news_points[index];
+                    HighlightDateIndex(news.m_date_range);
+                }
+            }
+            ImGui::SetCursorPos(cusor_pos);
+
             //ImGui::BulletText("You can create custom plotters or extend ImPlot using implot_internal.h.");
             ImGui::Checkbox("Show Tooltip", &m_show_tool_tip);
             ImGui::SameLine();
@@ -207,7 +234,7 @@ void SecurityWindow::Show()
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
             
-            if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
+            if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(chart_width, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
                 if (!m_is_first_time_limit_set || m_is_highlight_date_index)
                 {
@@ -247,6 +274,8 @@ void SecurityWindow::Show()
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
                 
+                ShowHilights(m_price_chart_limits);
+
                 if (m_show_patterns)
                 {
                     ShowPatterns(ImGui::GetWindowWidth() - largest_label_width, m_price_chart_height, m_price_chart_limits);
@@ -310,7 +339,7 @@ void SecurityWindow::Show()
                 ImVec2 plot_padding(largest_label_width - volume_label_width + 5.0f, 0); // x = left, y = top
                 ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, plot_padding);
             }
-            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(-1, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+            if (ImPlot::BeginPlot(std::format("Volume Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(chart_width, volume_chart_height), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "%.0f");
                 //seperate_charts_count
                 ImPlotAxisFlags x_axis_flags = ImPlotAxisFlags_NoGridLines;
@@ -334,6 +363,8 @@ void SecurityWindow::Show()
                 ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, date_axis_min, date_axis_max);
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
 
+                ShowHilights(m_volume_chart_limits);
+
                 if (m_is_any_plot_hovered)
                 {
                     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
@@ -348,6 +379,7 @@ void SecurityWindow::Show()
                 }
 
                 double x_axis_interval = 60 * 60 * 24; // one day in sec
+                ImPlot::SetNextFillStyle(ImVec4(0.3f, 0.45f, 0.7f, 1.0f));
                 ImPlot::PlotBars("Volume", m_dates.data(), candles_data.m_volumes.data(), candles_data.m_volumes.size(), x_axis_interval * 0.5);
 
                 m_volume_chart_limits = ImPlot::GetPlotLimits();
@@ -413,7 +445,9 @@ void SecurityWindow::Show()
                         m_hovered_highlight_l,
                         m_hovered_highlight_r,
                         m_bull_color,
-                        m_bear_color);
+                        m_bear_color,
+                        m_hilights_animation_data,
+                        chart_width);
 
                     if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0))
                     {
@@ -705,12 +739,19 @@ void SecurityWindow::RebuildCachedPlotPoints()
         {
             m_first_time_chart_limit_x_min = m_dates[*min_itr];
             m_first_time_chart_limit_x_max = m_dates[*max_itr];
+
+            HilightsAnimationData animation_data;
+            animation_data.m_x_min = m_first_time_chart_limit_x_min;
+            animation_data.m_x_max = m_first_time_chart_limit_x_max;
+            animation_data.m_start_time = std::chrono::system_clock::now();
+
+            m_hilights_animation_data.push_back(animation_data);
         }
     }
 }
 
-void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, const uint64_t* volumes, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) {
-
+void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, const uint64_t* volumes, int count, bool tooltip, float width_percent, ImVec4 bullCol, ImVec4 bearCol) 
+{
     // get ImGui window DrawList
     ImDrawList* draw_list = ImPlot::GetPlotDrawList();
     // calc real value width
@@ -816,8 +857,6 @@ void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, con
         // end plot item
         ImPlot::EndItem();
     }
-
-    
 }
 
 void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
@@ -826,7 +865,8 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
 
     if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandlesData()->IsDataReady())
     {
-        if (ImPlot::BeginItem("Patterns")) {
+        if (ImPlot::BeginItem("Patterns")) 
+        {
             const CandlesData& candle_data = m_security->GetCandlesData()->GetData();
             const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
 
@@ -883,9 +923,13 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                         if (ImPlot::FitThisFrame())
                         {
                             ImVec2 upper_left_tmp(left, top_tmp);
+                            ImVec2 upper_right_tmp(right, top_tmp);
+                            ImVec2 bottom_left_tmp(left, bottom_tmp);
                             ImVec2 bottom_right_tmp(right, bottom_tmp);
 
                             ImPlot::FitPoint(upper_left_tmp);
+                            ImPlot::FitPoint(upper_right_tmp);
+                            ImPlot::FitPoint(bottom_left_tmp);
                             ImPlot::FitPoint(bottom_right_tmp);
                         }
 
@@ -947,6 +991,55 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
     }
 }
 
+void SecurityWindow::ShowHilights(ImPlotRect limit)
+{
+    if (ImPlot::BeginItem("Hilights", ImPlotItemFlags_NoLegend))
+    {
+        ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+        double half_day = 60 * 60 * 12;
+        const uint32_t zero_to_one_ms = 500;
+        const uint32_t one_to_zero_ms = 1000;
+
+        for (HilightsAnimationData& hilight : m_hilights_animation_data)
+        {
+            size_t ms_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - hilight.m_start_time).count();
+            if (ms_elapsed < zero_to_one_ms)
+            {
+                // for first 0.25 sec go from 0 to 1
+                float angle_rad = (std::numbers::pi / 2.0f) * ((float)ms_elapsed / (float)zero_to_one_ms);
+                hilight.m_color.w = std::sin(angle_rad);
+            }
+            else if (ms_elapsed >= zero_to_one_ms && ms_elapsed < zero_to_one_ms + one_to_zero_ms)
+            {
+                size_t ms_elapsed_after = ms_elapsed - zero_to_one_ms;
+                float angle_rad = (std::numbers::pi / 2.0f) * ((float)ms_elapsed_after / (float)one_to_zero_ms);
+                hilight.m_color.w = std::cos(angle_rad);
+            }
+            else
+            {
+                hilight.m_color.w = -1.0f;
+            }
+
+            
+            ImVec2 top_left = ImPlot::PlotToPixels(hilight.m_x_min - half_day, limit.Y.Max);
+            ImVec2 bottom_right = ImPlot::PlotToPixels(hilight.m_x_max + half_day, limit.Y.Min);
+
+            ImU32 color = ImGui::GetColorU32(hilight.m_color);
+
+            draw_list->AddRectFilled(top_left, bottom_right, color);
+        }
+
+        m_hilights_animation_data.erase(
+            std::remove_if(m_hilights_animation_data.begin(), m_hilights_animation_data.end(),
+                [](const HilightsAnimationData& hilight) { return hilight.m_color.w < 0.0f; }),  // condition
+            m_hilights_animation_data.end());
+
+        ImPlot::EndItem();
+    }
+}
+
 //template <typename T>
 int SecurityWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
     if (r >= l) {
@@ -968,6 +1061,23 @@ void SecurityWindow::HighlightDateIndex(std::vector<uint64_t> dates_index_range)
 {
     m_is_highlight_date_index = true;
     m_highlight_date_index = dates_index_range;
+    
+    std::vector<uint64_t>::iterator min_itr = std::min_element(m_highlight_date_index.begin(), m_highlight_date_index.end());
+    std::vector<uint64_t>::iterator max_itr = std::max_element(m_highlight_date_index.begin(), m_highlight_date_index.end());
+
+    if (min_itr != m_highlight_date_index.end() && max_itr != m_highlight_date_index.end()
+        && *min_itr < m_dates.size() && *max_itr < m_dates.size())
+    {
+        m_first_time_chart_limit_x_min = m_dates[*min_itr];
+        m_first_time_chart_limit_x_max = m_dates[*max_itr];
+
+        HilightsAnimationData animation_data;
+        animation_data.m_x_min = m_first_time_chart_limit_x_min;
+        animation_data.m_x_max = m_first_time_chart_limit_x_max;
+        animation_data.m_start_time = std::chrono::system_clock::now();
+
+        m_hilights_animation_data.push_back(animation_data);
+    }
 }
 
 

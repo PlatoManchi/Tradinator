@@ -8,7 +8,7 @@ class TradinatorApp;
 class AutoAnalysisUpdateWindow
 {
 public:
-	AutoAnalysisUpdateWindow(TradinatorApp& tradinator_app);
+	AutoAnalysisUpdateWindow();
 
 	void Init(std::shared_ptr<AsyncData<NewsPointVectorType>> news_points);
 	void Begin();
@@ -17,5 +17,6 @@ public:
 	
 private:
 	std::shared_ptr<AsyncData<NewsPointVectorType>> m_news_points;
-	TradinatorApp& m_tradinator_app;
+	uint64_t m_id;
+	static uint64_t _ID_;
 };

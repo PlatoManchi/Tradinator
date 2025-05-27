@@ -8,6 +8,7 @@
 #include "implot.h"
 
 #include "Indicators/Indicator.h"
+#include "TradinatorTypes.h"
 
 class IIndicatorWrapper
 {
@@ -136,7 +137,7 @@ public:
 
 	virtual void Calculate() override;
 	void CalculateLabelWidth();
-	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color);
+	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, float chart_width = -1);
 	
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{

@@ -1083,16 +1083,22 @@ void Security::GenerateNewsPoints()
 
 	for (uint64_t i = 0; i < candles_data.m_dates.size(); ++i)
 	{
-		EPattern pattern = TradinatorCoreSpace::Utils::GetPatternFrom(candles_data.m_patterns[i]);
-		if (pattern != EPattern::None && pattern != EPattern::Max)
+		std::vector<EPattern> patterns = TradinatorCoreSpace::Utils::GetAllPatternsFrom(candles_data.m_patterns[i]);
+		for (EPattern pattern : patterns)
 		{
-			NewsPoint news_point(this->shared_from_this());
-			news_point.m_date_range = Pattern::GetPatternRangeAt(pattern, i);
-			news_point.m_pattern = pattern;
+			if (pattern != EPattern::None && pattern != EPattern::Max)
+			{
+				NewsPoint news_point(this->shared_from_this());
+				news_point.m_date_range = Pattern::GetPatternRangeAt(pattern, i);
+				news_point.m_date = candles_data.m_dates[news_point.m_date_range[0]];
+				news_point.m_pattern = pattern;
 
-			m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
+				m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
+			}
 		}
 	}
+
+	std::reverse(m_news_points_data->GetAsyncDataCopy().begin(), m_news_points_data->GetAsyncDataCopy().end());
 
 	m_news_points_data->SetDataReady(true);
 }

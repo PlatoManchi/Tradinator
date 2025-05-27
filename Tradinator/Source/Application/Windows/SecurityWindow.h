@@ -14,6 +14,8 @@
 #include "json/json.h"
 
 #include "Indicators/Indicator.h"
+#include "Application/Windows/AutoAnalysisUpdateWindow.h"
+#include "TradinatorTypes.h"
 
 class Security;
 class IIndicatorWrapper;
@@ -42,7 +44,7 @@ private:
 	bool CanApplyIndicatorOfType(EIndicatorType type);
 	
 	void ShowPatterns(float chart_width, float chart_height,  ImPlotRect chart_limits);
-
+	void ShowHilights(ImPlotRect limit);
 	void RebuildCachedPlotPoints();
 	void PlotCandlestick(const char* label_id, const size_t* xs, const double* opens, const double* closes, const double* lows, const double* highs, const uint64_t* volumes, int count, bool tooltip = true, float width_percent = 0.25f, ImVec4 bullCol = ImVec4(0, 1, 0, 1), ImVec4 bearCol = ImVec4(1, 0, 0, 1));
 	
@@ -93,5 +95,8 @@ private:
 	std::vector<uint64_t> m_highlight_date_index;
 
 	std::chrono::steady_clock::time_point m_last_load_request_time;
+
+	AutoAnalysisUpdateWindow m_auto_analysis_update_window;
+	std::vector<HilightsAnimationData> m_hilights_animation_data;
 };
 

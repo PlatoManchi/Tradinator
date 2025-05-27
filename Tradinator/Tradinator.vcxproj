@@ -36,6 +36,7 @@
     <ClInclude Include="Source\Fonts\SegoeUI.h" />
     <ClInclude Include="Source\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="Source\imspinner\imspinner.h" />
+    <ClInclude Include="Source\TradinatorTypes.h" />
     <ClInclude Include="Source\Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -53,6 +54,7 @@
     <ClCompile Include="Source\Components\SecuritiesSearchBar.cpp" />
     <ClCompile Include="Source\Components\StatusBar.cpp" />
     <ClCompile Include="Source\Tradinator.cpp" />
+    <ClCompile Include="Source\TradinatorTypes.cpp" />
     <ClCompile Include="Source\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

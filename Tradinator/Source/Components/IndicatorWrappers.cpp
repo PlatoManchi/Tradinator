@@ -315,14 +315,14 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
     m_label_width = std::max(max_range_width, min_range_width);
 }
 
-void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color)
+void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, float chart_width)
 {
     assert(m_security);
     assert(!IsIndicatorOverlayable());
     
     
 
-    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str(), ImVec2(-1, chart_height), ImPlotFlags_NoTitle))
+    if (ImPlot::BeginPlot(std::format("{}##{}_{}", m_indicator->GetName(), m_security->ISIN_Number(), m_id).c_str(), ImVec2(chart_width, chart_height), ImPlotFlags_NoTitle))
     {
         ImPlot::SetupAxes(nullptr, nullptr, x_axis_flags | ImPlotAxisFlags_NoGridLines, y_axis_flags);
 
@@ -368,6 +368,28 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
             ImPlot::PushPlotClipRect();
             draw_list->AddRectFilled(ImVec2(highlight_l, highlight_t), ImVec2(highlight_r, highlight_b), IM_COL32(128, 128, 128, 64));
             ImPlot::PopPlotClipRect();
+        }
+
+        if (ImPlot::BeginItem("Hilights", ImPlotItemFlags_NoLegend))
+        {
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+            std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+            double half_day = 60 * 60 * 12;
+            const uint32_t zero_to_one_ms = 500;
+            const uint32_t one_to_zero_ms = 1000;
+
+            for (const HilightsAnimationData& hilight : hilight_animation_data)
+            {
+                ImVec2 top_left = ImPlot::PlotToPixels(hilight.m_x_min - half_day, m_chart_limits.Y.Max);
+                ImVec2 bottom_right = ImPlot::PlotToPixels(hilight.m_x_max + half_day, m_chart_limits.Y.Min);
+
+                ImU32 color = ImGui::GetColorU32(hilight.m_color);
+
+                draw_list->AddRectFilled(top_left, bottom_right, color);
+            }
+
+            ImPlot::EndItem();
         }
 
         PlotItems(bull_color, bear_color);

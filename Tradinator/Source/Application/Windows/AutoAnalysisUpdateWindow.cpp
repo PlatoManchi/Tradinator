@@ -9,10 +9,12 @@
 #include "Application/TradinatorApp.h"
 #include "Application/TradinatorSettings.h"
 
+uint64_t AutoAnalysisUpdateWindow::_ID_ = 0;
 
-AutoAnalysisUpdateWindow::AutoAnalysisUpdateWindow(TradinatorApp& tradinator_app)
-    : m_tradinator_app(tradinator_app)
+AutoAnalysisUpdateWindow::AutoAnalysisUpdateWindow()
 {
+    m_id = _ID_;
+    _ID_++;
 }
 
 void AutoAnalysisUpdateWindow::Init(std::shared_ptr<AsyncData<NewsPointVectorType>> news_points)
@@ -66,7 +68,7 @@ int64_t AutoAnalysisUpdateWindow::Show()
         //ImGuiWindowFlags_NoSavedSettings
         ;
 
-    if (ImGui::Begin("Auto Analysis Update", nullptr, flags))
+    if (ImGui::BeginChild(std::format("Auto Analysis Update##{}", m_id).c_str()/*, nullptr, flags*/))
     {
         ImGui::SeparatorText("Analysis");
 
@@ -99,7 +101,7 @@ int64_t AutoAnalysisUpdateWindow::Show()
         
     }
 
-    ImGui::End();
+    ImGui::EndChild();
 
     return selected_index;
 }
