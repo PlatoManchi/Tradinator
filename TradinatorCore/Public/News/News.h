@@ -27,6 +27,9 @@ public:
 	// Most patterns/strategirs happen over a range of candles. This will hold the start and end indices of the range.
 	std::vector<uint64_t> m_date_range;
 
+	// cached date from database
+	std::chrono::system_clock::time_point m_date;
+
 	// If news is strategy type, then strategy ID
 	int64_t m_strategy = -1;
 

@@ -38,6 +38,7 @@ public:
 	std::unique_ptr<AsyncTask> GetParallelDownloadTask();
 	std::unique_ptr<AsyncTask> GetSerialWriteTask();
 	std::vector<std::unique_ptr<AsyncTask>> GetGenerateNewsPointsTask();
+	std::unique_ptr<AsyncTask> GetRedoAutoAnalysisTask();
 
 	std::shared_ptr<Security> GetSecurity(std::string symbol) const;
 
@@ -52,6 +53,8 @@ protected:
 	virtual void ParseSecurityListData() = 0;
 	void FindTenNewestIPOs();
 	void CreateFolderStructure() const;
+
+	std::unique_ptr<AsyncTask> ReadAnalysisWriteTask(std::string task_title, void (Security::*funcPtr)());
 
 	std::weak_ptr<TradinatorCoreThread> m_owning_tradinator_core_thread;
 

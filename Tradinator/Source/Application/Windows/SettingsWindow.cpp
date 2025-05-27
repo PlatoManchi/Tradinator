@@ -1,7 +1,12 @@
 #include "Application/Windows/SettingsWindow.h"
 
 #include <format>
+
+
+
 #include "Utils/Utils.h"
+#include "TradinatorCore.h"
+
 #include "Application/TradinatorSettings.h"
 
 SettingsWindow::SettingsWindow()
@@ -12,9 +17,9 @@ SettingsWindow::SettingsWindow()
 }
 
 
-void SettingsWindow::Init()
+void SettingsWindow::Init(std::shared_ptr<TradinatorCore> tradinator_core)
 {
-
+    m_tradinator_core = tradinator_core;
 }
 
 void SettingsWindow::Begin()
@@ -51,6 +56,31 @@ bool SettingsWindow::Show()
             ImGui::Button("Delete Log Files", { 0, 0 });
             /// @end Button
 
+            /// @begin Button
+            bool is_processing = m_tradinator_core->IsProcessing();
+            if (is_processing)
+            {
+                ImGui::BeginDisabled(true);
+            }
+            if (ImGui::Button("Redo Auto Analysis", { 0, 0 }))
+            {
+                m_tradinator_core->RedoAutoAnalysis();
+            }
+            if (ImGui::IsItemHovered()) {
+                if (is_processing)
+                {
+                    ImGui::SetTooltip("Cannot do this while processing.");
+                }
+                else
+                {
+                    ImGui::SetTooltip("Delete previous auto analysis data and redo auto analysis for all securities in all markets.");
+                }
+            }
+            if (is_processing)
+            {
+                ImGui::EndDisabled();
+            }
+            /// @end Button
 
             /// @begin Separator
             ImGui::Separator();

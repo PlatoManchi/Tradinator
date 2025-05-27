@@ -16,6 +16,7 @@
 TradinatorCoreThread::TradinatorCoreThread(std::string data_folder_path)
 	: m_data_folder_path(data_folder_path)
 	, m_async_task_manager(std::make_shared<AsyncTaskManager>())
+	, m_global_news(std::make_shared<AsyncData<NewsPointVectorType>>())
 	, m_is_initialized(false)
 	, m_is_shut_down(false)
 {
@@ -176,7 +177,7 @@ void TradinatorCoreThread::OnDownloadAndWriteCompleted()
 
 void TradinatorCoreThread::LoadNews(int64_t days)
 {
-	m_global_news.SetDataReady(false);
+	m_global_news->SetDataReady(false);
 
 	try
 	{
@@ -218,8 +219,9 @@ void TradinatorCoreThread::LoadNews(int64_t days)
 					NewsPoint point(security);
 					point.m_date_range = std::vector<uint64_t>({ (uint64_t)strategies_query.getColumn(3).getInt64()});
 					point.m_strategy = strategies_query.getColumn(4).getInt64();
+					point.m_date = date;
 
-					m_global_news.GetAsyncDataCopy().push_back(point);
+					m_global_news->GetAsyncDataCopy().push_back(point);
 				}
 			}
 			else
@@ -258,12 +260,17 @@ void TradinatorCoreThread::LoadNews(int64_t days)
 				if (security)
 				{
 					EPattern pattern_type = (EPattern)patterns_query.getColumn(4).getInt64();
+					std::vector<EPattern> all_patterns = TradinatorCoreSpace::Utils::GetAllPatternsFrom(pattern_type);
 
-					NewsPoint point(security);
-					point.m_date_range = Pattern::GetPatternRangeAt(pattern_type, patterns_query.getColumn(3).getInt64());
-					point.m_pattern = pattern_type;
+					for (EPattern pattern : all_patterns)
+					{
+						NewsPoint point(security);
+						point.m_date_range = Pattern::GetPatternRangeAt(pattern, patterns_query.getColumn(3).getInt64());
+						point.m_pattern = pattern;
+						point.m_date = date;
 
-					m_global_news.GetAsyncDataCopy().push_back(point);
+						m_global_news->GetAsyncDataCopy().push_back(point);
+					}
 				}
 			}
 			else
@@ -281,7 +288,7 @@ void TradinatorCoreThread::LoadNews(int64_t days)
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 
-	m_global_news.SetDataReady(true);
+	m_global_news->SetDataReady(true);
 }
 
 
@@ -292,69 +299,122 @@ void TradinatorCoreThread::AddMarket(std::shared_ptr<Market>&& market)
 	stored_market->SetOwningTradinatorCoreThread(this->weak_from_this());
 }
 
+void TradinatorCoreThread::RedoAutoAnalysis()
+{
+	bool is_success = false;
+	while (!is_success)
+	{
+		try
+		{
+			SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE);
+			db.exec("DELETE FROM Trends;");
+			db.exec("DELETE FROM Patterns;");
+			db.exec("DELETE FROM Strategies;");
 
+			is_success = true;
+		}
+		catch (std::exception& e)
+		{
+			is_success = false;
+			Log::GetInstance().Write(std::format("ERROR: RedoAutoAnalysis: SQLite exception: {}", e.what()));
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+	
+	std::vector<std::unique_ptr<AsyncTask>> tasks;
+	for (std::shared_ptr<Market> market : m_market_list)
+	{
+		tasks.emplace_back(std::move(market->GetRedoAutoAnalysisTask()));
+	}
+
+	tasks.emplace_back(std::move(std::make_unique<AsyncTask>(
+		std::string("Generating News"),
+		[&]()
+		{
+			LoadNews();
+		},
+		[]() {}
+	)));
+
+	m_async_task_manager->AddTask(std::move(std::make_unique<SerialAsyncTask>(
+		std::string("Redo Auto Analysis"),
+		m_async_task_manager,
+		std::move(tasks),
+		std::function<void()>([&]()
+			{
+			})
+	)));
+
+}
 
 void TradinatorCoreThread::InitializeDB()
 {
-	try
+	bool is_success = false;
+	while (!is_success)
 	{
-		SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+		try
+		{
+			SQLite::Database db(TradinatorCoreSpace::Utils::GetTradinatorDatabasePath(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
-		// Begin transaction
-		SQLite::Transaction securities_transaction(db);
-		db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
-			"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
-			"Symbol           TEXT         NOT NULL," \
-			"Name             TEXT         NOT NULL," \
-			"Series           TEXT         NOT NULL," \
-			"DateOfListing    INTEGER      NOT NULL," \
-			"PaidUpValue      INTEGER      NOT NULL," \
-			"MarketLot        INTEGER      NOT NULL," \
-			"FaceValue        INTEGER      NOT NULL," \
-			"LatestCandleData INTEGER      NOT NULL," \
-			"CandlesCount     INTEGER      NOT NULL); ");
-		securities_transaction.commit();
-
-
-		SQLite::Transaction trends_transaction(db);
-		db.exec("CREATE TABLE IF NOT EXISTS Trends("  \
-			"ISIN             CHAR(12)     NOT NULL," \
-			"Symbol           TEXT         NOT NULL," \
-			"Date             INTEGER      NOT NULL," \
-			"DateIndex        INTEGER      NOT NULL," \
-			"Trend            INTEGER      NOT NULL," \
-		    "PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
-		trends_transaction.commit();
-
-		SQLite::Transaction patterns_transaction(db);
-		db.exec("CREATE TABLE IF NOT EXISTS Patterns("  \
-			"ISIN             CHAR(12)     NOT NULL," \
-			"Symbol           TEXT         NOT NULL," \
-			"Date             INTEGER      NOT NULL," \
-			"DateIndex        INTEGER      NOT NULL," \
-			"Patterns         INTEGER      NOT NULL," \
-			"PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
-		patterns_transaction.commit();
+			// Begin transaction
+			SQLite::Transaction securities_transaction(db);
+			db.exec("CREATE TABLE IF NOT EXISTS Securities("  \
+				"ISIN CHAR(12) PRIMARY KEY     NOT NULL," \
+				"Symbol           TEXT         NOT NULL," \
+				"Name             TEXT         NOT NULL," \
+				"Series           TEXT         NOT NULL," \
+				"DateOfListing    INTEGER      NOT NULL," \
+				"PaidUpValue      INTEGER      NOT NULL," \
+				"MarketLot        INTEGER      NOT NULL," \
+				"FaceValue        INTEGER      NOT NULL," \
+				"LatestCandleData INTEGER      NOT NULL," \
+				"CandlesCount     INTEGER      NOT NULL); ");
+			securities_transaction.commit();
 
 
-		SQLite::Transaction strategies_transaction(db);
-		db.exec("CREATE TABLE IF NOT EXISTS Strategies("  \
-			"ISIN             CHAR(12)     NOT NULL," \
-			"Symbol           TEXT         NOT NULL," \
-			"Date             INTEGER      NOT NULL," \
-			"DateIndex        INTEGER      NOT NULL," \
-			"Strategies       INTEGER      NOT NULL," \
-			"PRIMARY KEY (ISIN, Symbol, Date, DateIndex)); ");
-		strategies_transaction.commit();
-	}
-	
+			SQLite::Transaction trends_transaction(db);
+			db.exec("CREATE TABLE IF NOT EXISTS Trends("  \
+				"ISIN             CHAR(12)     NOT NULL," \
+				"Symbol           TEXT         NOT NULL," \
+				"Date             INTEGER      NOT NULL," \
+				"DateIndex        INTEGER      NOT NULL," \
+				"Trend            INTEGER      NOT NULL," \
+				"PRIMARY KEY (ISIN, Date)); ");
+			trends_transaction.commit();
 
-	catch (std::exception& e)
-	{
-		Log::GetInstance().Write(std::format("ERROR: InitializeDB: SQLite exception: {}", e.what()));
+			SQLite::Transaction patterns_transaction(db);
+			db.exec("CREATE TABLE IF NOT EXISTS Patterns("  \
+				"ISIN             CHAR(12)     NOT NULL," \
+				"Symbol           TEXT         NOT NULL," \
+				"Date             INTEGER      NOT NULL," \
+				"DateIndex        INTEGER      NOT NULL," \
+				"Patterns         INTEGER      NOT NULL," \
+				"PRIMARY KEY (ISIN, Date)); ");
+			patterns_transaction.commit();
 
-		// Database might be locked by another thread. Wait for a bit and try again.
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+			SQLite::Transaction strategies_transaction(db);
+			db.exec("CREATE TABLE IF NOT EXISTS Strategies("  \
+				"ISIN             CHAR(12)     NOT NULL," \
+				"Symbol           TEXT         NOT NULL," \
+				"Date             INTEGER      NOT NULL," \
+				"DateIndex        INTEGER      NOT NULL," \
+				"Strategies       INTEGER      NOT NULL," \
+				"PRIMARY KEY (ISIN, Date)); ");
+			strategies_transaction.commit();
+
+			is_success = true;
+		}
+		catch (std::exception& e)
+		{
+			is_success = false;
+			Log::GetInstance().Write(std::format("ERROR: InitializeDB: SQLite exception: {}", e.what()));
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
 }
 

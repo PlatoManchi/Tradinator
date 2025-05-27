@@ -209,7 +209,7 @@ void SecurityWindow::Show()
             
             if (ImPlot::BeginPlot(std::format("Price Chart##{}", m_security->ISIN_Number()).c_str(), ImVec2(-1, m_price_chart_height), ImPlotFlags_NoLegend)) {
                 ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-                if (!m_is_first_time_limit_set)
+                if (!m_is_first_time_limit_set || m_is_highlight_date_index)
                 {
                     if (m_first_time_chart_limit_x_min < 1.0f || m_first_time_chart_limit_x_max < 1.0f)
                     {
@@ -224,7 +224,8 @@ void SecurityWindow::Show()
                     m_shared_limits.X.Min = m_first_time_chart_limit_x_min;
                     m_shared_limits.X.Max = m_first_time_chart_limit_x_max;
 
-                    m_is_first_time_limit_set = true;;
+                    m_is_first_time_limit_set = true;
+                    m_is_highlight_date_index = false;
                 }
                 else
                 {
@@ -649,6 +650,7 @@ void SecurityWindow::RebuildCachedPlotPoints()
     size_t count = candles_data.m_dates.size();
 
     // don't care about previous data stored in cache
+    m_dates = std::vector<uint64_t>();
     m_dates.reserve(count);
     
     date_axis_min = SIZE_MAX;
@@ -692,6 +694,18 @@ void SecurityWindow::RebuildCachedPlotPoints()
     for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
     {
         wrapper->Calculate();
+    }
+
+    if (m_is_highlight_date_index)
+    {
+        std::vector<uint64_t>::iterator min_itr = std::min_element(m_highlight_date_index.begin(), m_highlight_date_index.end());
+        std::vector<uint64_t>::iterator max_itr = std::max_element(m_highlight_date_index.begin(), m_highlight_date_index.end());
+
+        if (min_itr != m_highlight_date_index.end() && max_itr != m_highlight_date_index.end())
+        {
+            m_first_time_chart_limit_x_min = m_dates[*min_itr];
+            m_first_time_chart_limit_x_max = m_dates[*max_itr];
+        }
     }
 }
 
@@ -948,6 +962,13 @@ int SecurityWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
     return -1;
 }
 
+
+
+void SecurityWindow::HighlightDateIndex(std::vector<uint64_t> dates_index_range)
+{
+    m_is_highlight_date_index = true;
+    m_highlight_date_index = dates_index_range;
+}
 
 
 Json::Value SecurityWindow::GetSecurityStatus()

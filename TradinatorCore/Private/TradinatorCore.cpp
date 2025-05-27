@@ -22,6 +22,11 @@ void TradinatorCore::AddMarket(std::shared_ptr<Market>&& market)
 	m_tradinator_core_thread->AddMarket(std::move(market));
 }
 
+void TradinatorCore::RedoAutoAnalysis()
+{
+	m_tradinator_core_thread->RedoAutoAnalysis();
+}
+
 void TradinatorCore::Init()
 {
 	m_tradinator_core_thread->Init();

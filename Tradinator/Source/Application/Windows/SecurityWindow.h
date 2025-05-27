@@ -27,6 +27,8 @@ public:
 
 	void Show();
 
+	void HighlightDateIndex(std::vector<uint64_t> dates_index_range);
+
 	Json::Value GetSecurityStatus();
 	void SetSecurityStatus(Json::Value status);
 
@@ -86,6 +88,9 @@ private:
 	float m_first_time_chart_limit_x_min;
 	float m_first_time_chart_limit_x_max;
 	bool m_is_first_time_limit_set;
+
+	bool m_is_highlight_date_index = false;
+	std::vector<uint64_t> m_highlight_date_index;
 
 	std::chrono::steady_clock::time_point m_last_load_request_time;
 };

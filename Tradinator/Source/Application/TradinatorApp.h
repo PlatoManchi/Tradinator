@@ -23,7 +23,7 @@ public:
 	bool ShowApp();
 	void Shutdown();
 
-	void ShowSecurityWindow(std::shared_ptr<Security> security);
+	std::shared_ptr<SecurityWindow> ShowSecurityWindow(std::shared_ptr<Security> security);
 
 private:
 	bool ShowMainWindow();

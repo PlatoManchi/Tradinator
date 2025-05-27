@@ -105,7 +105,7 @@ bool TradinatorApp::ShowMainWindow()
 }
 
 
-void TradinatorApp::ShowSecurityWindow(std::shared_ptr<Security> security)
+std::shared_ptr<SecurityWindow> TradinatorApp::ShowSecurityWindow(std::shared_ptr<Security> security)
 {
     if (!m_security_windows.contains(security->ISIN_Number()))
     {
@@ -115,6 +115,8 @@ void TradinatorApp::ShowSecurityWindow(std::shared_ptr<Security> security)
     {
         //TODO: Bring window to foreground
     }
+
+    return m_security_windows[security->ISIN_Number()];
 }
 
 

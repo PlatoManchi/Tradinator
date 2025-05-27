@@ -90,23 +90,40 @@ std::chrono::system_clock::time_point Security::GetLastCandleDataDate() const
 	if (!m_is_latest_date_dirty)
 		return m_cached_latest_candle_date;
 
-	
-	if (DoesProcessedHistoricalDataExist())
+	bool is_success = false;
+	while (!is_success)
 	{
-		SQLite::Statement query(m_database_connection, std::format("SELECT \"LatestCandleData\" FROM Securities WHERE ISIN=\"{}\"", ISIN_Number()));
-		if (query.executeStep())
+		try
 		{
-			std::chrono::system_clock::rep time_count = query.getColumn(0);
-			std::chrono::system_clock::duration duration_since_epoch(time_count);
+			if (DoesProcessedHistoricalDataExist())
+			{
+				SQLite::Statement query(m_database_connection, std::format("SELECT \"LatestCandleData\" FROM Securities WHERE ISIN=\"{}\"", ISIN_Number()));
+				if (query.executeStep())
+				{
+					std::chrono::system_clock::rep time_count = query.getColumn(0);
+					std::chrono::system_clock::duration duration_since_epoch(time_count);
 
-			// cache
-			m_is_latest_date_dirty = false;
-			m_cached_latest_candle_date = std::chrono::system_clock::time_point(duration_since_epoch);
+					// cache
+					m_is_latest_date_dirty = false;
+					m_cached_latest_candle_date = std::chrono::system_clock::time_point(duration_since_epoch);
 
-			return m_cached_latest_candle_date;
+					return m_cached_latest_candle_date;
+				}
+			}
+
+			is_success = true;
 		}
-	}
+		catch(std::exception e)
+		{
+			is_success = false;
 
+			//Log::GetInstance().Write(std::format("ERROR: GetLastCandleDataDate: SQLite exception: {}", e.what()));
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		
+	}
 	
 
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -228,52 +245,115 @@ void Security::ReadFromRawFileToMemory()
 	assert(owning_market);
 
 	std::string tmp_file_path = owning_market->GetRawDataFolderPath() + "/" + std::format("{}.json", Symbol());
-
+	
 	std::ifstream downloaded_tmp_file(tmp_file_path);
 	downloaded_tmp_file >> m_raw_downloaded_data;
-}
 
 
-void Security::AnalyzeDownloadedData()
-{
+	// load the json into memory
 	const Json::Value* data = m_raw_downloaded_data.find(_DATA_);
-	if (!data) return;
+	if (!data)
+	{
+		return;
+	}
 
 	const Json::Value* candles_data = data->find(_CANDLES_);
-	if (!candles_data) return;
+	if (!candles_data)
+	{
+		return;
+	}
 
 	int64_t json_candle_count = candles_data->size();
-	if (json_candle_count == 0) return;
+	if (json_candle_count == 0)
+	{
+		return;
+	}
 
+	// see if data is newer than what ever is stored
+	std::chrono::system_clock::time_point last_candle_date = GetLastCandleDataDate();
 
-	const uint64_t window_size = 4;
+	Json::Value::const_iterator candle_itr = candles_data->end();
+	--candle_itr;
+
+	std::string date_str = (*candle_itr)[0].asCString();
+	std::istringstream is{ date_str };
+	std::chrono::system_clock::time_point date;
+	is >> std::chrono::parse("%F", date);
+
+	if (date < last_candle_date)
+	{
+		return;
+	}
+
 	const uint64_t polynomial_order = 25;
 	const uint64_t atr_window_size = 30;
 	const uint64_t min_distance_btw_peaks = 15;
-	const uint64_t width_for_finding_peaks = 3;
-	const double relative_width = 0.5;
 
-	if (DoesProcessedHistoricalDataExist())
+	// The json response from website sometimes has duplicate dates.
+	// so use a map to easily remove duplicates
+	std::unordered_map<std::chrono::system_clock::rep, bool> duplicate_date_checker;
+
+	bool is_success = false;
+	while (!is_success)
 	{
-		// if historical data exists load some data necessary for analysis
-		// since most of analysis techniques relay on previous data of window size
-		
-		uint64_t back_data_needed = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size }) + 10; // 10 extra for smoothing
+		try
+		{
+			if (DoesProcessedHistoricalDataExist())
+			{
+				// if historical data exists load some data necessary for analysis
+				// since most of analysis techniques relay on previous data of window size
 
-		m_new_downloaded_data.Reserve(back_data_needed + json_candle_count);
+				uint64_t back_data_needed = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size }) + 10; // 10 extra for smoothing
 
-		std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date DESC LIMIT {}", GetTableName(), back_data_needed);
-		SQLite::Statement query(m_database_connection, query_str);
+				m_new_downloaded_data.Reserve(back_data_needed + json_candle_count);
 
-		LoadCandleDataToMemoryFromQuery(query, m_new_downloaded_data);
-		back_data_count = m_new_downloaded_data.m_dates.size();
+				std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date DESC LIMIT {}", GetTableName(), back_data_needed);
+				SQLite::Statement query(m_database_connection, query_str);
+
+				//LoadCandleDataToMemoryFromQuery(query, m_new_downloaded_data);
+				while (query.executeStep())
+				{
+					// Date, Open, High, Low, Close, Volume, OpenInterest
+					std::chrono::system_clock::rep time_count = query.getColumn(0).getInt64();
+					std::chrono::system_clock::duration duration_since_epoch(time_count);
+					std::chrono::system_clock::time_point date(duration_since_epoch);
+
+					if (!duplicate_date_checker.contains(time_count))
+					{
+						duplicate_date_checker[time_count] = true;
+
+						m_new_downloaded_data.m_dates.push_back(date);
+						m_new_downloaded_data.m_opens.push_back(query.getColumn(1).getDouble());
+						m_new_downloaded_data.m_highs.push_back(query.getColumn(2).getDouble());
+						m_new_downloaded_data.m_lows.push_back(query.getColumn(3).getDouble());
+						m_new_downloaded_data.m_closes.push_back(query.getColumn(4).getDouble());
+						m_new_downloaded_data.m_volumes.push_back(query.getColumn(5).getInt64());
+						m_new_downloaded_data.m_open_interests.push_back(query.getColumn(6).getInt64());
+					}
+				}
+
+				m_back_data_count = m_new_downloaded_data.m_dates.size();
+			}
+			else
+			{
+				m_new_downloaded_data.Reserve(json_candle_count);
+				m_back_data_count = 0;
+			}
+
+			is_success = true;
+		}
+		catch (std::exception e)
+		{
+			is_success = false;
+
+			//Log::GetInstance().Write(std::format("ERROR: AnalyzeDownloadedData: SQLite exception: {}", e.what()));
+
+			// Database might be locked by another thread. Wait for a bit and try again.
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
-	else
-	{
-		m_new_downloaded_data.Reserve(json_candle_count);
-		back_data_count = 0;
-	}
 
+	
 	Json::Value::const_iterator itr = candles_data->end();
 	bool is_done = false;
 	while (!is_done)
@@ -285,165 +365,191 @@ void Security::AnalyzeDownloadedData()
 		std::istringstream is{ date_str };
 		std::chrono::system_clock::time_point date;
 		is >> std::chrono::parse("%F", date);
-
-		m_new_downloaded_data.m_dates.push_back(date);
-		m_new_downloaded_data.m_opens.push_back((*itr)[1].asDouble());
-		m_new_downloaded_data.m_highs.push_back((*itr)[2].asDouble());
-		m_new_downloaded_data.m_lows.push_back((*itr)[3].asDouble());
-		m_new_downloaded_data.m_closes.push_back((*itr)[4].asDouble());
 		
-		// one candle from the data has negative value for volumes and open interest for some reason and this 
-		// is for that one random wrong value
-		int64_t volume = (*itr)[5].asInt64();
-		if (volume < 0)
+		if (date > last_candle_date && !duplicate_date_checker.contains(date.time_since_epoch().count()))
 		{
-			volume = 0;
-		}
-		int64_t open_interest = (*itr)[6].asInt64();
-		if (open_interest < 0)
-		{
-			open_interest = 0;
-		}
+			duplicate_date_checker[date.time_since_epoch().count()] = true;
 
-		m_new_downloaded_data.m_volumes.push_back(volume);
-		m_new_downloaded_data.m_open_interests.push_back(open_interest);
+			m_new_downloaded_data.m_dates.push_back(date);
+			m_new_downloaded_data.m_opens.push_back((*itr)[1].asDouble());
+			m_new_downloaded_data.m_highs.push_back((*itr)[2].asDouble());
+			m_new_downloaded_data.m_lows.push_back((*itr)[3].asDouble());
+			m_new_downloaded_data.m_closes.push_back((*itr)[4].asDouble());
+
+			// one candle from the data has negative value for volumes and open interest for some reason and this 
+			// is for that one random wrong value
+			int64_t volume = (*itr)[5].asInt64();
+			if (volume < 0)
+			{
+				volume = 0;
+			}
+			int64_t open_interest = (*itr)[6].asInt64();
+			if (open_interest < 0)
+			{
+				open_interest = 0;
+			}
+
+			m_new_downloaded_data.m_volumes.push_back(volume);
+			m_new_downloaded_data.m_open_interests.push_back(open_interest);
+		}
+	}
+
+	if (m_symbol == "63MOONS")
+	{
+		std::cout << m_symbol << std::endl;
 	}
 
 	// Unload the raw data. We never need it again
 	m_raw_downloaded_data = std::move(Json::Value());
+}
 
+
+void Security::AnalyzeDownloadedData()
+{
+	const uint64_t window_size = 4;
+	const uint64_t polynomial_order = 25;
+	const uint64_t atr_window_size = 30;
+	const uint64_t min_distance_btw_peaks = 15;
+	const uint64_t width_for_finding_peaks = 3;
+	const double relative_width = 0.5;
+
+	
 	size_t total_candles = m_new_downloaded_data.m_dates.size();
-	m_new_downloaded_data.m_trends = std::move(std::vector<ETrend>(total_candles, ETrend::None));
-	m_new_downloaded_data.m_patterns = std::move(std::vector<EPattern>(total_candles, EPattern::None));
-	m_new_downloaded_data.m_strategies = std::move(std::vector<uint64_t>(total_candles, 0));
 
-	// Analyze
-	// -------------------------- Trends ---------------------
-	uint64_t max_data_required_for_analysis = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size });
-	if (total_candles > max_data_required_for_analysis)
+	if (total_candles > 0)
 	{
-		std::vector<double> a(polynomial_order * window_size, 0.0);
-		std::vector<double> at(polynomial_order * window_size, 0.0);
-		std::vector<double> ata(window_size * window_size, 0.0);
-		std::vector<double> ata_inv(window_size * window_size, 0.0);
-		std::vector<double> ata_inv_tmp(window_size * window_size, 0.0);// buffer to calculate inverse
-		std::vector<double> ata_inv_at(window_size * polynomial_order, 0.0);
-		std::vector<double> convolution_coefficient(polynomial_order, 0.0);
-		std::vector<double> convolution_coefficient_tmp(polynomial_order, 0.0);
+		m_new_downloaded_data.m_trends = std::move(std::vector<ETrend>(total_candles, ETrend::None));
+		m_new_downloaded_data.m_patterns = std::move(std::vector<EPattern>(total_candles, EPattern::None));
+		m_new_downloaded_data.m_strategies = std::move(std::vector<uint64_t>(total_candles, 0));
 
-		std::vector<double> savitzky_golay_output(total_candles, 0.0);
+		// Analyze
+		// -------------------------- Trends ---------------------
+		uint64_t max_data_required_for_analysis = std::max({ polynomial_order, min_distance_btw_peaks, atr_window_size });
+		if (total_candles > max_data_required_for_analysis)
+		{
+			std::vector<double> a(polynomial_order * window_size, 0.0);
+			std::vector<double> at(polynomial_order * window_size, 0.0);
+			std::vector<double> ata(window_size * window_size, 0.0);
+			std::vector<double> ata_inv(window_size * window_size, 0.0);
+			std::vector<double> ata_inv_tmp(window_size * window_size, 0.0);// buffer to calculate inverse
+			std::vector<double> ata_inv_at(window_size * polynomial_order, 0.0);
+			std::vector<double> convolution_coefficient(polynomial_order, 0.0);
+			std::vector<double> convolution_coefficient_tmp(polynomial_order, 0.0);
 
-		std::vector<double> average_true_ranges(total_candles, 0.0);
+			std::vector<double> savitzky_golay_output(total_candles, 0.0);
 
-		// max number of peaks possible will be count / m_distance_btw_peaks
-		std::vector<double> peaks(total_candles / min_distance_btw_peaks, 0.0);
-		std::vector<double> troughs(total_candles / min_distance_btw_peaks, 0.0);
+			std::vector<double> average_true_ranges(total_candles, 0.0);
 
-		uint64_t peaks_count = 0;
-		uint64_t troughs_count = 0;
+			// max number of peaks possible will be count / m_distance_btw_peaks
+			std::vector<double> peaks(total_candles / min_distance_btw_peaks, 0.0);
+			std::vector<double> troughs(total_candles / min_distance_btw_peaks, 0.0);
 
-		std::vector<double> trend_points(total_candles, 0.0);
+			uint64_t peaks_count = 0;
+			uint64_t troughs_count = 0;
+
+			std::vector<double> trend_points(total_candles, 0.0);
 
 #ifdef _TECHNICAL_ANALYSIS_ISPC_
-		std::vector<int8_t> peaks_and_trough_tmp_buff(total_candles, 0);
+			std::vector<int8_t> peaks_and_trough_tmp_buff(total_candles, 0);
 
-		ispc::calculate_trend_analysis_debug(
-			m_new_downloaded_data.m_highs.data(),
-			m_new_downloaded_data.m_lows.data(),
-			m_new_downloaded_data.m_closes.data(),
-			a.data(),
-			at.data(),
-			ata.data(),
-			ata_inv.data(),
-			ata_inv_tmp.data(),
-			ata_inv_at.data(),
-			convolution_coefficient.data(),
-			convolution_coefficient_tmp.data(),
-			savitzky_golay_output.data(),
-			average_true_ranges.data(),
-			peaks.data(),
-			troughs.data(),
-			peaks_and_trough_tmp_buff.data(),
-			trend_points.data(),
-			&peaks_count,
-			&troughs_count,
-			window_size,
-			atr_window_size,
-			polynomial_order,
-			min_distance_btw_peaks,
-			width_for_finding_peaks,
-			relative_width,
-			2,
-			total_candles
-		);
+			ispc::calculate_trend_analysis_debug(
+				m_new_downloaded_data.m_highs.data(),
+				m_new_downloaded_data.m_lows.data(),
+				m_new_downloaded_data.m_closes.data(),
+				a.data(),
+				at.data(),
+				ata.data(),
+				ata_inv.data(),
+				ata_inv_tmp.data(),
+				ata_inv_at.data(),
+				convolution_coefficient.data(),
+				convolution_coefficient_tmp.data(),
+				savitzky_golay_output.data(),
+				average_true_ranges.data(),
+				peaks.data(),
+				troughs.data(),
+				peaks_and_trough_tmp_buff.data(),
+				trend_points.data(),
+				&peaks_count,
+				&troughs_count,
+				window_size,
+				atr_window_size,
+				polynomial_order,
+				min_distance_btw_peaks,
+				width_for_finding_peaks,
+				relative_width,
+				2,
+				total_candles
+			);
 #else
-		TrendAnalysisDebug trend_analysis;
-		trend_analysis.CalculateRaw(
-			m_new_downloaded_data.m_highs.data(),
-			m_new_downloaded_data.m_lows.data(),
-			m_new_downloaded_data.m_closes.data(),
-			a.data(),
-			at.data(),
-			ata.data(),
-			ata_inv.data(),
-			ata_inv_tmp.data(),
-			ata_inv_at.data(),
-			convolution_coefficient.data(),
-			convolution_coefficient_tmp.data(),
-			savitzky_golay_output.data(),
-			average_true_ranges.data(),
-			peaks.data(),
-			troughs.data(),
-			trend_points.data(),
-			&peaks_count,
-			&troughs_count,
-			window_size,
-			atr_window_size,
-			polynomial_order,
-			min_distance_btw_peaks,
-			width_for_finding_peaks,
-			relative_width,
-			2,
-			total_candles
-		);
+			TrendAnalysisDebug trend_analysis;
+			trend_analysis.CalculateRaw(
+				m_new_downloaded_data.m_highs.data(),
+				m_new_downloaded_data.m_lows.data(),
+				m_new_downloaded_data.m_closes.data(),
+				a.data(),
+				at.data(),
+				ata.data(),
+				ata_inv.data(),
+				ata_inv_tmp.data(),
+				ata_inv_at.data(),
+				convolution_coefficient.data(),
+				convolution_coefficient_tmp.data(),
+				savitzky_golay_output.data(),
+				average_true_ranges.data(),
+				peaks.data(),
+				troughs.data(),
+				trend_points.data(),
+				&peaks_count,
+				&troughs_count,
+				window_size,
+				atr_window_size,
+				polynomial_order,
+				min_distance_btw_peaks,
+				width_for_finding_peaks,
+				relative_width,
+				2,
+				total_candles
+			);
 #endif // _TECHNICAL_ANALYSIS_ISPC_
 
-		
 
-		for (uint64_t i = 0; i < total_candles; ++i)
-		{
-			if (trend_points[i] > 0.9)
-			{
-				m_new_downloaded_data.m_trends[i] = ETrend::Up;
-			}
-			else if (trend_points[i] < -0.9)
-			{
-				m_new_downloaded_data.m_trends[i] = ETrend::Down;
-			}
-			else
-			{
-				m_new_downloaded_data.m_trends[i] = ETrend::None;
-			}
-		}
-	}
-	
 
-	// --------------------------- Patterns ------------------
-	std::vector<std::unique_ptr<Pattern>> patterns = std::move(TradinatorCoreSpace::Utils::GetAvailablePatterns());
-
-	for (uint64_t i = 0; i < m_new_downloaded_data.m_dates.size(); ++i)
-	{
-		EPattern satisfied_patterns = EPattern::None;
-
-		for (const std::unique_ptr<Pattern>& pattern : patterns)
-		{
-			if (pattern->Check(i, m_new_downloaded_data))
+			for (uint64_t i = 0; i < total_candles; ++i)
 			{
-				satisfied_patterns = satisfied_patterns | pattern->PatternType();
+				if (trend_points[i] > 0.9)
+				{
+					m_new_downloaded_data.m_trends[i] = ETrend::Up;
+				}
+				else if (trend_points[i] < -0.9)
+				{
+					m_new_downloaded_data.m_trends[i] = ETrend::Down;
+				}
+				else
+				{
+					m_new_downloaded_data.m_trends[i] = ETrend::None;
+				}
 			}
 		}
 
-		m_new_downloaded_data.m_patterns[i] = satisfied_patterns;
+
+		// --------------------------- Patterns ------------------
+		std::vector<std::unique_ptr<Pattern>> patterns = std::move(TradinatorCoreSpace::Utils::GetAvailablePatterns());
+
+		for (uint64_t i = 0; i < m_new_downloaded_data.m_dates.size(); ++i)
+		{
+			EPattern satisfied_patterns = EPattern::None;
+
+			for (const std::unique_ptr<Pattern>& pattern : patterns)
+			{
+				if (pattern->Check(i, m_new_downloaded_data))
+				{
+					satisfied_patterns = satisfied_patterns | pattern->PatternType();
+				}
+			}
+
+			m_new_downloaded_data.m_patterns[i] = satisfied_patterns;
+		}
 	}
 }
 
@@ -453,17 +559,21 @@ void Security::AnalyzeDownloadedData()
 
 void Security::InsertRawDataToDatabase()
 {
-	Log::GetInstance().Write(std::format("Inserting: {}", Name()));
-
-	if (m_is_downloading || m_is_inserting) return;
+	if (m_is_inserting)
 	{
-		std::lock_guard<std::mutex> lock(m_security_mutex);
-		m_is_inserting = true;
+		return;
 	}
 	
+	Log::GetInstance().Write(std::format("Inserting: {} - {}", Symbol(), Name()));
+
 	size_t count = m_new_downloaded_data.m_dates.size();
 	if (count > 0)
 	{
+		{
+			std::lock_guard<std::mutex> lock(m_security_mutex);
+			m_is_inserting = true;
+		}
+
 		bool is_success = false;
 		while (!is_success)
 		{
@@ -514,9 +624,11 @@ void Security::InsertRawDataToDatabase()
 
 						m_candle_count = query.getColumn(1).getInt64();
 					}
+					else
+					{
+						m_candle_count = 0;
+					}
 				}
-
-				m_candle_count += (count - back_data_count); // only consider new data
 
 
 				// Get previous trend
@@ -536,19 +648,20 @@ void Security::InsertRawDataToDatabase()
 				SQLite::Statement insert_candle(db, std::format("INSERT OR IGNORE INTO \"{}\" (Date, Open, High, Low, Close, Volume, OpenInterest) VALUES "  \
 					"(?, ?, ?, ?, ?, ?, ?)", GetTableName()));
 
-				SQLite::Statement insert_trends(db, std::format("INSERT OR IGNORE INTO \"Trends\" (ISIN, Symbol, Date, DateIndex, Trend) VALUES "  \
+				SQLite::Statement insert_trends(db, std::format("INSERT OR REPLACE INTO \"Trends\" (ISIN, Symbol, Date, DateIndex, Trend) VALUES "  \
 					"(?, ?, ?, ?, ?)"));
 
-				SQLite::Statement insert_patterns(db, std::format("INSERT OR IGNORE INTO \"Patterns\" (ISIN, Symbol, Date, DateIndex, Patterns) VALUES "  \
+				SQLite::Statement insert_patterns(db, std::format("INSERT OR REPLACE INTO \"Patterns\" (ISIN, Symbol, Date, DateIndex, Patterns) VALUES "  \
 					"(?, ?, ?, ?, ?)"));
 
-				SQLite::Statement insert_strategies(db, std::format("INSERT OR IGNORE INTO \"Strategies\" (ISIN, Symbol, Date, DateIndex, Strategies) VALUES "  \
+				SQLite::Statement insert_strategies(db, std::format("INSERT OR REPLACE INTO \"Strategies\" (ISIN, Symbol, Date, DateIndex, Strategies) VALUES "  \
 					"(?, ?, ?, ?, ?)"));
 
 				std::chrono::system_clock::time_point tmp_latest_candle_date = m_cached_latest_candle_date;
 
 				size_t candles_to_insert = m_new_downloaded_data.m_dates.size();
-				uint64_t start_index = m_candle_count - candles_to_insert;
+				uint64_t start_index = m_candle_count - m_back_data_count;
+				
 				for (size_t i = 0; i < candles_to_insert; ++i)
 				{
 					std::chrono::system_clock::time_point date = m_new_downloaded_data.m_dates[i];
@@ -566,6 +679,7 @@ void Security::InsertRawDataToDatabase()
 					insert_candle.bind(6, (int64_t)m_new_downloaded_data.m_volumes[i]);
 					insert_candle.bind(7, (int64_t)m_new_downloaded_data.m_open_interests[i]);
 					
+					// The json response sometimes has duplicate dates. Duplicates don't get inserted.
 					insert_candle.exec();                // execute insert_candle
 					insert_candle.reset();               // reset statement for next use
 					insert_candle.clearBindings();       // clear bound values
@@ -611,8 +725,18 @@ void Security::InsertRawDataToDatabase()
 						insert_strategies.clearBindings();
 					}
 				}
-
+				
 				transaction.commit();
+
+				{
+					std::string query_str = std::format("SELECT COUNT(*) FROM \"{}\";", GetTableName());
+					SQLite::Statement query(m_database_connection, query_str);
+					if (query.executeStep())
+					{
+						m_candle_count = query.getColumn(0).getInt64();
+					}
+				}
+				
 
 				UpdateSecuritySkeletonData();
 
@@ -639,6 +763,16 @@ void Security::InsertRawDataToDatabase()
 	}
 }
 
+
+void Security::LoadCandleDataToTempMemory()
+{
+	std::string query_str = std::format("SELECT * FROM \"{}\" ORDER BY Date ASC", GetTableName());
+	SQLite::Statement query(m_database_connection, query_str);
+
+	LoadCandleDataToMemoryFromQuery(query, m_new_downloaded_data);
+
+	m_back_data_count = m_new_downloaded_data.m_dates.size();
+}
 
 void Security::LoadCandleDataToMemoryFromQuery(SQLite::Statement& query, CandlesData& candle_data, int64_t days)
 {

@@ -27,12 +27,16 @@ public:
 	// Taking market as rvalue ref because we want to take the ownership 
 	// and want to make sure that caller understands that caller no longer has ownership
 	void AddMarket(std::shared_ptr<Market>&& market);
+
+	// Delete previous auto analysis data and redo for all of candle data.
+	void RedoAutoAnalysis();
+
 	bool CanSafelyShutdown() const;
 	
 	void LoadNews(int64_t days = 50);
 
 	const AsyncData<std::vector<std::weak_ptr<Security>>>& GetTenNewestIPOs() const;
-	const AsyncData<NewsPointVectorType>& GetGlobalNews() const { return m_global_news; }
+	std::shared_ptr<AsyncData<NewsPointVectorType>> GetGlobalNews() const { return m_global_news; }
 
 
 	inline bool IsProcessing() const { return m_async_task_manager->IsProcessing(); }
@@ -58,7 +62,7 @@ private:
 	std::vector<std::shared_ptr<Market>> m_market_list;
 
 	// Will contain cummulation of news points from all securities in all markets.
-	AsyncData<NewsPointVectorType> m_global_news;
+	std::shared_ptr<AsyncData<NewsPointVectorType>> m_global_news;
 
 	bool m_is_initialized;
 	bool m_is_shut_down;

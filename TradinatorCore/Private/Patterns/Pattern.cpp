@@ -56,6 +56,7 @@ std::vector<uint64_t> Pattern::GetPatternRangeAt(EPattern type, uint64_t at)
     switch (type)
     {
     case EPattern::None:
+        assert("Invalid pattern");
         return {};
 
     case EPattern::Bullish_Hammer:
@@ -106,13 +107,16 @@ std::vector<uint64_t> Pattern::GetPatternRangeAt(EPattern type, uint64_t at)
         return { at, at + 1, at + 2 };
     
     case EPattern::Max:
+        assert("Invalid pattern");
         return {};
 
     default:
+        assert("Pattern missing. Add missing pattern to switch.");
         return {};
 
     }
 
+    assert("Invalid pattern");
     return {};
 }
 
@@ -1010,7 +1014,7 @@ bool BearishGraveStoneDojiPattern::Check(uint64_t at, const CandlesData& candles
         */
 
         bool is_pattern_matched = 
-            candles_data.IsBullish(at + 1) &&
+            candles_data.IsBullish(at) &&
             candles_data.IsGravestoneDoji(at + 1) &&
             candles_data.IsBearish(at + 2);
 
@@ -1250,20 +1254,20 @@ bool BearishThreeBlackCrowPattern::Check(uint64_t at, const CandlesData& candles
 {
     if (at >= 0 && at < candles_data.m_dates.size() - 2)
     {
-        /*                      |
-                               ---
-                               |:|
-                         |     |:|
-                        ---    |:|
-                        |:|    |:|
-                 |      |:|    ---
-                ---     |:|     |
-                |:|     |:|
-                |:|     ---
-                |:|      |
-                |:|
-                ---
-                 |
+        /*   |                      
+            ---                     
+            |:|                     
+            |:|     |               
+            |:|    ---           
+            |:|    |:|           
+            ---    |:|     |     
+             |     |:|    ---    
+                   |:|    |:|    
+                   ---    |:|    
+                    |     |:|    
+                          |:| 
+                          --- 
+                           | 
         */
 
         bool is_pattern_matched = 
@@ -1273,10 +1277,10 @@ bool BearishThreeBlackCrowPattern::Check(uint64_t at, const CandlesData& candles
             candles_data.IsLongCandle(at + 1) &&
             candles_data.IsBearish(at + 2) &&
             candles_data.IsLongCandle(at + 2) &&
-            candles_data.m_closes[at + 1] > candles_data.m_closes[at] &&
-            candles_data.m_opens[at + 1] > candles_data.m_opens[at] &&
-            candles_data.m_closes[at + 2] > candles_data.m_closes[at + 1] &&
-            candles_data.m_opens[at + 2] > candles_data.m_opens[at + 1];
+            candles_data.m_closes[at] > candles_data.m_closes[at + 1] &&
+            candles_data.m_opens[at] > candles_data.m_opens[at + 1] &&
+            candles_data.m_closes[at + 1] > candles_data.m_closes[at + 2] &&
+            candles_data.m_opens[at + 1] > candles_data.m_opens[at + 2];
 
         if (is_pattern_matched)
         {

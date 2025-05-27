@@ -12,10 +12,12 @@
 
 #include "Utils.h"
 #include "Application/TradinatorApp.h"
+#include "Application/Windows/SecurityWindow.h"
 
 MainWindow::MainWindow(TradinatorApp& tradinator_app)
     : m_dashboard_window(tradinator_app)
     , m_pinned_securities_window(tradinator_app)
+    , m_auto_analysis_update_window(tradinator_app)
     , m_show_settings_window(false)
     , m_should_exit(false)
     , m_tradinator_app(tradinator_app)
@@ -29,10 +31,10 @@ void MainWindow::Init(std::shared_ptr<TradinatorCore> tradinator_core)
 
     m_dashboard_window.Init(m_tradinator_core);
     m_pinned_securities_window.Init(m_tradinator_core);
-    m_auto_analysis_update_window.Init();
+    m_auto_analysis_update_window.Init(m_tradinator_core->GetGlobalNews());
     m_securities_search_bar.Init(m_tradinator_core);
     m_status_bar.Init(m_tradinator_core);
-    m_settings_window.Init();
+    m_settings_window.Init(m_tradinator_core);
 
     m_should_exit = false;
 }
@@ -85,8 +87,17 @@ bool MainWindow::Show()
 
         ImGui::SetNextWindowPos(ImVec2(work_pos.x + pinned_securities_width + dashboard_width, work_pos.y + search_bar_height));
         ImGui::SetNextWindowSize(ImVec2(auto_analysis_width, work_size.y - (search_bar_height + status_bar_height)));
-        m_auto_analysis_update_window.Show();
-
+        int64_t selected_index = m_auto_analysis_update_window.Show();
+        if (selected_index != -1)
+        {
+            NewsPointVectorType& news_points = m_tradinator_core->GetGlobalNews()->GetData();
+            if (selected_index < news_points.size())
+            {
+                NewsPoint& news = news_points[selected_index];
+                std::shared_ptr<SecurityWindow> window = m_tradinator_app.ShowSecurityWindow(news.m_security);
+                window->HighlightDateIndex(news.m_date_range);
+            }
+        }
 
         ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + work_size.y - status_bar_height));
         ImGui::SetNextWindowSize(ImVec2(work_size.x, status_bar_height));
