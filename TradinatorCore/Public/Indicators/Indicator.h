@@ -5,6 +5,8 @@
 #include <vector>
 
 
+#include "TradinatorCoreTypes.h"
+
 class Security;
 
 struct IndicatorPoint
@@ -21,32 +23,6 @@ struct IndicatorPoint
 	IndicatorPoint& operator = (IndicatorPoint&& other) noexcept = default;
 };
 
-enum class EIndicatorSource
-{
-	E_HIGH,
-	E_OPEN,
-	E_LOW,
-	E_CLOSE	
-};
-
-enum class EIndicatorType 
-{
-	MIN,
-
-	E_SMA,
-	E_WMA,
-	E_EMA,
-	E_BOLLINGER_BAND,
-	E_ROC,
-	E_RSI,
-	E_OBV,
-	E_MACD,
-	E_ATR,
-	E_TrendAnalysisDebug,
-
-
-	MAX
-};
 
 class Indicator
 {
@@ -74,6 +50,7 @@ public:
 	uint64_t& GetLength() { return m_length; }
 
 protected:
+
 	EIndicatorSource m_source;
 	uint64_t m_length;
 	std::weak_ptr<Security> m_security;

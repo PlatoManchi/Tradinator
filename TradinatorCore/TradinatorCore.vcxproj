@@ -184,8 +184,10 @@
     <ClInclude Include="Public\Market\NSE_Market.h" />
     <ClInclude Include="Public\News\News.h" />
     <ClInclude Include="Public\Patterns\Pattern.h" />
+    <ClInclude Include="Public\Strategy\Strategy.h" />
     <ClInclude Include="Public\TradinatorCore.h" />
     <ClInclude Include="Public\TradinatorCoreThread.h" />
+    <ClInclude Include="Public\TradinatorCoreTypes.h" />
     <ClInclude Include="Public\Utils\AsyncTask.h" />
     <ClInclude Include="Public\Utils\DownloadTask.h" />
     <ClInclude Include="Public\Utils\AsyncTaskManager.h" />
@@ -214,8 +216,10 @@
     <ClCompile Include="Private\Market\NSE_Market.cpp" />
     <ClCompile Include="Private\News\News.cpp" />
     <ClCompile Include="Private\Patterns\Pattern.cpp" />
+    <ClCompile Include="Private\Strategy\Strategy.cpp" />
     <ClCompile Include="Private\TradinatorCore.cpp" />
     <ClCompile Include="Private\TradinatorCoreThread.cpp" />
+    <ClCompile Include="Private\TradinatorCoreTypes.cpp" />
     <ClCompile Include="Private\Utils\AsyncTask.cpp" />
     <ClCompile Include="Private\Utils\DownloadTask.cpp" />
     <ClCompile Include="Private\Utils\AsyncTaskManager.cpp" />

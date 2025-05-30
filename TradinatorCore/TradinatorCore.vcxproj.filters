@@ -49,6 +49,12 @@
     <Filter Include="Private\News">
       <UniqueIdentifier>{1c7905e8-0fd6-4c93-a2f4-04aeeacd38bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Private\Strategy">
+      <UniqueIdentifier>{b78616da-3215-48c1-b2b6-d8b5048de834}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\Strategy">
+      <UniqueIdentifier>{5c9689a5-9ee4-4783-8f9b-b2417f6d503e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\TradinatorCore.h">
@@ -144,6 +150,8 @@
     <ClInclude Include="ispc\utils_ispc.h">
       <Filter>ispc</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Strategy\Strategy.h" />
+    <ClInclude Include="Public\TradinatorCoreTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -230,6 +238,8 @@
     <ClCompile Include="Private\Utils\StopWatch.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Private\Strategy\Strategy.cpp" />
+    <ClCompile Include="Private\TradinatorCoreTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Data\AsyncData.inl">
