@@ -1,6 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "imgui.h"
+
+class Pattern;
+class Strategy;
 
 class StartupWindow
 {
@@ -14,6 +20,9 @@ public:
 	void Shutdown();
 
 private:
+	std::vector<std::unique_ptr<Pattern>> m_patterns;
+	std::vector<std::unique_ptr<Strategy>> m_strategies;
+
 	bool m_working_folder_exists;
 	bool m_nse_market_security_list_exist;
 

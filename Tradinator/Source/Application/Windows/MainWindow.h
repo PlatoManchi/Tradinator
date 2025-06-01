@@ -11,6 +11,9 @@
 
 class TradinatorCore;
 class TradinatorApp;
+class Pattern;
+class Strategy;
+
 
 class MainWindow
 {
@@ -39,6 +42,9 @@ private:
 
 	bool m_show_settings_window = false;
 	bool m_should_exit = false;
+
+	std::vector<std::unique_ptr<Pattern>> m_patterns;
+	std::vector<std::unique_ptr<Strategy>> m_strategies;
 
 	TradinatorApp& m_tradinator_app;
 };

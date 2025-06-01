@@ -15,6 +15,8 @@ class CandlesData;
 class Strategy
 {
 public:
+	std::string Name();
+
 	virtual EStrategy GetStrategyType() const = 0;
 
 	virtual std::vector<bool> Check(const CandlesData& candles_data) = 0;

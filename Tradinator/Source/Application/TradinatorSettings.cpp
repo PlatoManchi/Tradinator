@@ -77,7 +77,16 @@ void TradinatorSettings::LoadSettings()
 		for (std::unique_ptr<Pattern>& pattern : patterns)
 		{
 			std::string pattern_name = pattern->Name();
-			m_pattern_visbility[pattern->PatternType()] = m_settings["PatternVisibility"].find(pattern_name) ? m_settings["PatternVisibility"][pattern_name].asBool() : pattern->IsDefaultVisible();
+			bool is_visible = m_settings["PatternVisibility"].find(pattern_name) ? m_settings["PatternVisibility"][pattern_name].asBool() : pattern->IsDefaultVisible();
+			SetPatternVisbility(pattern->PatternType(), is_visible);
+		}
+
+		std::vector<std::unique_ptr<Strategy>> strategies = TradinatorCoreSpace::Utils::GetAvailableStrategies();
+		for (std::unique_ptr<Strategy>& stragety : strategies)
+		{
+			std::string strategy_name = stragety->Name();
+			bool is_visible = m_settings["StrategyVisibility"].find(strategy_name) ? m_settings["StrategyVisibility"][strategy_name].asBool() : true;
+			SetStrategyVisibility(stragety->GetStrategyType(), is_visible);
 		}
 
 		m_pinned_securities_isin_numbers.clear();
@@ -103,7 +112,14 @@ void TradinatorSettings::SaveSettings()
 	for (std::unique_ptr<Pattern>& pattern : patterns)
 	{
 		std::string pattern_name = pattern->Name();
-		m_settings["PatternVisibility"][pattern_name] = m_pattern_visbility[pattern->PatternType()];
+		m_settings["PatternVisibility"][pattern_name] = GetPatternVisibility(pattern->PatternType());
+	}
+
+	std::vector<std::unique_ptr<Strategy>> strategies = TradinatorCoreSpace::Utils::GetAvailableStrategies();
+	for (std::unique_ptr<Strategy>& stragety : strategies)
+	{
+		std::string strategy_name = stragety->Name();
+		m_settings["StrategyVisibility"][strategy_name] = GetStrategyVisibility(stragety->GetStrategyType());
 	}
 
 	m_settings["PinnedSecurities"].clear();
@@ -146,4 +162,20 @@ bool TradinatorSettings::GetPatternVisibility(EPattern type)
 void TradinatorSettings::SetPatternVisbility(EPattern type, bool is_visible)
 {
 	m_pattern_visbility[type] = is_visible;
+}
+
+bool TradinatorSettings::GetStrategyVisibility(EStrategy strategy)
+{
+	auto itr = m_strategy_visbility.find(strategy);
+	if (itr != m_strategy_visbility.end())
+	{
+		return (*itr).second;
+	}
+
+	return true;
+}
+
+void TradinatorSettings::SetStrategyVisibility(EStrategy strategy, bool is_visible)
+{
+	m_strategy_visbility[strategy] = is_visible;
 }

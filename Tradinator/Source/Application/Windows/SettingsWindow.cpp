@@ -5,6 +5,8 @@
 
 
 #include "Utils/Utils.h"
+#include "Patterns/Pattern.h"
+#include "Strategy/Strategy.h"
 #include "TradinatorCore.h"
 
 #include "Application/TradinatorSettings.h"
@@ -24,7 +26,8 @@ void SettingsWindow::Init(std::shared_ptr<TradinatorCore> tradinator_core)
 
 void SettingsWindow::Begin()
 {
-
+    m_patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
+    m_strategies = TradinatorCoreSpace::Utils::GetAvailableStrategies();
 }
 
 bool SettingsWindow::Show()
@@ -155,16 +158,85 @@ bool SettingsWindow::Show()
             ImGui::Separator();
             /// @end Separator
 
+
+
+
+
+
+
+
+            std::string strategy_heading_str = "Strategy Visibility";
+            ImVec2 strategy_heading_size = ImGui::CalcTextSize(strategy_heading_str.c_str());
+            ImVec2 prev_pos = ImGui::GetCursorPos();
+            ImGui::SetCursorPos(ImVec2(work_size.x / 2.0 - strategy_heading_size.x / 2.0, prev_pos.y));
+            ImGui::Text(strategy_heading_str.c_str());
+
+            if (ImGui::Button("Select All"))
+            {
+                for (std::unique_ptr<Strategy>& strategy : m_strategies)
+                {
+                    TradinatorSettings::Get().SetStrategyVisibility(strategy->GetStrategyType(), true);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Select None"))
+            {
+                for (std::unique_ptr<Strategy>& strategy : m_strategies)
+                {
+                    TradinatorSettings::Get().SetStrategyVisibility(strategy->GetStrategyType(), false);
+                }
+            }
+
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            ImVec2 item_spacing = style.ItemSpacing;
+
+            float strategy_width = 180.0f;
+            float window_width = ImGui::GetWindowWidth();
+            float table_width = (window_width - item_spacing.x * 3.0f) / 2.0f;
+            int  column_count = std::max((int)(table_width / strategy_width), 1);
+
+            if (ImGui::BeginTable("StrategyList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            {
+                int row = -1;
+                uint64_t index = 0;
+                for (std::unique_ptr<Strategy>& strategy : m_strategies)
+                {
+                    int tmp_row = index / column_count;
+                    if (tmp_row != row)
+                    {
+                        row = tmp_row;
+                        ImGui::TableNextRow(0, 0);
+                    }
+
+                    ImGui::TableSetColumnIndex(index % column_count);
+
+                    bool is_visible = TradinatorSettings::Get().GetStrategyVisibility(strategy->GetStrategyType());
+                    ImGui::Checkbox(strategy->Name().c_str(), &is_visible);
+                    TradinatorSettings::Get().SetStrategyVisibility(strategy->GetStrategyType(), is_visible);
+
+                    ++index;
+                }
+
+                ImGui::EndTable();
+            }
+
+
+
+
+            /// @begin Separator
+            ImGui::Separator();
+            /// @end Separator
+
             std::string patterns_heading_str = "Pattern Visibility";
             ImVec2 patterns_heading_size = ImGui::CalcTextSize(patterns_heading_str.c_str());
-            ImVec2 prev_pos = ImGui::GetCursorPos();
+            prev_pos = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(work_size.x / 2.0 - patterns_heading_size.x / 2.0, prev_pos.y));
             ImGui::Text(patterns_heading_str.c_str());
 
             if (ImGui::Button("Select All"))
             {
-                std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
-                for (std::unique_ptr<Pattern>& pattern : patterns)
+                for (std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
                     TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), true);
                 }
@@ -172,24 +244,18 @@ bool SettingsWindow::Show()
             ImGui::SameLine();
             if (ImGui::Button("Select None"))
             {
-                std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
-                for (std::unique_ptr<Pattern>& pattern : patterns)
+                for (std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
                     TradinatorSettings::Get().SetPatternVisbility(pattern->PatternType(), false);
                 }
             }
-            std::vector<std::unique_ptr<Pattern>> patterns = TradinatorCoreSpace::Utils::GetAvailablePatterns();
             
 
-            ImGuiStyle& style = ImGui::GetStyle();
-            ImVec2 item_spacing = style.ItemSpacing;
-
             float pattern_width = 180.0f;
-            float window_width = ImGui::GetWindowWidth();
-            float table_width = (window_width - item_spacing.x * 3.0f) / 2.0f;
-            int  column_count = std::max((int)(table_width / pattern_width), 1);
+            table_width = (window_width - item_spacing.x * 3.0f) / 2.0f;
+            column_count = std::max((int)(table_width / pattern_width), 1);
 
-            uint64_t pattern_count = patterns.size();
+            uint64_t pattern_count = m_patterns.size();
 
             ImGui::SeparatorText("Bullish Patterns : ");
 
@@ -197,7 +263,7 @@ bool SettingsWindow::Show()
             {
                 int row = -1;
                 uint64_t index = 0;
-                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                for (const std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
                     if ((pattern->PatternType() & Bullish_Pattern_Type) != EPattern::None)
                     {
@@ -227,7 +293,7 @@ bool SettingsWindow::Show()
             {
                 int row = -1;
                 uint64_t index = 0;
-                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                for (const std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
                     if ((pattern->PatternType() & Bearish_Pattern_Type) != EPattern::None)
                     {
@@ -257,7 +323,7 @@ bool SettingsWindow::Show()
             {
                 int row = -1;
                 uint64_t index = 0;
-                for (const std::unique_ptr<Pattern>& pattern : patterns)
+                for (const std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
                     if ((pattern->PatternType() & Bullish_Pattern_Type) == EPattern::None &&
                         (pattern->PatternType() & Bearish_Pattern_Type) == EPattern::None)

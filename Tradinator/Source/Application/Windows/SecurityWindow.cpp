@@ -882,7 +882,8 @@ void SecurityWindow::ShowStrategy(float chart_width, float chart_height, ImPlotR
 
             for (uint64_t i = 0; i < news_count; ++i)
             {
-                if (news_points[i].m_strategy == EStrategy::None)
+                if (news_points[i].m_strategy == EStrategy::None ||
+                    !TradinatorSettings::Get().GetStrategyVisibility(news_points[i].m_strategy))
                 {
                     continue;
                 }

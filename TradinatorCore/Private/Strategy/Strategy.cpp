@@ -5,10 +5,21 @@
 #include "Indicators/SMA.h"
 #include "Indicators/RSI.h"
 #include "Indicators/MACD.h"
+#include "Utils/Utils.h"
 
 #ifdef _INDICATORS_ISPC_
 #include "indicator_helper_ispc.h"
 #endif // _RSI_ISPC_
+
+
+
+
+std::string Strategy::Name()
+{
+	return TradinatorCoreSpace::Utils::GetStrategyTypeStr(GetStrategyType());
+}
+
+
 
 std::vector<bool> Long_Strategy_1::Check(const CandlesData& candles_data)
 {

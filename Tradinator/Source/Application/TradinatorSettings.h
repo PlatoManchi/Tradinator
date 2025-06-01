@@ -5,7 +5,7 @@
 
 #include "json/json.h"
 
-#include "Patterns/Pattern.h"
+#include "TradinatorCoreTypes.h"
 
 class TradinatorSettings
 {
@@ -29,6 +29,9 @@ public:
 	bool GetPatternVisibility(EPattern type);
 	void SetPatternVisbility(EPattern type, bool is_visible);
 
+	bool GetStrategyVisibility(EStrategy strategy);
+	void SetStrategyVisibility(EStrategy strategy, bool is_visible);
+
 	void LoadSettings();
 	void SaveSettings();
 
@@ -48,6 +51,7 @@ private:
 	std::vector<PinnedSecurity> m_pinned_securities_isin_numbers;
 
 	std::unordered_map<EPattern, bool> m_pattern_visbility;
+	std::unordered_map<EStrategy, bool> m_strategy_visbility;
 
 	static std::string _SETTINGS_FILE_;
 	static TradinatorSettings _TRADINATOR_SETTINGS_;

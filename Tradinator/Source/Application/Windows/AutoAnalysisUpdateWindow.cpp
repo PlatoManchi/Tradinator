@@ -85,18 +85,20 @@ int64_t AutoAnalysisUpdateWindow::Show()
                 NewsPoint& news = news_points[i];
                 if (news.m_strategy != EStrategy::None)
                 {
-                    std::string text = std::format("Strategy:\n{} has Long_Strategy_1 at {:%d-%b-%Y}", news.m_security->Name(), news.m_date);
-                    if (SelectableWrapped(text.c_str()))
+                    if (TradinatorSettings::Get().GetStrategyVisibility(news.m_strategy))
                     {
-                        selected_index = i;
+                        std::string text = std::format("Strategy:\n{} has {} at {:%d-%b-%Y}", news.m_security->Name(), TradinatorCoreSpace::Utils::GetStrategyTypeStr(news.m_strategy), news.m_date);
+                        if (SelectableWrapped(text.c_str()))
+                        {
+                            selected_index = i;
+                        }
                     }
                 }
                 if (news.m_pattern != EPattern::None)
                 {
-                    EPattern pattern = TradinatorCoreSpace::Utils::GetPatternFrom(news.m_pattern);
-                    if (TradinatorSettings::Get().GetPatternVisibility(pattern))
+                    if (TradinatorSettings::Get().GetPatternVisibility(news.m_pattern))
                     {
-                        std::string text = std::format("Pattern:\n{} has {} at {:%d-%b-%Y}", news.m_security->Name(), TradinatorCoreSpace::Utils::GetPatternShortDescription(pattern), news.m_date);
+                        std::string text = std::format("Pattern:\n{} has {} at {:%d-%b-%Y}", news.m_security->Name(), TradinatorCoreSpace::Utils::GetPatternShortDescription(news.m_pattern), news.m_date);
 
                         if (SelectableWrapped(text.c_str()))
                         {
