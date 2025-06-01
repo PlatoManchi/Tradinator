@@ -29,7 +29,7 @@ public:
 
 	void Show();
 
-	void HighlightDateIndex(std::vector<uint64_t> dates_index_range);
+	void HighlightDateIndex(NewsPoint news);
 
 	Json::Value GetSecurityStatus();
 	void SetSecurityStatus(Json::Value status);

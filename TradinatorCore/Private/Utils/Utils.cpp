@@ -16,6 +16,7 @@
 #include "Indicators/TrendAnalysisDebug.h"
 
 #include "Patterns/Pattern.h"
+#include "Strategy/Strategy.h"
 
 std::string TradinatorCoreSpace::Utils::_DATA_FOLDER_PATH_;
 size_t TradinatorCoreSpace::Utils::_MAX_PARALLEL_DOWNLOADS_ = 100;
@@ -194,7 +195,7 @@ std::vector<EPattern> TradinatorCoreSpace::Utils::GetAllPatternsFrom(EPattern pa
 
     for (int i = 0; i < 64; ++i)
     {
-        uint64_t test = 1ULL << i;
+        uint64_t test = 1LL << i;
         if ((uint64_t)patterns & test)
         {
             EPattern matched_pattern = static_cast<EPattern>(test);
@@ -213,8 +214,8 @@ EPattern TradinatorCoreSpace::Utils::GetPatternFrom(EPattern patterns)
     // The order in which enum is arranged is thebt priority of patterns in order of their importance
     for (int i = 0; i < 64; ++i)
     {
-        uint64_t test = 1ULL << i;
-        if ((uint64_t)patterns & test)
+        int64_t test = 1LL << i;
+        if ((int64_t)patterns & test)
         {
             EPattern matched_pattern = static_cast<EPattern>(test);
             if (matched_pattern != EPattern::None && matched_pattern != EPattern::Max)
@@ -358,6 +359,36 @@ EPattern TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const std::s
     if (itr != _STRING_TO_PATTERN_.end())
     {
         return (*itr).second;
+    }
+
+    return result;
+}
+
+
+std::vector<std::unique_ptr<Strategy>> TradinatorCoreSpace::Utils::GetAvailableStrategies()
+{
+    std::vector<std::unique_ptr<Strategy>> result;
+
+    result.emplace_back(std::make_unique<Long_Strategy_1>());
+
+    return result;
+}
+
+std::vector<EStrategy> TradinatorCoreSpace::Utils::GetAllStrategiesFrom(EStrategy strategies)
+{
+    std::vector<EStrategy> result;
+
+    for (int i = 0; i < 64; ++i)
+    {
+        int64_t test = 1LL << i;
+        if ((int64_t)strategies & test)
+        {
+            EStrategy strategy = static_cast<EStrategy>(test);
+            if (strategy != EStrategy::None && strategy != EStrategy::Max)
+            {
+                result.push_back(static_cast<EStrategy>(test));
+            }
+        }
     }
 
     return result;

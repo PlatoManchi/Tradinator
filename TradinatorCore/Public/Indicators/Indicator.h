@@ -33,6 +33,13 @@ public:
 	Indicator(EIndicatorSource source, uint64_t length);
 	Indicator(uint64_t length, std::weak_ptr<Security> security);
 	Indicator(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security);
+	
+	Indicator(const Indicator& other) = default;
+	Indicator(Indicator&& other) noexcept = default;
+	Indicator& operator=(const Indicator& other) = default;
+	Indicator& operator=(Indicator&& other) noexcept = default;
+
+	virtual ~Indicator() = default;
 
 	virtual std::vector<std::vector<double>> Calculate() = 0;
 	virtual std::string GetName() const = 0;

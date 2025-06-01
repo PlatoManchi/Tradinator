@@ -1057,10 +1057,10 @@ int SecurityWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
 
 
 
-void SecurityWindow::HighlightDateIndex(std::vector<uint64_t> dates_index_range)
+void SecurityWindow::HighlightDateIndex(NewsPoint news)
 {
     m_is_highlight_date_index = true;
-    m_highlight_date_index = dates_index_range;
+    m_highlight_date_index = news.m_date_range;
     
     std::vector<uint64_t>::iterator min_itr = std::min_element(m_highlight_date_index.begin(), m_highlight_date_index.end());
     std::vector<uint64_t>::iterator max_itr = std::max_element(m_highlight_date_index.begin(), m_highlight_date_index.end());

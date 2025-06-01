@@ -20,6 +20,11 @@ public:
 	EMA(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
 	EMA(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
+	EMA(const EMA& other) = default;
+	EMA(EMA&& other) noexcept = default;
+	EMA& operator=(const EMA& other) = default;
+	EMA& operator=(EMA&& other) noexcept = default;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 

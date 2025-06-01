@@ -31,7 +31,7 @@ public:
 	std::chrono::system_clock::time_point m_date;
 
 	// If news is strategy type, then strategy ID
-	int64_t m_strategy = -1;
+	EStrategy m_strategy = EStrategy::None;
 
 
 	// If news is pattern type, then the pattern

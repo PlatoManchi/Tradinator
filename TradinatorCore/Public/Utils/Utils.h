@@ -4,11 +4,12 @@
 #include <chrono>
 #include <unordered_map>
 
-//#include "Patterns/Pattern.h"
+#include "TradinatorCoreTypes.h"
 
 class Indicator;
 class Pattern;
-enum class EPattern : int64_t;
+class Strategy;
+
 
 namespace TradinatorCoreSpace
 {
@@ -26,6 +27,7 @@ namespace TradinatorCoreSpace
 
 		static std::vector<std::unique_ptr<Indicator>> GetAvailableIndicators();
 		static std::vector<std::unique_ptr<Pattern>> GetAvailablePatterns();
+		static std::vector<std::unique_ptr<Strategy>> GetAvailableStrategies();
 
 		static size_t GetMaxParallelDownloads() { return _MAX_PARALLEL_DOWNLOADS_; }
 		static size_t GetMaxParallelAnalysis() { return _MAX_PARALLEL_ANALYSIS_; }
@@ -40,6 +42,8 @@ namespace TradinatorCoreSpace
 		static EPattern GetPatternFrom(EPattern patterns);
 		static std::string GetPatternShortDescription(EPattern pattern);
 		static EPattern GetPatternFromShortDescription(const std::string& short_description);
+
+		static std::vector<EStrategy> GetAllStrategiesFrom(EStrategy strategies);
 
 	private:
 		static std::string _DATA_FOLDER_PATH_;

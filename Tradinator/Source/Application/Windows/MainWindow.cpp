@@ -105,7 +105,7 @@ bool MainWindow::Show()
                 {
                     NewsPoint& news = news_points[selected_index];
                     std::shared_ptr<SecurityWindow> window = m_tradinator_app.ShowSecurityWindow(news.m_security);
-                    window->HighlightDateIndex(news.m_date_range);
+                    window->HighlightDateIndex(news);
                 }
             }
         }

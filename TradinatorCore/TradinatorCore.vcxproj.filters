@@ -150,8 +150,12 @@
     <ClInclude Include="ispc\utils_ispc.h">
       <Filter>ispc</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Strategy\Strategy.h" />
-    <ClInclude Include="Public\TradinatorCoreTypes.h" />
+    <ClInclude Include="Public\Strategy\Strategy.h">
+      <Filter>Public\Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\TradinatorCoreTypes.h">
+      <Filter>Public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\TradinatorCore.cpp">
@@ -238,8 +242,12 @@
     <ClCompile Include="Private\Utils\StopWatch.cpp">
       <Filter>Private\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Private\Strategy\Strategy.cpp" />
-    <ClCompile Include="Private\TradinatorCoreTypes.cpp" />
+    <ClCompile Include="Private\Strategy\Strategy.cpp">
+      <Filter>Private\Strategy</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\TradinatorCoreTypes.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Public\Data\AsyncData.inl">

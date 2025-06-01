@@ -69,5 +69,5 @@ public:
 	std::vector<uint64_t> m_open_interests;
 	std::vector<ETrend> m_trends;
 	std::vector<EPattern> m_patterns;
-	std::vector<uint64_t> m_strategies;
+	std::vector<EStrategy> m_strategies;
 };

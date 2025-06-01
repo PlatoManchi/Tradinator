@@ -12,8 +12,8 @@
 class RSI : public Indicator
 {
 public:
-	RSI() : Indicator() {}
-	RSI(EIndicatorSource source) : Indicator(source) {}
+	RSI() : Indicator() { m_length = 14; }
+	RSI(EIndicatorSource source) : Indicator(source) { m_length = 14; }
 	RSI(uint64_t length) : Indicator(length) {}
 	RSI(EIndicatorSource source, uint64_t length) : Indicator(source, length) {}
 	RSI(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}

@@ -22,6 +22,8 @@
 #include "Utils/Utils.h"
 #include "Utils/Log.h"
 #include "Indicators/TrendAnalysisDebug.h"
+#include "Patterns/Pattern.h"
+#include "Strategy/Strategy.h"
 
 #ifdef _TECHNICAL_ANALYSIS_ISPC_
 #include "utils_ispc.h"
@@ -420,7 +422,7 @@ void Security::AnalyzeDownloadedData()
 	{
 		m_new_downloaded_data.m_trends = std::move(std::vector<ETrend>(total_candles, ETrend::None));
 		m_new_downloaded_data.m_patterns = std::move(std::vector<EPattern>(total_candles, EPattern::None));
-		m_new_downloaded_data.m_strategies = std::move(std::vector<uint64_t>(total_candles, 0));
+		m_new_downloaded_data.m_strategies = std::move(std::vector<EStrategy>(total_candles, EStrategy::None));
 
 		// Analyze
 		// -------------------------- Trends ---------------------
@@ -550,6 +552,29 @@ void Security::AnalyzeDownloadedData()
 
 			m_new_downloaded_data.m_patterns[i] = satisfied_patterns;
 		}
+	}
+
+
+	// ----------------------------- Strategies -------------------------
+	std::vector<std::unique_ptr<Strategy>> strategies = std::move(TradinatorCoreSpace::Utils::GetAvailableStrategies());
+	std::vector<std::vector<bool>> strategies_results(strategies.size(), std::vector<bool>(m_new_downloaded_data.m_dates.size()));
+	for (size_t i = 0; i < strategies.size(); ++i)
+	{
+		strategies_results[i] = std::move(strategies[i]->Check(m_new_downloaded_data));
+	}
+
+	for (size_t i = 0; i < m_new_downloaded_data.m_dates.size(); ++i)
+	{
+		EStrategy strategy = EStrategy::None;
+		for (size_t j = 0; j < strategies_results.size(); ++j)
+		{
+			if (strategies_results[j][i])
+			{
+				strategy = strategy | strategies[j]->GetStrategyType();
+			}
+		}
+
+		m_new_downloaded_data.m_strategies[i] = strategy;
 	}
 }
 
@@ -712,7 +737,7 @@ void Security::InsertRawDataToDatabase()
 						insert_patterns.clearBindings();
 					}
 
-					if (m_new_downloaded_data.m_strategies[i] != 0)
+					if (m_new_downloaded_data.m_strategies[i] != EStrategy::None)
 					{
 						insert_strategies.bind(1, ISIN_Number());
 						insert_strategies.bind(2, Symbol());
@@ -857,7 +882,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 			SQLite::Statement patterns_query(m_database_connection, patterns_query_str);
 
 
-			int64_t next_strategy = 0;
+			EStrategy next_strategy = EStrategy::None;
 			std::chrono::system_clock::time_point next_strategy_date;
 			std::string strategies_query_str = std::format("SELECT \"Date\",\"Strategies\" FROM \"Strategies\" WHERE ISIN=\"{}\" ORDER BY Date ASC", ISIN_Number());
 			SQLite::Statement strategies_query(m_database_connection, strategies_query_str);
@@ -944,7 +969,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 						std::chrono::system_clock::rep time_count = strategies_query.getColumn(0);
 						std::chrono::system_clock::duration duration_since_epoch(time_count);
 
-						next_strategy = strategies_query.getColumn(1).getInt64();
+						next_strategy = (EStrategy)strategies_query.getColumn(1).getInt64();
 						next_strategy_date = std::chrono::system_clock::time_point(duration_since_epoch);
 
 						if (next_strategy_date >= date)
@@ -960,7 +985,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 				}
 				else
 				{
-					candle_data.m_strategies.push_back(0);
+					candle_data.m_strategies.push_back(EStrategy::None);
 				}
 				
 
@@ -1083,6 +1108,36 @@ void Security::GenerateNewsPoints()
 
 	for (uint64_t i = 0; i < candles_data.m_dates.size(); ++i)
 	{
+		std::vector<EStrategy> strategies = TradinatorCoreSpace::Utils::GetAllStrategiesFrom(candles_data.m_strategies[i]);
+		for (EStrategy strategy : strategies)
+		{
+			bool can_process = i == 0 || (candles_data.m_strategies[i - 1] & strategy) == EStrategy::None;
+			if (can_process)
+			{
+				if (strategy != EStrategy::None && strategy != EStrategy::Max)
+				{
+					std::vector<uint64_t> date_range;
+					date_range.push_back(i);
+					for (size_t j = i; j < candles_data.m_dates.size(); ++j)
+					{
+						if ((candles_data.m_strategies[j] & strategy) == EStrategy::None)
+						{
+							date_range.push_back(j);
+							break;
+						}
+					}
+
+					NewsPoint news_point(this->shared_from_this());
+					news_point.m_date_range = date_range;
+					news_point.m_date = candles_data.m_dates[i];
+					news_point.m_strategy = strategy;
+
+					m_news_points_data->GetAsyncDataCopy().emplace_back(std::move(news_point));
+				}
+			}
+			
+		}
+
 		std::vector<EPattern> patterns = TradinatorCoreSpace::Utils::GetAllPatternsFrom(candles_data.m_patterns[i]);
 		for (EPattern pattern : patterns)
 		{

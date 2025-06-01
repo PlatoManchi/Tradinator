@@ -34,57 +34,58 @@ enum class EIndicatorType
 
 // The order in which enum is arranged is also priority of patterns based on their importance
 // NOTE: Sqlite can only store int64_t and not uint64_t. Hence using int64_t so that it can be converted from int64_t to EPattern
-enum class EPattern : int64_t {
+enum class EPattern : int64_t 
+{
     None = 0,
 
     // Patterns with Doji
-    Bullish_Long_Legged_Doji = 1ULL << 1,
-    Bearish_Long_Legged_Doji = 1ULL << 2,
-    Bullish_Tri_Star = 1ULL << 3,
-    Bearish_Tri_Star = 1ULL << 4,
-    Bullish_Abandoned_Baby = 1ULL << 5,
-    Bearish_Abandoned_Baby = 1ULL << 6,
-    Bullish_Morning_Star_Doji = 1ULL << 7,
-    Bearish_Evening_Star_Doji = 1ULL << 8,
-    Bullish_Grave_Stone_Doji = 1ULL << 9,
-    Bearish_Grave_Stone_Doji = 1ULL << 10,
-    Bullish_Harami_Cross = 1ULL << 11,
-    Bearish_Harami_Cross = 1ULL << 12,
+    Bullish_Long_Legged_Doji = 1LL << 1,
+    Bearish_Long_Legged_Doji = 1LL << 2,
+    Bullish_Tri_Star = 1LL << 3,
+    Bearish_Tri_Star = 1LL << 4,
+    Bullish_Abandoned_Baby = 1LL << 5,
+    Bearish_Abandoned_Baby = 1LL << 6,
+    Bullish_Morning_Star_Doji = 1LL << 7,
+    Bearish_Evening_Star_Doji = 1LL << 8,
+    Bullish_Grave_Stone_Doji = 1LL << 9,
+    Bearish_Grave_Stone_Doji = 1LL << 10,
+    Bullish_Harami_Cross = 1LL << 11,
+    Bearish_Harami_Cross = 1LL << 12,
 
     // Patterns without Doji
-    Bullish_Three_Outside_Up = 1ULL << 13,
-    Bearish_Three_Outside_Down = 1ULL << 14,
-    Bullish_Three_Inside_Up = 1ULL << 15,
-    Bearish_Three_Inside_Down = 1ULL << 16,
-    Bullish_Matching_Low = 1ULL << 17,
-    Bearish_Matching_High = 1ULL << 18,
-    Bullish_Kicking = 1ULL << 19,
-    Bearish_Kicking = 1ULL << 20,
-    Bullish_Three_White_Soldiers = 1ULL << 21,
-    Bearish_Three_Black_Crow = 1ULL << 22,
-    Bullish_Meeting_Lines = 1ULL << 23,
-    Bearish_Meeting_Line = 1ULL << 24,
-    Bullish_Morning_Star = 1ULL << 25,
-    Bearish_Evening_Star = 1ULL << 26,
-    Bullish_Inverted_Hammer = 1ULL << 27,
-    Bearish_Shooting_Star = 1ULL << 28,
-    Bullish_Harami = 1ULL << 29,
-    Bearish_Harami = 1ULL << 30,
-    Bullish_Piercing = 1ULL << 31,
-    Bearish_Piercing = 1ULL << 32,
-    Bullish_Engulfing = 1ULL << 33,
-    Bearish_Engulfing = 1ULL << 34,
-    Bullish_Hammer = 1ULL << 35,
-    Bearish_Hanging_Man = 1ULL << 36,
+    Bullish_Three_Outside_Up = 1LL << 13,
+    Bearish_Three_Outside_Down = 1LL << 14,
+    Bullish_Three_Inside_Up = 1LL << 15,
+    Bearish_Three_Inside_Down = 1LL << 16,
+    Bullish_Matching_Low = 1LL << 17,
+    Bearish_Matching_High = 1LL << 18,
+    Bullish_Kicking = 1LL << 19,
+    Bearish_Kicking = 1LL << 20,
+    Bullish_Three_White_Soldiers = 1LL << 21,
+    Bearish_Three_Black_Crow = 1LL << 22,
+    Bullish_Meeting_Lines = 1LL << 23,
+    Bearish_Meeting_Line = 1LL << 24,
+    Bullish_Morning_Star = 1LL << 25,
+    Bearish_Evening_Star = 1LL << 26,
+    Bullish_Inverted_Hammer = 1LL << 27,
+    Bearish_Shooting_Star = 1LL << 28,
+    Bullish_Harami = 1LL << 29,
+    Bearish_Harami = 1LL << 30,
+    Bullish_Piercing = 1LL << 31,
+    Bearish_Piercing = 1LL << 32,
+    Bullish_Engulfing = 1LL << 33,
+    Bearish_Engulfing = 1LL << 34,
+    Bullish_Hammer = 1LL << 35,
+    Bearish_Hanging_Man = 1LL << 36,
 
 
 
     // Generic Patterns
-    Dragon_Fly_Doji = 1ULL << 37,
-    Grave_Stone_Doji = 1ULL << 38,
-    Long_Leg_Doji = 1ULL << 39,
+    Dragon_Fly_Doji = 1LL << 37,
+    Grave_Stone_Doji = 1LL << 38,
+    Long_Leg_Doji = 1LL << 39,
 
-    Max = 1ULL << 40,
+    Max = 1LL << 40,
 };
 
 // Enable bitwise ops on enum class
@@ -146,3 +147,29 @@ const EPattern Bearish_Pattern_Type =
         EPattern::Bearish_Piercing |
         EPattern::Bearish_Engulfing |
         EPattern::Bearish_Hanging_Man;
+
+
+
+enum class EStrategy : int64_t
+{
+    None = 0,
+
+    Long_Strategy_1 = 1LL << 0,
+
+    Max = 1LL << 4,
+};
+
+// Enable bitwise ops on enum class
+inline EStrategy operator|(EStrategy a, EStrategy b) {
+    return static_cast<EStrategy>(
+        static_cast<std::underlying_type_t<EStrategy>>(a) |
+        static_cast<std::underlying_type_t<EStrategy>>(b)
+        );
+}
+
+inline EStrategy operator&(EStrategy a, EStrategy b) {
+    return static_cast<EStrategy>(
+        static_cast<std::underlying_type_t<EStrategy>>(a) &
+        static_cast<std::underlying_type_t<EStrategy>>(b)
+        );
+}

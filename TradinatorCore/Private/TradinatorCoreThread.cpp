@@ -218,7 +218,7 @@ void TradinatorCoreThread::LoadNews(int64_t days)
 				{
 					NewsPoint point(security);
 					point.m_date_range = std::vector<uint64_t>({ (uint64_t)strategies_query.getColumn(3).getInt64()});
-					point.m_strategy = strategies_query.getColumn(4).getInt64();
+					point.m_strategy = (EStrategy)strategies_query.getColumn(4).getInt64();
 					point.m_date = date;
 
 					m_global_news->GetAsyncDataCopy().push_back(point);
