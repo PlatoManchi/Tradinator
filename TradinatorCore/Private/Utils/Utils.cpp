@@ -127,7 +127,84 @@ void TradinatorCoreSpace::Utils::SetReadWriteBatchSize(size_t read_write_batch_s
 }
 
 
+std::unique_ptr<Indicator> TradinatorCoreSpace::Utils::GetIndicator(EIndicatorType type)
+{
+    switch (type)
+    {
+    case EIndicatorType::E_SMA:
+        return std::make_unique<SMA>();
+    case EIndicatorType::E_WMA:
+        return std::make_unique<WMA>();
+    case EIndicatorType::E_EMA:
+        return std::make_unique<EMA>();
+    case EIndicatorType::E_BOLLINGER_BAND:
+        return std::make_unique<BollingerBand>();
+    case EIndicatorType::E_ROC:
+        return std::make_unique<ROC>();
+    case EIndicatorType::E_RSI:
+        return std::make_unique<RSI>();
+    case EIndicatorType::E_OBV:
+        return std::make_unique<OBV>();
+    case EIndicatorType::E_MACD:
+        return std::make_unique<MACD>();
+    case EIndicatorType::E_ATR:
+        return std::make_unique<ATR>();
+    case EIndicatorType::E_TrendAnalysisDebug:
+        return std::make_unique<TrendAnalysisDebug>();
+    }
 
+    return nullptr;
+}
+
+std::string TradinatorCoreSpace::Utils::GetIndicatorTypeStr(EIndicatorType type)
+{
+    static std::unordered_map<EIndicatorType, std::string> _INDICATOR_TO_STRING_ =
+    {
+        {EIndicatorType::E_SMA, "SMA"},
+        {EIndicatorType::E_WMA, "WMA"},
+        {EIndicatorType::E_EMA, "EMA"},
+        {EIndicatorType::E_BOLLINGER_BAND, "Boolinger Band"},
+        {EIndicatorType::E_ROC, "ROC"},
+        {EIndicatorType::E_RSI, "RSI"},
+        {EIndicatorType::E_OBV, "OBV"},
+        {EIndicatorType::E_MACD, "MACD"},
+        {EIndicatorType::E_ATR, "ATR"},
+        {EIndicatorType::E_TrendAnalysisDebug, "Trend Analysis Debug"}
+    };
+
+    auto itr = _INDICATOR_TO_STRING_.find(type);
+    if (itr != _INDICATOR_TO_STRING_.end())
+    {
+        return (*itr).second;
+    }
+
+    return "Fill out details at TradinatorCoreSpace::Utils::GetIndicatorTypeStr";
+}
+
+EIndicatorType TradinatorCoreSpace::Utils::GetIndicatorType(std::string type_str)
+{
+    static std::unordered_map<std::string, EIndicatorType> _STRING_TO_INDICATOR_ =
+    {
+        {"SMA", EIndicatorType::E_SMA},
+        {"WMA", EIndicatorType::E_WMA},
+        {"EMA", EIndicatorType::E_EMA},
+        {"Boolinger Band", EIndicatorType::E_BOLLINGER_BAND},
+        {"ROC", EIndicatorType::E_ROC},
+        {"RSI", EIndicatorType::E_RSI},
+        {"OBV", EIndicatorType::E_OBV},
+        {"MACD", EIndicatorType::E_MACD},
+        {"ATR", EIndicatorType::E_ATR},
+        {"Trend Analysis Debug", EIndicatorType::E_TrendAnalysisDebug}
+    };
+
+    auto itr = _STRING_TO_INDICATOR_.find(type_str);
+    if (itr != _STRING_TO_INDICATOR_.end())
+    {
+        return (*itr).second;
+    }
+
+    return EIndicatorType::None;
+}
 
 std::vector<std::unique_ptr<Pattern>> TradinatorCoreSpace::Utils::GetAvailablePatterns()
 {
@@ -353,15 +430,13 @@ EPattern TradinatorCoreSpace::Utils::GetPatternFromShortDescription(const std::s
     };
 
 
-    EPattern result = EPattern::None;
-
     auto itr = _STRING_TO_PATTERN_.find(short_description);
     if (itr != _STRING_TO_PATTERN_.end())
     {
         return (*itr).second;
     }
 
-    return result;
+    return EPattern::None;
 }
 
 
@@ -370,6 +445,7 @@ std::vector<std::unique_ptr<Strategy>> TradinatorCoreSpace::Utils::GetAvailableS
     std::vector<std::unique_ptr<Strategy>> result;
 
     result.emplace_back(std::make_unique<Long_Strategy_1>());
+    result.emplace_back(std::make_unique<Short_Strategy_1>());
 
     return result;
 }
@@ -392,4 +468,78 @@ std::vector<EStrategy> TradinatorCoreSpace::Utils::GetAllStrategiesFrom(EStrateg
     }
 
     return result;
+}
+
+std::unique_ptr<Strategy> TradinatorCoreSpace::Utils::GetStrategy(EStrategy strategy)
+{
+    switch (strategy)
+    {
+    case EStrategy::Long_Strategy_1:
+        return std::make_unique<Long_Strategy_1>();
+    case EStrategy::Short_Strategy_1:
+        return std::make_unique<Short_Strategy_1>();
+    }
+
+    return nullptr;
+}
+
+std::string TradinatorCoreSpace::Utils::GetStrategyTypeStr(EStrategy type)
+{
+    static std::unordered_map<EStrategy, std::string> _STRATEGY_TO_STRING_ =
+    {
+        { EStrategy::Long_Strategy_1, "Long Strategy 1" },
+        { EStrategy::Short_Strategy_1, "Short Strategy 1" }
+    };
+
+    auto itr = _STRATEGY_TO_STRING_.find(type);
+    if (itr != _STRATEGY_TO_STRING_.end())
+    {
+        return (*itr).second;
+    }
+
+    return "Fill out details at TradinatorCoreSpace::Utils::GetStrategyTypeStr";
+}
+
+EStrategy TradinatorCoreSpace::Utils::GetStrategyType(std::string type_str)
+{
+    static std::unordered_map<std::string, EStrategy> _STRING_TO_STRATEGY_ =
+    {
+        { "Long Strategy 1", EStrategy::Long_Strategy_1 },
+        { "Short Strategy 1", EStrategy::Short_Strategy_1 }
+    };
+
+    auto itr = _STRING_TO_STRATEGY_.find(type_str);
+    if (itr != _STRING_TO_STRATEGY_.end())
+    {
+        return (*itr).second;
+    }
+
+    return EStrategy::None;
+}
+
+std::string TradinatorCoreSpace::Utils::GetStrategyDesc(EStrategy type)
+{
+    static std::unordered_map<EStrategy, std::string> _STRATEGY_TO_STRING_ =
+    {
+        {EStrategy::Long_Strategy_1,
+            "Long Strategy 1\n\n" \
+            "Rule 1: Short Term Moving Average crossing Long Term Moving Average from below to above.\n" \
+            "Rule 2: RSI crossing 50 level from below to above.\n" \
+            "Rule 3: MACD crossing signal line or zero line from below to above. MACD moving above zero is better than moving above signal line.\n\n" \
+            "NOTE: Consolidation break out from resistance must happen for strategy to work."},
+        {EStrategy::Short_Strategy_1,
+            "Short Strategy 1\n\n"
+            "Rule 1: Short Term Moving Average crossing Long Term Moving Average from above to below.\n" \
+            "Rule 2: RSI crossing 50 level from above to below.\n" \
+            "Rule 3: MACD crossing signal line or zero line from above to below. MACD moving below zero is better than moving below signal line.\n\n" \
+            "NOTE: Consolidation break down from support must happen for strategy to work."},
+    };
+
+    auto itr = _STRATEGY_TO_STRING_.find(type);
+    if (itr != _STRATEGY_TO_STRING_.end())
+    {
+        return (*itr).second;
+    }
+
+    return "Fill out details at TradinatorCoreSpace::Utils::GetStrategyDesc";
 }

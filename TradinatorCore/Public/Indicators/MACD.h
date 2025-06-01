@@ -53,6 +53,13 @@ public:
 		m_signal_period = signal_period;
 	}
 
+	MACD(const MACD& other) = default;
+	MACD(MACD&& other) noexcept = default;
+	MACD& operator=(const MACD& other) = default;
+	MACD& operator=(MACD&& other) noexcept = default;
+
+	bool operator==(const MACD& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* ema_period_1_buffer, double* ema_period_2_buffer, double* macd_output, double* signal_output, double* histogram_output, uint64_t period_1, uint64_t period_2, uint64_t signal_period, uint64_t data_size);
 

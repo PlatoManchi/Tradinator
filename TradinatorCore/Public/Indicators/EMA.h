@@ -25,6 +25,8 @@ public:
 	EMA& operator=(const EMA& other) = default;
 	EMA& operator=(EMA&& other) noexcept = default;
 
+	bool operator==(const EMA& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 

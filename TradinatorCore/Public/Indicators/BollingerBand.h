@@ -45,6 +45,13 @@ public:
 		m_standard_deviation_multiplier = standard_deviation_multiplier;
 	}
 
+	BollingerBand(const BollingerBand& other) = default;
+	BollingerBand(BollingerBand&& other) noexcept = default;
+	BollingerBand& operator=(const BollingerBand& other) = default;
+	BollingerBand& operator=(BollingerBand&& other) noexcept = default;
+
+	bool operator==(const BollingerBand& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* top, double* sma, double* bottom, uint64_t window_size, double standard_deviation_multiplier, uint64_t data_size);
 

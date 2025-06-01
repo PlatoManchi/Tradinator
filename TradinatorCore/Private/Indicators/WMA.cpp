@@ -12,6 +12,13 @@
 
 
 
+bool WMA::operator==(const WMA& other) const
+{
+	return Indicator::operator==(other);
+}
+
+
+
 std::vector<std::vector<double>> WMA::Calculate()
 {
 	std::vector<std::vector<double>> result;

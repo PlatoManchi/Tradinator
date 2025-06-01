@@ -12,6 +12,12 @@
 
 
 
+bool EMA::operator==(const EMA& other) const
+{
+	return Indicator::operator==(other);
+}
+
+
 std::vector<std::vector<double>> EMA::Calculate()
 {
 	std::vector<std::vector<double>> result;

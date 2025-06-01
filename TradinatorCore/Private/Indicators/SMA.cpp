@@ -13,6 +13,10 @@
 
 
 
+bool SMA::operator==(const SMA& other) const
+{
+	return Indicator::operator==(other);
+}
 
 
 

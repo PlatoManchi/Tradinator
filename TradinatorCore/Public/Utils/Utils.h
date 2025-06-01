@@ -37,6 +37,9 @@ namespace TradinatorCoreSpace
 		static void SetMaxParallelAnalysis(size_t max_parallel_analysis);
 		static void SetReadWriteBatchSize(size_t read_write_batch_size);
 
+		static std::unique_ptr<Indicator> GetIndicator(EIndicatorType type);
+		static std::string GetIndicatorTypeStr(EIndicatorType type);
+		static EIndicatorType GetIndicatorType(std::string type_str);
 
 		static std::vector<EPattern> GetAllPatternsFrom(EPattern patterns);
 		static EPattern GetPatternFrom(EPattern patterns);
@@ -44,6 +47,10 @@ namespace TradinatorCoreSpace
 		static EPattern GetPatternFromShortDescription(const std::string& short_description);
 
 		static std::vector<EStrategy> GetAllStrategiesFrom(EStrategy strategies);
+		static std::unique_ptr<Strategy> GetStrategy(EStrategy strategy);
+		static std::string GetStrategyTypeStr(EStrategy type);
+		static std::string GetStrategyDesc(EStrategy type);
+		static EStrategy GetStrategyType(std::string type_str);
 
 	private:
 		static std::string _DATA_FOLDER_PATH_;

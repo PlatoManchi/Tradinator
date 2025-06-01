@@ -29,7 +29,7 @@ public:
 
 	void Show();
 
-	void HighlightDateIndex(NewsPoint news);
+	void HilightNews(NewsPoint news);
 
 	Json::Value GetSecurityStatus();
 	void SetSecurityStatus(Json::Value status);
@@ -43,6 +43,7 @@ private:
 	void ShowIndicatorsList();
 	bool CanApplyIndicatorOfType(EIndicatorType type);
 	
+	void ShowStrategy(float chart_width, float chart_height, ImPlotRect chart_limits);
 	void ShowPatterns(float chart_width, float chart_height,  ImPlotRect chart_limits);
 	void ShowHilights(ImPlotRect limit);
 	void RebuildCachedPlotPoints();
@@ -98,5 +99,6 @@ private:
 
 	AutoAnalysisUpdateWindow m_auto_analysis_update_window;
 	std::vector<HilightsAnimationData> m_hilights_animation_data;
+	std::vector<HilightsAnimationData> m_strategy_hilight_data;
 };
 

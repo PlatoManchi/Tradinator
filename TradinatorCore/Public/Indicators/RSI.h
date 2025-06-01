@@ -19,6 +19,13 @@ public:
 	RSI(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
 	RSI(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
+	RSI(const RSI& other) = default;
+	RSI(RSI&& other) noexcept = default;
+	RSI& operator=(const RSI& other) = default;
+	RSI& operator=(RSI&& other) noexcept = default;
+
+	bool operator==(const RSI& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 

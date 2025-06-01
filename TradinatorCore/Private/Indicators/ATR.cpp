@@ -12,6 +12,13 @@
 #include "indicator_helper_ispc.h"
 #endif // _ATR_ISPC_
 
+
+bool ATR::operator==(const ATR& other) const
+{
+	return Indicator::operator==(other);
+}
+
+
 std::vector<std::vector<double>> ATR::Calculate()
 {
 	std::vector<std::vector<double>> result;

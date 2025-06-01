@@ -43,3 +43,12 @@ Indicator::Indicator(EIndicatorSource source, uint64_t length, std::weak_ptr<Sec
 {
 
 }
+
+
+bool Indicator::operator==(const Indicator& other) const
+{
+	return
+		m_source == other.m_source &&
+		m_length == other.m_length &&
+		IndicatorType() == other.IndicatorType();
+}

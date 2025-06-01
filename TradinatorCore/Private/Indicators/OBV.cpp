@@ -10,6 +10,14 @@
 #include "indicator_helper_ispc.h"
 #endif // _SMA_ISPC_
 
+
+bool OBV::operator==(const OBV& other) const
+{
+	return m_source == other.m_source &&
+		IndicatorType() == other.IndicatorType();
+}
+
+
 std::vector<std::vector<double>> OBV::Calculate()
 {
 	std::vector<std::vector<double>> result;

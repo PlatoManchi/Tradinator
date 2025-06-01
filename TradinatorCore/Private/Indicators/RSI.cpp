@@ -12,6 +12,12 @@
 #endif // _RSI_ISPC_
 
 
+bool RSI::operator==(const RSI& other) const
+{
+	return Indicator::operator==(other);
+}
+
+
 
 std::vector<std::vector<double>> RSI::Calculate()
 {

@@ -39,6 +39,8 @@ public:
 	Indicator& operator=(const Indicator& other) = default;
 	Indicator& operator=(Indicator&& other) noexcept = default;
 
+	bool operator==(const Indicator& other) const;
+
 	virtual ~Indicator() = default;
 
 	virtual std::vector<std::vector<double>> Calculate() = 0;

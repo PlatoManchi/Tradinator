@@ -72,6 +72,21 @@ void PrintMatrix(double* mat, uint64_t row, uint64_t col)
 	std::cout << std::endl;
 }
 
+
+
+bool TrendAnalysisDebug::operator==(const TrendAnalysisDebug& other) const
+{
+	return m_source == other.m_source &&
+		m_length == other.m_length &&
+		IndicatorType() == other.IndicatorType() &&
+		m_polynomial_order == other.m_polynomial_order &&
+		m_distance_btw_peaks == other.m_distance_btw_peaks &&
+		m_width_for_peaks == other.m_width_for_peaks &&
+		m_relative_height == other.m_relative_height;
+}
+
+
+
 std::vector<std::vector<double>> TrendAnalysisDebug::Calculate()
 {
 	std::vector<std::vector<double>> result;

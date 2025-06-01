@@ -18,6 +18,13 @@ public:
 	ROC(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
 	ROC(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
+	ROC(const ROC& other) = default;
+	ROC(ROC&& other) noexcept = default;
+	ROC& operator=(const ROC& other) = default;
+	ROC& operator=(ROC&& other) noexcept = default;
+
+	bool operator==(const ROC& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 

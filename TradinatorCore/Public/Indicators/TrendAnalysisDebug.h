@@ -21,6 +21,13 @@ public:
 	TrendAnalysisDebug(size_t length) : Indicator(length) {};
 	TrendAnalysisDebug(size_t length, std::weak_ptr<Security> security) : Indicator(length, security) {};
 
+	TrendAnalysisDebug(const TrendAnalysisDebug& other) = default;
+	TrendAnalysisDebug(TrendAnalysisDebug&& other) noexcept = default;
+	TrendAnalysisDebug& operator=(const TrendAnalysisDebug& other) = default;
+	TrendAnalysisDebug& operator=(TrendAnalysisDebug&& other) noexcept = default;
+
+	bool operator==(const TrendAnalysisDebug& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(
 		const double* highs,

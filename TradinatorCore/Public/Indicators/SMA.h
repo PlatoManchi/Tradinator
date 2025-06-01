@@ -22,6 +22,13 @@ public:
 	SMA(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
 	SMA(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
+	SMA(const SMA& other) = default;
+	SMA(SMA&& other) noexcept = default;
+	SMA& operator=(const SMA& other) = default;
+	SMA& operator=(SMA&& other) noexcept = default;
+
+	bool operator==(const SMA& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
 

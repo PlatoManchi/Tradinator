@@ -7,6 +7,9 @@
 #include "imgui.h"
 #include "implot.h"
 
+#include "Data/AsyncData.h"
+#include "News/News.h"
+
 #include "Indicators/Indicator.h"
 #include "TradinatorTypes.h"
 
@@ -22,6 +25,8 @@ public:
 	IIndicatorWrapper& operator=(const IIndicatorWrapper& other);
 	IIndicatorWrapper(IIndicatorWrapper&& other) noexcept = default;
 	IIndicatorWrapper& operator=(IIndicatorWrapper&& other) noexcept = default;
+
+	bool operator==(const IIndicatorWrapper& other) const;
 
 	virtual void SetIndicator(std::unique_ptr<Indicator> indicator);
 	virtual void SetSecurity(std::shared_ptr<Security> security);
@@ -137,7 +142,7 @@ public:
 
 	virtual void Calculate() override;
 	void CalculateLabelWidth();
-	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, float chart_width = -1);
+	virtual void DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, std::shared_ptr<AsyncData<NewsPointVectorType>> news, float chart_width = -1);
 	
 	virtual std::unique_ptr<IIndicatorWrapper> Clone() override
 	{

@@ -121,6 +121,8 @@ void SecurityWindow::Show()
         }
         else
         {
+            m_tooltip_override = false;
+
             ImGuiStyle& style = ImGui::GetStyle();
             // close indicators that are marked for closing
             for (size_t id : m_remove_applied_indicator_ids)
@@ -202,7 +204,7 @@ void SecurityWindow::Show()
                 if (index < news_points.size())
                 {
                     NewsPoint news = news_points[index];
-                    HighlightDateIndex(news.m_date_range);
+                    HilightNews(news);
                 }
             }
             ImGui::SetCursorPos(cusor_pos);
@@ -274,11 +276,13 @@ void SecurityWindow::Show()
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
                 ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
                 
-                ShowHilights(m_price_chart_limits);
+                float price_chart_width = ImGui::GetWindowWidth() - largest_label_width;
 
+                ShowHilights(m_price_chart_limits);
+                ShowStrategy(price_chart_width, m_price_chart_height, m_price_chart_limits);
                 if (m_show_patterns)
                 {
-                    ShowPatterns(ImGui::GetWindowWidth() - largest_label_width, m_price_chart_height, m_price_chart_limits);
+                    ShowPatterns(price_chart_width, m_price_chart_height, m_price_chart_limits);
                 }
 
                 if (m_is_any_plot_hovered)
@@ -364,6 +368,7 @@ void SecurityWindow::Show()
                 ImPlot::SetupAxisZoomConstraints(ImAxis_X1, 60 * 60 * 24 * 14, date_axis_max - date_axis_min); // 14 days at min and full chat at max
 
                 ShowHilights(m_volume_chart_limits);
+                ShowStrategy(-1.0f, -1.0f, m_volume_chart_limits);
 
                 if (m_is_any_plot_hovered)
                 {
@@ -447,6 +452,7 @@ void SecurityWindow::Show()
                         m_bull_color,
                         m_bear_color,
                         m_hilights_animation_data,
+                        m_security->GetNewsPointsData(),
                         chart_width);
 
                     if (largest_label_width > (chart_wrapper->GetLabelWidth() + 20.0))
@@ -859,13 +865,105 @@ void SecurityWindow::PlotCandlestick(const char* label_id, const size_t* xs, con
     }
 }
 
-void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
+void SecurityWindow::ShowStrategy(float chart_width, float chart_height, ImPlotRect chart_limits)
 {
     m_tooltip_override = false;
-
     if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandlesData()->IsDataReady())
     {
-        if (ImPlot::BeginItem("Patterns")) 
+        if (ImPlot::BeginItem("Strategies", ImPlotItemFlags_NoLegend))
+        {
+            const CandlesData& candle_data = m_security->GetCandlesData()->GetData();
+            const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
+
+            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+            uint64_t candles_count = candle_data.m_dates.size();
+            uint64_t news_count = news_points.size();
+
+            for (uint64_t i = 0; i < news_count; ++i)
+            {
+                if (news_points[i].m_strategy == EStrategy::None)
+                {
+                    continue;
+                }
+
+                if (news_points[i].m_date_range.size() > 0)
+                {
+                    if (news_points[i].m_date_range[0] < candles_count)
+                    {
+                        std::chrono::system_clock::rep cummulative_x_date = 0;
+                        
+                        double top = chart_limits.Y.Max;
+                        double bottom = chart_limits.Y.Min;
+                        
+                        std::chrono::system_clock::time_point left_date = candle_data.m_dates[news_points[i].m_date_range[0]];
+                        std::chrono::system_clock::time_point right_date = candle_data.m_dates[news_points[i].m_date_range[news_points[i].m_date_range.size() - 1]];
+                        std::chrono::system_clock::rep left = std::chrono::duration_cast<std::chrono::seconds>(left_date.time_since_epoch()).count() - 60 * 60 * 12;
+                        std::chrono::system_clock::rep right = std::chrono::duration_cast<std::chrono::seconds>(right_date.time_since_epoch()).count() + 60 * 60 * 12;
+
+                        ImVec2 upper_left = ImPlot::PlotToPixels(left, top);
+                        ImVec2 lower_right = ImPlot::PlotToPixels(right, bottom);
+                        ImVec2 upper_right = ImPlot::PlotToPixels(right, top);
+                        ImVec2 lower_left = ImPlot::PlotToPixels(left, bottom);
+
+                        TradinatorAppSpace::ENatureType type = TradinatorAppSpace::Utils::GetStrategyNatureType(news_points[i].m_strategy);
+                        ImVec4 color = ImVec4(76.0 / 255.0, 144.0 / 255.0, 176.0 / 255.0, 1.0f); //  neutral color
+                        if (type == TradinatorAppSpace::ENatureType::BULL)
+                        {
+                            color = m_bull_color;
+                        }
+                        else if (type == TradinatorAppSpace::ENatureType::BEAR)
+                        {
+                            color = m_bear_color;
+                        }
+                        color.w = 0.2f;
+
+                        draw_list->AddRectFilled(upper_left, lower_right, ImGui::GetColorU32(color), 0.0f, ImDrawFlags_RoundCornersNone);
+
+                        if (chart_height > 0.0f)
+                        {
+                            float offset = ((chart_limits.Y.Max - chart_limits.Y.Min) / chart_height) * 50.0f;
+                            float annotation_x = (left + right) / 2.0f;
+                            float annotation_y = bottom + offset / 2.0f;
+
+                            if (!m_tooltip_override)
+                            {
+                                ImPlotPoint mouse = ImPlot::GetPlotMousePos();
+
+                                float ratio_x = (chart_limits.X.Max - chart_limits.X.Min) / chart_width;
+                                float ratio_y = (chart_limits.Y.Max - chart_limits.Y.Min) / chart_height;
+
+                                if (std::abs(mouse.x - annotation_x) < ratio_x * 30 &&
+                                    std::abs(mouse.y - annotation_y) < ratio_y * 20)
+                                {
+                                    m_tooltip_override = true;
+                                    ImGui::BeginTooltip();
+                                    ImGui::Text(TradinatorCoreSpace::Utils::GetStrategyDesc(news_points[i].m_strategy).c_str());
+                                    ImGui::EndTooltip();
+                                }
+                                else
+                                {
+                                    m_tooltip_override = false;
+                                }
+                            }
+
+                            color.w = 1.0f; // alpha for annotation
+                            ImPlot::Annotation(annotation_x, annotation_y, color, ImVec2(0, 0), false, " S ");
+                        }
+                    }
+                }
+            }
+
+            ImPlot::EndItem();
+        }
+    }
+}
+
+void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotRect chart_limits)
+{
+    if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandlesData()->IsDataReady())
+    {
+        if (ImPlot::BeginItem("Patterns", ImPlotItemFlags_NoLegend))
         {
             const CandlesData& candle_data = m_security->GetCandlesData()->GetData();
             const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
@@ -876,7 +974,8 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
             uint64_t news_count = news_points.size();
             for (uint64_t i = 0; i < news_count; ++i)
             {
-                if (!TradinatorSettings::Get().GetPatternVisibility(news_points[i].m_pattern))
+                if (news_points[i].m_pattern == EPattern::None ||
+                    !TradinatorSettings::Get().GetPatternVisibility(news_points[i].m_pattern))
                 {
                     continue;
                 }
@@ -910,10 +1009,12 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                         ImVec2 upper_left = ImPlot::PlotToPixels(left, top);
                         ImVec2 lower_right = ImPlot::PlotToPixels(right, bottom);
                         ImVec2 upper_right = ImPlot::PlotToPixels(right, top);
-                        ImVec2 lower_left = ImVec2(left, bottom);
+                        ImVec2 lower_left = ImPlot::PlotToPixels(left, bottom);
 
                         upper_left.y -= 15.0f;
+                        upper_right.y -= 15.0f;
                         lower_right.y += 15.0f;
+                        lower_left.y += 15.0f;
 
                         float offset = ((chart_limits.Y.Max - chart_limits.Y.Min) / chart_height) * 50.0f;
 
@@ -933,13 +1034,13 @@ void SecurityWindow::ShowPatterns(float chart_width, float chart_height, ImPlotR
                             ImPlot::FitPoint(bottom_right_tmp);
                         }
 
-                        TradinatorAppSpace::EPatternNatureType type = TradinatorAppSpace::Utils::GetPatternNatureType(news_points[i].m_pattern);
+                        TradinatorAppSpace::ENatureType type = TradinatorAppSpace::Utils::GetPatternNatureType(news_points[i].m_pattern);
                         ImVec4 color = ImVec4(76.0 / 255.0, 144.0 / 255.0, 176.0 / 255.0, 1.0f); //  neutral color
-                        if (type == TradinatorAppSpace::EPatternNatureType::BULL)
+                        if (type == TradinatorAppSpace::ENatureType::BULL)
                         {
                             color = m_bull_color;
                         }
-                        else if (type == TradinatorAppSpace::EPatternNatureType::BEAR)
+                        else if (type == TradinatorAppSpace::ENatureType::BEAR)
                         {
                             color = m_bear_color;
                         }
@@ -1057,7 +1158,7 @@ int SecurityWindow::BinarySearch(const size_t* arr, int l, int r, double x) {
 
 
 
-void SecurityWindow::HighlightDateIndex(NewsPoint news)
+void SecurityWindow::HilightNews(NewsPoint news)
 {
     m_is_highlight_date_index = true;
     m_highlight_date_index = news.m_date_range;
@@ -1077,6 +1178,32 @@ void SecurityWindow::HighlightDateIndex(NewsPoint news)
         animation_data.m_start_time = std::chrono::system_clock::now();
 
         m_hilights_animation_data.push_back(animation_data);
+    }
+
+    if (news.m_strategy != EStrategy::None && news.m_strategy != EStrategy::Max)
+    {
+        std::unique_ptr<Strategy> strategy = TradinatorCoreSpace::Utils::GetStrategy(news.m_strategy);
+        std::vector<std::unique_ptr<Indicator>> indicators = strategy->GetIndicatorsNeeded();
+        for (std::unique_ptr<Indicator>& indicator : indicators)
+        {
+            std::unique_ptr<IIndicatorWrapper> clone_wrapper = std::move(TradinatorAppSpace::Utils::GetIndicatorWrapper(std::move(indicator), m_security));
+            bool found = false;
+            for (std::unique_ptr<IIndicatorWrapper>& wrapper : m_applied_indicator_wrappers)
+            {
+                if (*wrapper == *clone_wrapper)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found)
+            {
+                clone_wrapper->Calculate();
+
+                m_applied_indicator_wrappers.emplace_back(std::move(clone_wrapper));
+            }
+        }
     }
 }
 
@@ -1137,7 +1264,7 @@ void SecurityWindow::SetSecurityStatus(Json::Value status)
 
     for (int i = 0; i < count; ++i)
     {
-        EIndicatorType type = TradinatorAppSpace::Utils::GetIndicatorType(applied_indicators[i]["Name"].asString());
+        EIndicatorType type = TradinatorCoreSpace::Utils::GetIndicatorType(applied_indicators[i]["Name"].asString());
         std::unique_ptr<IIndicatorWrapper> wrapper = TradinatorAppSpace::Utils::GetIndicatorWrapper(type);
         if (wrapper)
         {

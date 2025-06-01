@@ -11,6 +11,11 @@
 #endif // _ROC_ISPC_
 
 
+bool ROC::operator==(const ROC& other) const
+{
+	return Indicator::operator==(other);
+}
+
 
 std::vector<std::vector<double>> ROC::Calculate()
 {

@@ -15,6 +15,13 @@ public:
 	OBV() : Indicator() {}
 	OBV(std::weak_ptr<Security> security) : Indicator(0, security) {};
 
+	OBV(const OBV& other) = default;
+	OBV(OBV&& other) noexcept = default;
+	OBV& operator=(const OBV& other) = default;
+	OBV& operator=(OBV&& other) noexcept = default;
+
+	bool operator==(const OBV& other) const;
+
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* closes, const uint64_t* volumes, double* output, uint64_t data_size);
 

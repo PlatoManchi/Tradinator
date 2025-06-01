@@ -14,6 +14,16 @@
 
 
 
+bool BollingerBand::operator==(const BollingerBand& other) const
+{
+	return
+		m_source == other.m_source &&
+		m_length == other.m_length &&
+		IndicatorType() == other.IndicatorType() &&
+		fabs(m_standard_deviation_multiplier - other.m_standard_deviation_multiplier) <= DBL_EPSILON;
+}
+
+
 std::vector<std::vector<double>> BollingerBand::Calculate()
 {
 	std::vector<std::vector<double>> result;

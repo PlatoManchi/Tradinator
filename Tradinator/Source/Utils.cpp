@@ -21,6 +21,7 @@
 #include "Indicators/MACD.h"
 #include "Indicators/ATR.h"
 #include "Indicators/TrendAnalysisDebug.h"
+#include "Utils/Utils.h"
 
 #include "Components/IndicatorWrappers.h"
 
@@ -52,7 +53,7 @@ namespace TradinatorAppSpace
 
 	ImVec4 Utils::GetIndicatorColor(EIndicatorType type, size_t index)
 	{
-		assert(type != EIndicatorType::MIN && type != EIndicatorType::MAX);
+		assert(type != EIndicatorType::None && type != EIndicatorType::Max);
 
 		switch (type)
 		{
@@ -91,89 +92,7 @@ namespace TradinatorAppSpace
 		return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
-	std::string Utils::GetIndicatorTypeStr(EIndicatorType type)
-	{
-		switch (type)
-		{
-		case EIndicatorType::E_SMA:
-			return "SMA";
-		case EIndicatorType::E_WMA:
-			return "WMA";
-		case EIndicatorType::E_EMA:
-			return "EMA";
-		case EIndicatorType::E_BOLLINGER_BAND:
-			return "Boolinger Band";
-		case EIndicatorType::E_ROC:
-			return "ROC";
-		case EIndicatorType::E_RSI:
-			return "RSI";
-		case EIndicatorType::E_OBV:
-			return "OBV";
-		case EIndicatorType::E_MACD:
-			return "MACD";
-		case EIndicatorType::E_ATR:
-			return "ATR";
-		case EIndicatorType::E_TrendAnalysisDebug:
-			return "Trend Analysis Debug";
-		}
-
-		return "";
-	}
-
-	EIndicatorType Utils::GetIndicatorType(std::string type_str)
-	{
-		if (type_str == "SMA")
-			return EIndicatorType::E_SMA;
-		else if (type_str == "WMA")
-			return EIndicatorType::E_WMA;
-		else if (type_str == "EMA")
-			return EIndicatorType::E_EMA;
-		else if (type_str == "Boolinger Band")
-			return EIndicatorType::E_BOLLINGER_BAND;
-		else if (type_str == "ROC")
-			return EIndicatorType::E_ROC;
-		else if (type_str == "RSI")
-			return EIndicatorType::E_RSI;
-		else if (type_str == "OBV")
-			return EIndicatorType::E_OBV;
-		else if (type_str == "MACD")
-			return EIndicatorType::E_MACD;
-		else if (type_str == "ATR")
-			return EIndicatorType::E_ATR;
-		else if (type_str == "Trend Analysis Debug")
-			return EIndicatorType::E_TrendAnalysisDebug;
-
-		return EIndicatorType::MAX;
-	}
-
-	std::unique_ptr<Indicator> Utils::GetIndicator(EIndicatorType type)
-	{
-		switch (type)
-		{
-		case EIndicatorType::E_SMA:
-			return std::make_unique<SMA>();
-		case EIndicatorType::E_WMA:
-			return std::make_unique<WMA>();
-		case EIndicatorType::E_EMA:
-			return std::make_unique<EMA>();
-		case EIndicatorType::E_BOLLINGER_BAND:
-			return std::make_unique<BollingerBand>();
-		case EIndicatorType::E_ROC:
-			return std::make_unique<ROC>();
-		case EIndicatorType::E_RSI:
-			return std::make_unique<RSI>();
-		case EIndicatorType::E_OBV:
-			return std::make_unique<OBV>();
-		case EIndicatorType::E_MACD:
-			return std::make_unique<MACD>();
-		case EIndicatorType::E_ATR:
-			return std::make_unique<ATR>();
-		case EIndicatorType::E_TrendAnalysisDebug:
-			return std::make_unique<TrendAnalysisDebug>();
-		}
-
-		return nullptr;
-	}
+	
 
 	std::unique_ptr<IIndicatorWrapper> Utils::GetIndicatorWrapper(EIndicatorType type)
 	{
@@ -210,7 +129,7 @@ namespace TradinatorAppSpace
 
 		if (wrapper)
 		{
-			wrapper->SetIndicator(GetIndicator(type));
+			wrapper->SetIndicator(TradinatorCoreSpace::Utils::GetIndicator(type));
 		}
 
 		return wrapper;
@@ -232,20 +151,33 @@ namespace TradinatorAppSpace
 	}
 
 
-	EPatternNatureType Utils::GetPatternNatureType(EPattern pattern)
+	ENatureType Utils::GetPatternNatureType(EPattern pattern)
 	{
 		if ((pattern & Bullish_Pattern_Type) != EPattern::None)
 		{
-			return EPatternNatureType::BULL;
+			return ENatureType::BULL;
 		}
 		else if ((pattern & Bearish_Pattern_Type) != EPattern::None)
 		{
-			return EPatternNatureType::BEAR;
+			return ENatureType::BEAR;
 		}
 
-		return EPatternNatureType::NONE;
+		return ENatureType::NONE;
 	}
 
+	ENatureType Utils::GetStrategyNatureType(EStrategy strategy)
+	{
+		switch (strategy)
+		{
+		case EStrategy::Long_Strategy_1:
+			return ENatureType::BULL;
+		case EStrategy::Short_Strategy_1:
+			return ENatureType::BEAR;
+		}
+
+
+		return ENatureType::NONE;
+	}
 
 	void Utils::OpenURL(const std::string& url)
 	{

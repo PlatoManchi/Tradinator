@@ -9,6 +9,7 @@
 #include "Indicators/TrendAnalysisDebug.h"
 
 #include "Utils.h"
+#include "Utils/Utils.h"
 
 size_t IIndicatorWrapper::_INCREMENTAL_WRAPPER_ID_ = 0;
 
@@ -80,6 +81,11 @@ IIndicatorWrapper& IIndicatorWrapper::operator=(const IIndicatorWrapper& other)
     m_id = _INCREMENTAL_WRAPPER_ID_++;
 
     return *this;
+}
+
+bool IIndicatorWrapper::operator==(const IIndicatorWrapper& other) const
+{
+    return *m_indicator == *other.m_indicator;
 }
 
 void IIndicatorWrapper::SetIndicator(std::unique_ptr<Indicator> indicator)
@@ -231,21 +237,22 @@ std::string GenericIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
     if (m_points_list.size() >= 1)
     {
         return std::format("{}({}) :   {}",
-            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
+            TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
             m_points_list[0][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
+        TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void GenericIndicatorWrapper::FromJson(Json::Value value)
 {
-    EIndicatorType type = TradinatorAppSpace::Utils::GetIndicatorType(value["Name"].asString());
+    EIndicatorType type = TradinatorCoreSpace::Utils::GetIndicatorType(value["Name"].asString());
     if (!m_indicator)
     {
-        m_indicator = std::move(TradinatorAppSpace::Utils::GetIndicator(type));
+        m_indicator = std::move(TradinatorCoreSpace::Utils::GetIndicator(type));
     }
+
     m_indicator->SetLength(value["Length"].asUInt64());
     m_show = value["Show"].asBool();
 
@@ -262,7 +269,7 @@ void GenericIndicatorWrapper::FromJson(Json::Value value)
 Json::Value GenericIndicatorWrapper::ToJson() const
 {
     Json::Value json_indicator;
-    json_indicator["Name"] = TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType());
+    json_indicator["Name"] = TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType());
     json_indicator["Length"] = m_indicator->GetLength();
     json_indicator["Show"] = m_show;
 
@@ -315,7 +322,7 @@ void GenericChartIndicatorWrapper::CalculateLabelWidth()
     m_label_width = std::max(max_range_width, min_range_width);
 }
 
-void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, float chart_width)
+void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAxisFlags x_axis_flags, ImPlotAxisFlags y_axis_flags, ImPlotRect& shared_limits, bool& is_any_plot_hovered, bool show_highlight, ImPlotPoint& hovered_mouse_point, float hover_highlight_l, float hover_highlight_r, ImVec4 bull_color, ImVec4 bear_color, const std::vector<HilightsAnimationData>& hilight_animation_data, std::shared_ptr<AsyncData<NewsPointVectorType>> news, float chart_width)
 {
     assert(m_security);
     assert(!IsIndicatorOverlayable());
@@ -390,6 +397,65 @@ void GenericChartIndicatorWrapper::DrawCustomChart(double chart_height, ImPlotAx
             }
 
             ImPlot::EndItem();
+        }
+
+        if (m_security->GetNewsPointsData()->IsDataReady() && m_security->GetCandlesData()->IsDataReady())
+        {
+            if (ImPlot::BeginItem("Strategies", ImPlotItemFlags_NoLegend))
+            {
+                const CandlesData& candle_data = m_security->GetCandlesData()->GetData();
+                const NewsPointVectorType& news_points = m_security->GetNewsPointsData()->GetData();
+
+                ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+
+                uint64_t candles_count = candle_data.m_dates.size();
+                uint64_t news_count = news_points.size();
+
+                for (uint64_t i = 0; i < news_count; ++i)
+                {
+                    if (news_points[i].m_strategy == EStrategy::None)
+                    {
+                        continue;
+                    }
+
+                    if (news_points[i].m_date_range.size() > 0)
+                    {
+                        if (news_points[i].m_date_range[0] < candles_count)
+                        {
+                            std::chrono::system_clock::rep cummulative_x_date = 0;
+
+                            double top = m_chart_limits.Y.Max;
+                            double bottom = m_chart_limits.Y.Min;
+
+                            std::chrono::system_clock::time_point left_date = candle_data.m_dates[news_points[i].m_date_range[0]];
+                            std::chrono::system_clock::time_point right_date = candle_data.m_dates[news_points[i].m_date_range[news_points[i].m_date_range.size() - 1]];
+                            std::chrono::system_clock::rep left = std::chrono::duration_cast<std::chrono::seconds>(left_date.time_since_epoch()).count() - 60 * 60 * 12;
+                            std::chrono::system_clock::rep right = std::chrono::duration_cast<std::chrono::seconds>(right_date.time_since_epoch()).count() + 60 * 60 * 12;
+
+                            ImVec2 upper_left = ImPlot::PlotToPixels(left, top);
+                            ImVec2 lower_right = ImPlot::PlotToPixels(right, bottom);
+                            ImVec2 upper_right = ImPlot::PlotToPixels(right, top);
+                            ImVec2 lower_left = ImPlot::PlotToPixels(left, bottom);
+
+                            TradinatorAppSpace::ENatureType type = TradinatorAppSpace::Utils::GetStrategyNatureType(news_points[i].m_strategy);
+                            ImVec4 color = ImVec4(76.0 / 255.0, 144.0 / 255.0, 176.0 / 255.0, 1.0f); //  neutral color
+                            if (type == TradinatorAppSpace::ENatureType::BULL)
+                            {
+                                color = bull_color;
+                            }
+                            else if (type == TradinatorAppSpace::ENatureType::BEAR)
+                            {
+                                color = bear_color;
+                            }
+                            color.w = 0.2f;
+
+                            draw_list->AddRectFilled(upper_left, lower_right, ImGui::GetColorU32(color), 0.0f, ImDrawFlags_RoundCornersNone);
+                        }
+                    }
+                }
+
+                ImPlot::EndItem();
+            }
         }
 
         PlotItems(bull_color, bear_color);
@@ -620,14 +686,14 @@ std::string BollingerBandIndicatorWrapper::GetHumanReadableValueAt(size_t index)
     if (m_points_list.size() >= 3)
     {
         return std::format("{}({}) :   {}, {}, {}",
-            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
+            TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index,
             m_points_list[0][index],
             m_points_list[1][index],
             m_points_list[2][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
+        TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void BollingerBandIndicatorWrapper::FromJson(Json::Value value)
@@ -1036,7 +1102,7 @@ std::string MACDIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
     if (m_points_list.size() >= 3)
     {
         return std::format("{}({}) :   {}, {}, {}",
-            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), 
+            TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
             index,
             m_points_list[0][index],
             m_points_list[1][index],
@@ -1044,7 +1110,7 @@ std::string MACDIndicatorWrapper::GetHumanReadableValueAt(size_t index) const
     }
     
     return std::format("{}({}) :   Invalid Input",
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
+        TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void MACDIndicatorWrapper::FromJson(Json::Value value)
@@ -1426,14 +1492,14 @@ std::string TrendAnalysisDebugWrapper::GetHumanReadableValueAt(size_t index) con
             trend_str = "Down";
         }
         return std::format("{}({}) :   {} ({})",
-            TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
+            TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()),
             index,
             trend_str,
             m_points_list[0][index]);
     }
 
     return std::format("{}({}) :   Invalid Input",
-        TradinatorAppSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
+        TradinatorCoreSpace::Utils::GetIndicatorTypeStr(m_indicator->IndicatorType()), index);
 }
 
 void TrendAnalysisDebugWrapper::FromJson(Json::Value value)

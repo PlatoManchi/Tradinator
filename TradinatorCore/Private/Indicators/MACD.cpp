@@ -12,6 +12,17 @@
 #endif // _MACD_ISPC_
 
 
+bool MACD::operator==(const MACD& other) const
+{
+	return m_source == other.m_source &&
+		m_period_1 == other.m_period_1 &&
+		m_period_2 == other.m_period_2 &&
+		m_signal_period == other.m_signal_period &&
+		IndicatorType() == other.IndicatorType();
+}
+
+
+
 std::vector<std::vector<double>> MACD::Calculate()
 {
 	std::vector<std::vector<double>> result;

@@ -13,7 +13,7 @@ enum class EIndicatorSource
 
 enum class EIndicatorType
 {
-	MIN,
+	None,
 
 	E_SMA,
 	E_WMA,
@@ -27,7 +27,7 @@ enum class EIndicatorType
 	E_TrendAnalysisDebug,
 
 
-	MAX
+	Max
 };
 
 
@@ -155,6 +155,7 @@ enum class EStrategy : int64_t
     None = 0,
 
     Long_Strategy_1 = 1LL << 0,
+    Short_Strategy_1 = 1LL << 1,
 
     Max = 1LL << 4,
 };

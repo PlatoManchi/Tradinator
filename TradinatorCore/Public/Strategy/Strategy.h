@@ -29,3 +29,12 @@ class Long_Strategy_1 : public Strategy
 	virtual std::vector<bool> Check(const CandlesData& candles_data) override;
 	virtual std::vector<std::unique_ptr<Indicator>> GetIndicatorsNeeded() const override;
 };
+
+
+class Short_Strategy_1 : public Strategy
+{
+	virtual EStrategy GetStrategyType() const { return EStrategy::Short_Strategy_1; };
+
+	virtual std::vector<bool> Check(const CandlesData& candles_data) override;
+	virtual std::vector<std::unique_ptr<Indicator>> GetIndicatorsNeeded() const override;
+};

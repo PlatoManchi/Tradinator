@@ -20,6 +20,12 @@ public:
 	WMA(uint64_t length, std::weak_ptr<Security> security) : Indicator(length, security) {}
 	WMA(EIndicatorSource source, uint64_t length, std::weak_ptr<Security> security) : Indicator(source, length, security) {}
 
+	WMA(const WMA& other) = default;
+	WMA(WMA&& other) noexcept = default;
+	WMA& operator=(const WMA& other) = default;
+	WMA& operator=(WMA&& other) noexcept = default;
+
+	bool operator==(const WMA& other) const;
 
 	virtual std::vector<std::vector<double>> Calculate() override;
 	void CalculateRaw(const double* input, double* output, uint64_t window_size, uint64_t data_size);
