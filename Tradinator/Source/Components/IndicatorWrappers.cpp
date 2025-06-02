@@ -311,6 +311,10 @@ void GenericChartIndicatorWrapper::Calculate()
         {
             m_x_axis_min = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[0].time_since_epoch()).count();
             m_x_axis_max = std::chrono::duration_cast<std::chrono::seconds>(m_security->GetCandlesData()->GetData().m_dates[count - 1].time_since_epoch()).count();
+
+            // Adding one day padding at start and end of graph
+            m_x_axis_min -= 60 * 60 * 24;
+            m_x_axis_max += 60 * 60 * 24;
         }
     }
 }
