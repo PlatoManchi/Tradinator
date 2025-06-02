@@ -1200,8 +1200,11 @@ void SecurityWindow::HilightNews(NewsPoint news)
             
             if (!found)
             {
-                clone_wrapper->Calculate();
-
+                if (m_security->GetCandlesData()->IsDataReady())
+                {
+                    clone_wrapper->Calculate();
+                }
+                
                 m_applied_indicator_wrappers.emplace_back(std::move(clone_wrapper));
             }
         }
