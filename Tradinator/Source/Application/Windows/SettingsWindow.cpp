@@ -171,7 +171,7 @@ bool SettingsWindow::Show()
             ImGui::SetCursorPos(ImVec2(work_size.x / 2.0 - strategy_heading_size.x / 2.0, prev_pos.y));
             ImGui::Text(strategy_heading_str.c_str());
 
-            if (ImGui::Button("Select All"))
+            if (ImGui::Button("Select All##Strategy"))
             {
                 for (std::unique_ptr<Strategy>& strategy : m_strategies)
                 {
@@ -179,7 +179,7 @@ bool SettingsWindow::Show()
                 }
             }
             ImGui::SameLine();
-            if (ImGui::Button("Select None"))
+            if (ImGui::Button("Select None##Strategy"))
             {
                 for (std::unique_ptr<Strategy>& strategy : m_strategies)
                 {
@@ -214,7 +214,10 @@ bool SettingsWindow::Show()
                     bool is_visible = TradinatorSettings::Get().GetStrategyVisibility(strategy->GetStrategyType());
                     ImGui::Checkbox(strategy->Name().c_str(), &is_visible);
                     TradinatorSettings::Get().SetStrategyVisibility(strategy->GetStrategyType(), is_visible);
-
+                    if (ImGui::IsItemHovered()) 
+                    {
+                        ImGui::SetTooltip(TradinatorCoreSpace::Utils::GetStrategyDesc(strategy->GetStrategyType()).c_str());
+                    }
                     ++index;
                 }
 
@@ -234,7 +237,7 @@ bool SettingsWindow::Show()
             ImGui::SetCursorPos(ImVec2(work_size.x / 2.0 - patterns_heading_size.x / 2.0, prev_pos.y));
             ImGui::Text(patterns_heading_str.c_str());
 
-            if (ImGui::Button("Select All"))
+            if (ImGui::Button("Select All##Pattern"))
             {
                 for (std::unique_ptr<Pattern>& pattern : m_patterns)
                 {
@@ -242,7 +245,7 @@ bool SettingsWindow::Show()
                 }
             }
             ImGui::SameLine();
-            if (ImGui::Button("Select None"))
+            if (ImGui::Button("Select None##Pattern"))
             {
                 for (std::unique_ptr<Pattern>& pattern : m_patterns)
                 {

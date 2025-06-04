@@ -170,6 +170,10 @@ void MainWindow::ShowMainMenu_File()
             bool is_visible = TradinatorSettings::Get().GetStrategyVisibility(strategy->GetStrategyType());
             ImGui::Checkbox(strategy->Name().c_str(), &is_visible);
             TradinatorSettings::Get().SetStrategyVisibility(strategy->GetStrategyType(), is_visible);
+            if (ImGui::IsItemHovered()) 
+            {
+                ImGui::SetTooltip(TradinatorCoreSpace::Utils::GetStrategyDesc(strategy->GetStrategyType()).c_str());
+            }
         }
         ImGui::EndMenu();
     }
