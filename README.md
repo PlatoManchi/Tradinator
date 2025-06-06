@@ -4,6 +4,10 @@
 # Intro
 Tradinator is an app I built to put my learnings about patterns and strategies into pratice.  
 
+> [!NOTE]
+> Depending on your hardware, first time setup might take 15min or more since downloading all the historical data and processing them into a sqlite database is slow and takes time. Bottle neck writting into sqlite. 
+
+
 # Setting Working Folder
 When running the app first time, start up screen is shown. 
 Working folder is the folder where app will for all its operations. Downloaded raw candle data is stored at NSE/Raw folder and the processed sqlite database is stored at Data/Tradinator.db.
