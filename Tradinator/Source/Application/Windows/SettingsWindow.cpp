@@ -52,11 +52,11 @@ bool SettingsWindow::Show()
             /// @separator
 
             /// @begin Button
-            ImGui::Button("Delete Temporary Files", { 0, 0 });
+            //ImGui::Button("Delete Temporary Files", { 0, 0 });
             /// @end Button
 
             /// @begin Button
-            ImGui::Button("Delete Log Files", { 0, 0 });
+            //ImGui::Button("Delete Log Files", { 0, 0 });
             /// @end Button
 
             /// @begin Button
