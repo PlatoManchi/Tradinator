@@ -275,7 +275,7 @@ bool StartupWindow::Show()
             float table_width = (window_width - item_spacing.x * 3.0f) / 2.0f;
             int  column_count = std::max((int)(table_width / strategy_width), 1);
 
-            if (ImGui::BeginTable("StrategyList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            if (ImGui::BeginTable("StrategyList", column_count, ImGuiTableFlags_None, { -1, 0 }))
             {
                 int row = -1;
                 uint64_t index = 0;
@@ -341,7 +341,7 @@ bool StartupWindow::Show()
 
             ImGui::SeparatorText("Bullish Patterns : ");
 
-            if (ImGui::BeginTable("BullishPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            if (ImGui::BeginTable("BullishPatternList", column_count, ImGuiTableFlags_None, { -1, 0 }))
             {
                 int row = -1;
                 uint64_t index = 0;
