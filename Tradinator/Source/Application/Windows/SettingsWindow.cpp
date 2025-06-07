@@ -292,7 +292,7 @@ bool SettingsWindow::Show()
 
             ImGui::SeparatorText("Bearish Patterns : ");
 
-            if (ImGui::BeginTable("BearishPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            if (ImGui::BeginTable("BearishPatternList", column_count, ImGuiTableFlags_None, { -1, 0 }))
             {
                 int row = -1;
                 uint64_t index = 0;
@@ -322,7 +322,7 @@ bool SettingsWindow::Show()
 
             ImGui::SeparatorText("Generic Patterns : ");
 
-            if (ImGui::BeginTable("GenericPatternList", column_count, ImGuiTableFlags_None, { -1, -1 }))
+            if (ImGui::BeginTable("GenericPatternList", column_count, ImGuiTableFlags_None, { -1, 0 }))
             {
                 int row = -1;
                 uint64_t index = 0;
