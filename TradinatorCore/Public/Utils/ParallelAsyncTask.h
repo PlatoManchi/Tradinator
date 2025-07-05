@@ -27,7 +27,7 @@ public:
 		, std::shared_ptr<AsyncTaskManager> async_task_manager
 		, std::unique_ptr<Task>&& task
 		, Tasks ... tasks_and_callback) requires std::convertible_to<Task, AsyncTask>
-		: ParallelAsyncTask(std::move(tasks_and_callback) ...)
+		: ParallelAsyncTask(std::forward<decltype(tasks_and_callback)>(tasks_and_callback) ...)
 	{
 		assert(task);
 
@@ -45,7 +45,7 @@ public:
 protected:
 	template<typename Task, typename ... Tasks>
 	ParallelAsyncTask(std::unique_ptr<Task>&& task, Tasks ... tasks) requires std::convertible_to<Task, AsyncTask>
-		: ParallelAsyncTask(std::move(tasks) ...)
+		: ParallelAsyncTask(std::forward<decltype(tasks)>(tasks) ...)
 	{
 		assert(task);
 
