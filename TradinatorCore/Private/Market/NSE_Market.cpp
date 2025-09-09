@@ -95,7 +95,7 @@ void NSE_Market::ParseSecurityListData()
         }
 
 
-        catch (std::exception&)
+        catch ([[maybe_unused]] std::exception&)
         {
             is_success = false;
             

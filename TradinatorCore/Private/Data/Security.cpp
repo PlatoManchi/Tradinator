@@ -115,7 +115,7 @@ std::chrono::system_clock::time_point Security::GetLastCandleDataDate() const
 
 			is_success = true;
 		}
-		catch(std::exception e)
+		catch([[maybe_unused]] std::exception e)
 		{
 			is_success = false;
 
@@ -344,7 +344,7 @@ void Security::ReadFromRawFileToMemory()
 
 			is_success = true;
 		}
-		catch (std::exception e)
+		catch ([[maybe_unused]] std::exception e)
 		{
 			is_success = false;
 
@@ -768,7 +768,7 @@ void Security::InsertRawDataToDatabase()
 				m_is_memory_in_sync = false;
 				is_success = true;
 			}
-			catch (std::exception& e)
+			catch ([[maybe_unused]] std::exception& e)
 			{
 				is_success = false;
 				//Log::GetInstance().Write(std::format("ERROR: InsertRawDataToDatabase: SQLite exception: {}", e.what()));
@@ -1004,7 +1004,7 @@ void Security::LoadCandleDataToMemory(int64_t days)
 			m_is_memory_in_sync = true;
 			is_success = true;
 		}
-		catch (std::exception& e)
+		catch ([[maybe_unused]] std::exception& e)
 		{
 			is_success = false;
 			Log::GetInstance().Write(std::format("ERROR: LoadCandleDataToMemory: SQLite exception: {}", e.what()));
@@ -1086,7 +1086,7 @@ void Security::UpdateSecuritySkeletonData()
 		}
 
 
-		catch (std::exception& e)
+		catch ([[maybe_unused]] std::exception& e)
 		{
 			is_success = false;
 			//Log::GetInstance().Write(std::format("ERROR: UpdateSecuritySkeletonData: SQLite exception: {}", e.what()));

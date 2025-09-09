@@ -280,7 +280,7 @@ void TradinatorCoreThread::LoadNews(int64_t days)
 		}
 
 	}
-	catch (std::exception& e)
+	catch ([[maybe_unused]] std::exception& e)
 	{
 		Log::GetInstance().Write(std::format("ERROR: LoadNews: SQLite exception: {}", e.what()));
 
@@ -313,7 +313,7 @@ void TradinatorCoreThread::RedoAutoAnalysis()
 
 			is_success = true;
 		}
-		catch (std::exception& e)
+		catch ([[maybe_unused]] std::exception& e)
 		{
 			is_success = false;
 			Log::GetInstance().Write(std::format("ERROR: RedoAutoAnalysis: SQLite exception: {}", e.what()));
@@ -407,7 +407,7 @@ void TradinatorCoreThread::InitializeDB()
 
 			is_success = true;
 		}
-		catch (std::exception& e)
+		catch ([[maybe_unused]] std::exception& e)
 		{
 			is_success = false;
 			Log::GetInstance().Write(std::format("ERROR: InitializeDB: SQLite exception: {}", e.what()));
